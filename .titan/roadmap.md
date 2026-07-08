@@ -22,7 +22,7 @@
 | 001 | Requirements & Product Definition | Define what is being built: Titan AI itself, realized as Titan Core | complete | 000 |
 | 003 | Architecture Design | Approve the Titan Core engine architecture (`architecture.md` Section 6) | complete | 001 |
 | 002 | Technical Discovery & Stack Selection | Choose and record the technology stack that fits Titan Core, via `tech_stack.md` | not-started | 003 |
-| 004 | Environment & Tooling Setup | Repo scaffold, CI/CD skeleton, linting, formatting, pre-commit hooks | not-started | 002 |
+| 004 | Environment & Tooling Setup | Repo scaffold, CI/CD skeleton, linting, formatting, pre-commit hooks | in-progress | 002 |
 | 005 | Context Engine Implementation | Build session/live-state management: the foundation every other engine reads from | not-started | 004 |
 | 006 | Knowledge Engine Implementation | Build long-term memory: programmatic read/write access to `.titan/` governance corpus | not-started | 005 |
 | 007 | Planner Engine Implementation | Build goal-to-plan decomposition, consuming Context + Knowledge engines | not-started | 006 |

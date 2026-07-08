@@ -57,17 +57,19 @@ These are starting biases, not mandates — they can be overridden by an ADR if 
 
 ## 5. Current Selected Stack
 
-**Status: Not yet decided.** This section will be populated during Phase 002 and must include, at minimum:
+**Status: Decided for the initial Phase 004 scaffold.** The repository now uses the following baseline stack:
 
-- Primary language(s) and version(s)
-- Runtime/framework
-- Database/storage
-- Build tooling
-- Testing framework(s)
-- CI/CD platform
-- Hosting/deployment target
+- **Primary language:** TypeScript 5.8+
+- **Runtime:** Node.js (modern LTS-compatible runtime)
+- **Package management:** npm workspaces
+- **Build tooling:** TypeScript compiler with module resolution configured for a monorepo
+- **Testing framework:** Vitest
+- **Linting/formatting:** ESLint and Prettier
+- **Configuration:** environment-based configuration via `.env` and `.env.example`
+- **CI/CD platform:** Not yet configured; deferred to a follow-up step if required
+- **Hosting/deployment target:** Not yet selected; deferred until product-specific requirements exist
 
-Until this section is filled in with an accompanying ADR, no agent should treat any stack as "already decided."
+This selection is recorded here and in ADR-0003 so the scaffold is not treated as an ad hoc choice.
 
 ## 6. Dependency Registry
 
@@ -75,7 +77,11 @@ A running list of non-trivial dependencies added to the project, for visibility 
 
 | Dependency | Purpose | Added In Phase | ADR Reference |
 |---|---|---|---|
-| — | — | — | — |
+| TypeScript | Core language/compiler for the monorepo | 004 | ADR-0003 |
+| Vitest | Unit and integration test runner | 004 | ADR-0003 |
+| ESLint | Linting and code-quality enforcement | 004 | ADR-0003 |
+| Prettier | Automated formatting | 004 | ADR-0003 |
+| @types/node | Node.js type definitions | 004 | ADR-0003 |
 
 ## 7. Deprecation & Migration Policy
 

@@ -87,6 +87,42 @@ As part of this decision, the roadmap dependency between Phase 002 (Technical Di
 
 ---
 
-## ADR-0003 through ADR-000N
+## ADR-0003: Adopt a TypeScript Monorepo Scaffold for Titan AI
 
-No further decisions have been made yet. The next ADR will likely be recorded during Phase 002, covering technology stack selection. Add new entries below this line using `templates/adr-template.md`, incrementing the number sequentially. Do not skip numbers; do not reuse numbers.
+- **Status:** accepted
+- **Date:** 2026-07-08
+- **Author:** Claude (acting as Principal Software Architect per assignment)
+
+### Context
+
+The repository now needs an actual codebase structure rather than only governance documents. The approved Titan Core architecture requires a modular monorepo with engine packages and shared infrastructure packages, but the implementation also needs a concrete toolchain that can support testing, linting, formatting, type safety, and environment-based configuration from the first commit.
+
+### Decision
+
+Adopt a TypeScript-based monorepo scaffold for the initial Phase 004 implementation, using:
+
+- **TypeScript** for type-safe source code
+- **npm workspaces** for package orchestration
+- **Vitest** for automated tests
+- **ESLint** and **Prettier** for linting and formatting
+- **Environment-based configuration** via `.env` and `.env.example`
+
+This choice is intended to support the approved engine package boundaries while remaining simple enough for the initial scaffold.
+
+### Alternatives Considered
+
+1. **Python monorepo**. Rejected for this phase because the project explicitly requested a TypeScript monorepo and the governance default preferences favor TypeScript for long-term maintainability.
+2. **Jest instead of Vitest**. Rejected because Vitest offers a lighter default experience and better fit for a modern TypeScript workspace with fast feedback.
+3. **No explicit linting/formatting tooling**. Rejected because the standards require automated formatting and reviewability from the first implementation phase.
+
+### Consequences
+
+- **Positive:** The repository now has a consistent toolchain that supports the package layout required by Titan Core and keeps the initial scaffold easy to understand and extend.
+- **Negative:** The stack choice is now a constraint for future implementation; changing it later would require a new ADR and migration work.
+- **Mitigation:** Keep the initial stack minimal and use the existing architecture boundaries to avoid premature framework coupling.
+
+---
+
+## ADR-0004 through ADR-000N
+
+No further decisions have been made yet. Add new entries below this line using `templates/adr-template.md`, incrementing the number sequentially. Do not skip numbers; do not reuse numbers.

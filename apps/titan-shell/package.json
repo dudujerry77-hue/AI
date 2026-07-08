@@ -1,0 +1,17 @@
+{
+  "name": "@titan/titan-shell",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "dependencies": {
+    "@titan/context": "file:../../engines/context",
+    "@titan/knowledge": "file:../../engines/knowledge",
+    "@titan/planner": "file:../../engines/planner",
+    "@titan/orchestrator": "file:../../engines/orchestrator",
+    "@titan/execution": "file:../../engines/execution",
+    "@titan/validation": "file:../../engines/validation",
+    "@titan/learning": "file:../../engines/learning",
+    "@titan/shared": "file:../../packages/shared"
+  }
+}
