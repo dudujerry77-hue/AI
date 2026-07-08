@@ -185,7 +185,7 @@ Implement a shared Engine Framework before implementing additional Titan engines
 
 ### Consequences
 
-The shared framework becomes a prerequisite for all future engine implementation work. The roadmap now includes a dedicated framework phase before Knowledge and the remaining engines, and the architecture documents explicitly require the framework to be in place before additional engine implementation proceeds.
+The shared framework becomes a prerequisite for all future engine implementation work. The roadmap now includes a dedicated framework phase before Knowledge and the remaining engines, and the architecture documents explicitly require the framework to be in place before additional engine implementation proceeds. The public engine contract for all engines is captured in `specification/engine_api.md` so that engine implementations remain consistent with the shared framework and the approved architecture.
 
 ---
 

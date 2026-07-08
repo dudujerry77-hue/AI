@@ -10,6 +10,7 @@
 
 ### Added
 - A governance update introducing a shared Engine Framework as a required architecture prerequisite before additional Titan engine implementation begins.
+- A new governance specification, `specification/engine_api.md`, defining the mandatory public contract for every Titan engine, including lifecycle, event, health, configuration, logging, error handling, capability discovery, and compatibility expectations.
 - Initial Titan AI repository scaffold with production-style folders for `apps/`, `engines/`, `packages/`, `services/`, `shared/`, `tests/`, `scripts/`, and `docs/`.
 - TypeScript monorepo workspace configuration, including TypeScript, ESLint, Prettier, Vitest, environment example config, `.gitignore`, and `.editorconfig`.
 - Placeholder engine packages for Context, Knowledge, Planner, Orchestrator, Execution, Validation, and Learning, each containing only documentation, manifest, and entrypoint stubs.

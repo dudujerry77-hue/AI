@@ -142,6 +142,7 @@ The Engine Framework must provide:
 
 - **Engine lifecycle** — startup, initialization, execution, pause/resume where applicable, and orderly shutdown.
 - **Standard engine interface** — a common contract that every engine implements or inherits.
+- **Public engine API contract** — the mandatory interface and behavior defined in `specification/engine_api.md`.
 - **Engine registry** — a central registry of available engines and their capabilities.
 - **Dependency injection** — a standard way to supply services and collaborators to engines.
 - **Internal event bus** — a shared mechanism for asynchronous, observable engine-to-framework and framework-to-engine communication.

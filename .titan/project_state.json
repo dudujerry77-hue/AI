@@ -27,6 +27,7 @@
       "roadmap.md",
       "architecture.md",
       "engine_framework.md",
+      "specification/engine_api.md",
       "current_phase.md",
       "project_state.json",
       "changelog.md",

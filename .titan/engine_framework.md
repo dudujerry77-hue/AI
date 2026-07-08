@@ -8,7 +8,7 @@
 
 ## 1. Purpose
 
-The Engine Framework exists to provide a common architectural foundation for every Titan engine. Its purpose is to standardize engine lifecycle management, communication, observability, configuration, error handling, and runtime coordination so engines can remain independent, testable, and replaceable.
+The Engine Framework exists to provide a common architectural foundation for every Titan engine. Its purpose is to standardize engine lifecycle management, communication, observability, configuration, error handling, and runtime coordination so engines can remain independent, testable, and replaceable. The mandatory public engine contract is defined in `specification/engine_api.md` and must be implemented by every engine that uses the framework.
 
 ## 2. Architecture
 
