@@ -6,7 +6,8 @@
   "workspaces": [
     "apps/*",
     "engines/*",
-    "packages/*"
+    "packages/*",
+    "runtime"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",

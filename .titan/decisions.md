@@ -187,6 +187,10 @@ Implement a shared Engine Framework before implementing additional Titan engines
 
 The shared framework becomes a prerequisite for all future engine implementation work. The roadmap now includes a dedicated framework phase before Knowledge and the remaining engines, and the architecture documents explicitly require the framework to be in place before additional engine implementation proceeds. The public engine contract for all engines is captured in `specification/engine_api.md` so that engine implementations remain consistent with the shared framework and the approved architecture.
 
+### Implementation Status
+
+The shared framework was implemented during Phase 006 as a reusable runtime package under `runtime/`, including the engine contract, lifecycle manager, registry, event bus, configuration service, logger, health monitor, metrics collector, and error hierarchy. The implementation was verified through unit tests and a successful TypeScript build.
+
 ---
 
 ## ADR-0006 through ADR-000N

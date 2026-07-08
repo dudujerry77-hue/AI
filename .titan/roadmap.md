@@ -24,7 +24,7 @@
 | 002 | Technical Discovery & Stack Selection | Choose and record the technology stack that fits Titan Core, via `tech_stack.md` | not-started | 003 |
 | 004 | Environment & Tooling Setup | Repo scaffold, CI/CD skeleton, linting, formatting, pre-commit hooks | in-progress | 002 |
 | 005 | Context Engine Implementation | Build session/live-state management: the foundation every other engine reads from | complete | 004 |
-| 006 | Engine Framework | Build the shared runtime infrastructure that every Titan engine will use, including the TitanEngine interface, BaseEngine implementation, EngineRegistry, EventBus, Dependency Injection container, Lifecycle Manager, Health Monitor, Configuration Service, Logging Service, Metrics interface, Error Handling framework, and the public engine API contract documented in `specification/engine_api.md` | not-started | 005 |
+| 006 | Engine Framework | Build the shared runtime infrastructure that every Titan engine will use, including the TitanEngine interface, BaseEngine implementation, EngineRegistry, EventBus, Dependency Injection container, Lifecycle Manager, Health Monitor, Configuration Service, Logging Service, Metrics interface, Error Handling framework, and the public engine API contract documented in `specification/engine_api.md` | complete | 005 |
 | 007 | Knowledge Engine Implementation | Build long-term memory: programmatic read/write access to `.titan/` governance corpus | not-started | 006 |
 | 008 | Planner Engine Implementation | Build goal-to-plan decomposition, consuming Context + Knowledge engines | not-started | 007 |
 | 009 | Orchestrator Engine Implementation | Build central coordination: task sequencing, dispatch, escalation enforcement | not-started | 008 |

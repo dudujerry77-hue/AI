@@ -9,15 +9,15 @@
     "repository_root": "."
   },
   "current_phase": {
-    "id": "005",
-    "name": "Context Engine Implementation",
+    "id": "006",
+    "name": "Engine Framework",
     "status": "complete"
   },
   "next_phase": {
-    "id": "006",
-    "name": "Engine Framework",
+    "id": "007",
+    "name": "Knowledge Engine Implementation",
     "status": "not-started",
-    "blocked_reason": "Waiting for the Context Engine implementation and verification to be completed."
+    "blocked_reason": "Waiting for the shared Engine Framework implementation and verification to be completed."
   },
   "governance": {
     "constitution_version": "1.0.0",
@@ -63,7 +63,7 @@
     "engine_framework_phase": "006",
     "shared_framework": {
       "name": "Engine Framework",
-      "status": "not-implemented",
+      "status": "implemented",
       "implementation_phase": "006"
     },
     "engines": [
@@ -83,9 +83,9 @@
     "known_open_bugs": 0
   },
   "counters": {
-    "sessions_logged": 4,
+    "sessions_logged": 5,
     "adrs_recorded": 5,
-    "phases_completed": 4
+    "phases_completed": 5
   },
   "agents_involved_to_date": [
     "Claude"
