@@ -14,6 +14,7 @@
 - Placeholder engine packages for Context, Knowledge, Planner, Orchestrator, Execution, Validation, and Learning, each containing only documentation, manifest, and entrypoint stubs.
 - A minimal application shell package that imports the engine placeholders without performing real work.
 - Governance updates recording the Phase 004 scaffold and the selected TypeScript stack in `tech_stack.md`, `project_state.json`, `current_phase.md`, and `decisions.md`.
+- A completed Context Engine package implementing typed runtime context interfaces, a `ContextManager`, immutable snapshots, versioning, serialization/deserialization, and load/save support.
 
 ---
 

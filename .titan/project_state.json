@@ -9,15 +9,15 @@
     "repository_root": "."
   },
   "current_phase": {
-    "id": "004",
-    "name": "Environment & Tooling Setup",
-    "status": "in-progress"
-  },
-  "next_phase": {
     "id": "005",
     "name": "Context Engine Implementation",
+    "status": "complete"
+  },
+  "next_phase": {
+    "id": "006",
+    "name": "Knowledge Engine Implementation",
     "status": "not-started",
-    "blocked_reason": "Waiting for the initial workspace scaffold and placeholder engine packages to be validated."
+    "blocked_reason": "Waiting for the Context Engine implementation and verification to be completed."
   },
   "governance": {
     "constitution_version": "1.0.0",
@@ -56,11 +56,11 @@
     "notes": "architecture.md Section 6 still defines the approved Titan Core engine architecture (7 engines). The initial scaffold now reflects that structure through placeholder engine packages."
   },
   "titan_core": {
-    "status": "architecture-approved",
+    "status": "context-engine-complete",
     "engines": [
       { "name": "Planner Engine", "status": "not-implemented", "implementation_phase": "007" },
       { "name": "Orchestrator Engine", "status": "not-implemented", "implementation_phase": "008" },
-      { "name": "Context Engine", "status": "not-implemented", "implementation_phase": "005" },
+      { "name": "Context Engine", "status": "implemented", "implementation_phase": "005" },
       { "name": "Knowledge Engine", "status": "not-implemented", "implementation_phase": "006" },
       { "name": "Execution Engine", "status": "not-implemented", "implementation_phase": "009" },
       { "name": "Validation Engine", "status": "not-implemented", "implementation_phase": "010" },
@@ -74,9 +74,9 @@
     "known_open_bugs": 0
   },
   "counters": {
-    "sessions_logged": 3,
-    "adrs_recorded": 3,
-    "phases_completed": 2
+    "sessions_logged": 4,
+    "adrs_recorded": 4,
+    "phases_completed": 3
   },
   "agents_involved_to_date": [
     "Claude"

@@ -123,6 +123,34 @@ This choice is intended to support the approved engine package boundaries while 
 
 ---
 
-## ADR-0004 through ADR-000N
+## ADR-0004: Implement the Context Engine as the Runtime Context Source of Truth
+
+- **Status:** accepted
+- **Date:** 2026-07-08
+- **Author:** Claude (acting as Principal Software Architect per assignment)
+
+### Context
+
+The approved Titan Core architecture requires a dedicated Context Engine that manages the live runtime state of a session without taking on planning, orchestration, memory, or AI responsibilities. The initial scaffold only had placeholder modules, so the repository needed a concrete implementation that could be consumed by future engines without overstepping boundaries.
+
+### Decision
+
+Implement the Context Engine as an isolated package responsible only for runtime context state. It exposes typed interfaces for project, session, task, phase, user, and engine context, plus a `ContextManager` that creates immutable snapshots, applies versioning, and supports serialization, deserialization, and persistence through a storage adapter.
+
+### Alternatives Considered
+
+1. **Use a shared object module without a dedicated engine package.** Rejected because the architecture requires the Context Engine to be a single, explicit source of truth with clear responsibilities and boundaries.
+2. **Implement context as mutable global state.** Rejected because it would break the architectural requirement for explicit state ownership and inspectable snapshots.
+3. **Let the Orchestrator or Planner own context state.** Rejected because that would blur engine boundaries and violate the approved architecture.
+
+### Consequences
+
+- **Positive:** Future engines can depend on a typed, versioned runtime context abstraction without coupling to ad hoc state handling.
+- **Negative:** The initial implementation is intentionally narrow and will need future expansion when additional context data becomes necessary.
+- **Mitigation:** Keep the engine strictly scoped to runtime context and document that boundary clearly.
+
+---
+
+## ADR-0005 through ADR-000N
 
 No further decisions have been made yet. Add new entries below this line using `templates/adr-template.md`, incrementing the number sequentially. Do not skip numbers; do not reuse numbers.
