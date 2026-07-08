@@ -46,6 +46,17 @@ Section 1's vision — coherent, multi-agent, multi-session autonomous engineeri
 - **Execution Engine** and **Validation Engine** enforce the "Definition of Done" (`constitution.md` Section 5) mechanically, by construction, rather than relying on each agent to remember to self-check.
 - **Learning Engine** operationalizes Section 6's long-term success definition: it is the mechanism by which Titan AI actually improves over time rather than merely not degrading.
 
+## 4b. Why a Shared Engine Framework Matters
+
+A shared Engine Framework improves Titan AI in several ways that are essential to the long-term vision:
+
+- **Scalability:** the framework provides the common runtime foundation that allows new engines to be added without re-creating the same infrastructure each time.
+- **Maintainability:** common lifecycle, logging, configuration, and error-handling behavior reduce duplication and make future changes less fragile.
+- **Testing:** a single shared contract for lifecycle, event flow, and health signals makes engines easier to test in isolation and in combination.
+- **Engine independence:** each engine can evolve behind the same interface without depending on bespoke glue code or direct coupling to other engines.
+- **Future distributed execution:** the framework creates a clear boundary for communication and runtime behavior that can later support distributed deployment or remote execution.
+- **Replacement of individual engines:** because each engine depends on the same framework contract, an engine can be replaced or upgraded without rewriting the surrounding system from scratch.
+
 ## 5. How This Plan Is Used
 
 - **At project kickoff:** the roadmap is derived from this plan.

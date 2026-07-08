@@ -132,7 +132,30 @@ flowchart TD
 3. Every engine's inputs and outputs must be logged in a form the Context Engine (short-term) and, where significant, the Knowledge Engine (long-term, via `sessions/`) can capture — this keeps Titan Core itself compliant with `constitution.md` Section 3.3 ("leave a trail").
 4. Engine boundaries described here are binding. A future agent that finds a boundary awkward must raise an ADR to revise it, not quietly blend two engines' responsibilities together.
 
-### 6.4 Mapping to the Default Structural Pattern (Section 3)
+### 6.4 Engine Framework (Required Shared Infrastructure)
+
+**Status:** Required for all future Titan engine implementation phases. This framework is now part of the approved architecture and must be established before additional engines are implemented.
+
+Every Titan engine must inherit from, or implement, a shared Engine Framework that provides the common runtime contract used by all engines. The framework is the boundary-enforcing layer for engine lifecycle, communication, and shared infrastructure. It exists to ensure that engines remain independently testable, replaceable, and interoperable without relying on ad hoc coupling.
+
+The Engine Framework must provide:
+
+- **Engine lifecycle** — startup, initialization, execution, pause/resume where applicable, and orderly shutdown.
+- **Standard engine interface** — a common contract that every engine implements or inherits.
+- **Engine registry** — a central registry of available engines and their capabilities.
+- **Dependency injection** — a standard way to supply services and collaborators to engines.
+- **Internal event bus** — a shared mechanism for asynchronous, observable engine-to-framework and framework-to-engine communication.
+- **Structured logging** — consistent, contextual logging across all engines.
+- **Configuration loading** — centralized, validated configuration access for each engine.
+- **Health monitoring** — runtime health signals, readiness checks, and fault visibility.
+- **Metrics hooks** — common hooks for counters, timing, and other runtime metrics.
+- **Error handling** — consistent error propagation, classification, and recovery behavior.
+- **Graceful shutdown** — orderly termination with cleanup and state preservation where appropriate.
+- **Capability discovery** — a standardized way for the framework or other engines to discover what an engine can do.
+
+Engines must never communicate directly unless explicitly allowed by an approved interface or ADR. All communication should occur through the Engine Framework using events or approved interfaces. This keeps engine boundaries explicit and allows future distributed execution, replacement, or isolation of individual engines without reworking the whole system.
+
+## 6.5 Mapping to the Default Structural Pattern (Section 3)
 
 Each engine is implemented as its own module respecting the `/domain`, `/application`, `/infrastructure`, `/interfaces` layering from Section 3 internally. Suggested package layout once Phase 002 selects a stack:
 

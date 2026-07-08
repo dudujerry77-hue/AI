@@ -9,6 +9,7 @@
 ## [Unreleased]
 
 ### Added
+- A governance update introducing a shared Engine Framework as a required architecture prerequisite before additional Titan engine implementation begins.
 - Initial Titan AI repository scaffold with production-style folders for `apps/`, `engines/`, `packages/`, `services/`, `shared/`, `tests/`, `scripts/`, and `docs/`.
 - TypeScript monorepo workspace configuration, including TypeScript, ESLint, Prettier, Vitest, environment example config, `.gitignore`, and `.editorconfig`.
 - Placeholder engine packages for Context, Knowledge, Planner, Orchestrator, Execution, Validation, and Learning, each containing only documentation, manifest, and entrypoint stubs.

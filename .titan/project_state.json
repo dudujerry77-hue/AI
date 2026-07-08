@@ -15,7 +15,7 @@
   },
   "next_phase": {
     "id": "006",
-    "name": "Knowledge Engine Implementation",
+    "name": "Engine Framework",
     "status": "not-started",
     "blocked_reason": "Waiting for the Context Engine implementation and verification to be completed."
   },
@@ -26,6 +26,7 @@
       "master_plan.md",
       "roadmap.md",
       "architecture.md",
+      "engine_framework.md",
       "current_phase.md",
       "project_state.json",
       "changelog.md",
@@ -57,16 +58,23 @@
   },
   "titan_core": {
     "status": "context-engine-complete",
+    "engine_framework_required_before_future_engine_implementation": true,
+    "engine_framework_phase": "006",
+    "shared_framework": {
+      "name": "Engine Framework",
+      "status": "not-implemented",
+      "implementation_phase": "006"
+    },
     "engines": [
-      { "name": "Planner Engine", "status": "not-implemented", "implementation_phase": "007" },
-      { "name": "Orchestrator Engine", "status": "not-implemented", "implementation_phase": "008" },
+      { "name": "Planner Engine", "status": "not-implemented", "implementation_phase": "008" },
+      { "name": "Orchestrator Engine", "status": "not-implemented", "implementation_phase": "009" },
       { "name": "Context Engine", "status": "implemented", "implementation_phase": "005" },
-      { "name": "Knowledge Engine", "status": "not-implemented", "implementation_phase": "006" },
-      { "name": "Execution Engine", "status": "not-implemented", "implementation_phase": "009" },
-      { "name": "Validation Engine", "status": "not-implemented", "implementation_phase": "010" },
-      { "name": "Learning Engine", "status": "not-implemented", "implementation_phase": "011" }
+      { "name": "Knowledge Engine", "status": "not-implemented", "implementation_phase": "007" },
+      { "name": "Execution Engine", "status": "not-implemented", "implementation_phase": "010" },
+      { "name": "Validation Engine", "status": "not-implemented", "implementation_phase": "011" },
+      { "name": "Learning Engine", "status": "not-implemented", "implementation_phase": "012" }
     ],
-    "notes": "Implementation order follows architecture.md Section 6.1's data-flow dependencies: Context and Knowledge first, then Planner, Orchestrator, Execution, Validation, and Learning last."
+    "notes": "Implementation order follows architecture.md Section 6.1's data-flow dependencies and the new Engine Framework requirement: Context first, then the shared framework, then Knowledge, Planner, Orchestrator, Execution, Validation, and Learning."
   },
   "quality": {
     "test_coverage_percent": null,
@@ -75,8 +83,8 @@
   },
   "counters": {
     "sessions_logged": 4,
-    "adrs_recorded": 4,
-    "phases_completed": 3
+    "adrs_recorded": 5,
+    "phases_completed": 4
   },
   "agents_involved_to_date": [
     "Claude"

@@ -151,6 +151,44 @@ Implement the Context Engine as an isolated package responsible only for runtime
 
 ---
 
-## ADR-0005 through ADR-000N
+## ADR-0005: Implement a Shared Engine Framework Before Additional Engine Implementation
+
+- **Status:** accepted
+- **Date:** 2026-07-08
+- **Author:** Claude (acting as Principal Software Architect per assignment)
+
+### Context
+
+After the Context Engine was documented and the broader Titan Core architecture was approved, the project had a clear need for a shared runtime contract for all future engines. Without a common framework, each engine would risk introducing its own lifecycle model, communication pattern, dependency injection strategy, logging, health model, and error-handling approach. That would increase coupling, make testing harder, and weaken the engine-boundary rules established in `architecture.md` Section 6.
+
+### Decision
+
+Implement a shared Engine Framework before implementing additional Titan engines. The framework will define the common contract used by every engine and will be the mandatory path for engine lifecycle management, engine registration, communication, configuration, logging, health monitoring, metrics hooks, error handling, and graceful shutdown. All engine-to-engine communication must flow through the framework using events or approved interfaces unless an explicit ADR allows otherwise.
+
+### Alternatives Considered
+
+1. **Implement the next engine directly without a shared framework.** Rejected because it would preserve ad hoc coupling and make each engine responsible for recreating the same infrastructure.
+2. **Allow each engine to define its own runtime assumptions.** Rejected because it would weaken the boundary model and make future replacement or distributed execution much more difficult.
+3. **Delay the framework until after several engines exist.** Rejected because it would embed architectural inconsistencies earlier and create more expensive refactoring later.
+
+### Trade-offs
+
+- **Positive:** A shared framework improves consistency, maintainability, testing, and future extensibility across all engines.
+- **Negative:** It adds a prerequisite phase before engine implementation can proceed, which slightly delays tangible engine work.
+
+### Benefits
+
+- Stronger engine independence.
+- Cleaner event-driven communication.
+- Better observability and operational readiness.
+- A clearer path to future distributed or multi-process execution.
+
+### Consequences
+
+The shared framework becomes a prerequisite for all future engine implementation work. The roadmap now includes a dedicated framework phase before Knowledge and the remaining engines, and the architecture documents explicitly require the framework to be in place before additional engine implementation proceeds.
+
+---
+
+## ADR-0006 through ADR-000N
 
 No further decisions have been made yet. Add new entries below this line using `templates/adr-template.md`, incrementing the number sequentially. Do not skip numbers; do not reuse numbers.

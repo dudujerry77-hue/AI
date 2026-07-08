@@ -29,13 +29,13 @@ Implementing the Context Engine as an isolated, runtime-only package that owns p
 ## Next Phase
 
 - **Phase ID:** 006
-- **Name:** Knowledge Engine Implementation
+- **Name:** Engine Framework
 - **Status:** not-started
 - **Entry Criteria:** The Context Engine is implemented and verified.
-- **What the next agent should do first:** Continue with the Knowledge Engine in the approved dependency order and keep the governance files updated as work progresses.
+- **What the next agent should do first:** Build the shared Engine Framework in the approved dependency order before proceeding with the Knowledge Engine and the remaining engines, and keep the governance files updated as work progresses.
 
 ## Instructions for Whoever Reads This Next
 
-1. Continue with the next engine in dependency order: Knowledge Engine (006) → Planner Engine (007) → Orchestrator Engine (008) → Execution Engine (009) → Validation Engine (010) → Learning Engine (011), per `architecture.md` Section 6.1 and `roadmap.md`.
+1. Continue with the next phase in dependency order: Engine Framework (006) → Knowledge Engine (007) → Planner Engine (008) → Orchestrator Engine (009) → Execution Engine (010) → Validation Engine (011) → Learning Engine (012), per `architecture.md` Section 6.1 and `roadmap.md`.
 2. When you complete work, update this file's Active Phase status, update `project_state.json`, and append to `changelog.md`.
 3. If you are picking this project back up after a long gap, also skim the last 2–3 files in `sessions/` for tacit context not yet promoted into these governance docs.
