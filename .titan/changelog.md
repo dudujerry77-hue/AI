@@ -1,0 +1,57 @@
+# CHANGELOG
+
+**Document Class:** Historical Record
+**Format:** Based on [Keep a Changelog](https://keepachangelog.com/). Newest entries at the top.
+**Rule:** Every entry here must correspond to a real, committed change and, where applicable, a session log in `sessions/` and/or an ADR in `decisions.md`. Never write a changelog entry for work that wasn't actually completed.
+
+---
+
+## [Unreleased]
+
+Nothing yet — Phase 002 (Technical Discovery & Stack Selection) has not started.
+
+---
+
+## [0.1.0] — 2026-07-08 — Titan Core Architecture Approved
+
+### Added
+- `architecture.md`: new Section 6, "Titan Core Architecture (Approved)," defining the seven Titan Core engines — Planner, Orchestrator, Context, Knowledge, Execution, Validation, Learning — with responsibilities, boundaries, a Mermaid data-flow diagram, cross-cutting rules, and a package-layout mapping. Sections renumbered (former Section 6 "Extension Protocol" → 7, former Section 7 "Anti-Patterns" → 8) with new Titan-Core-specific anti-patterns appended.
+- `decisions.md`: ADR-0002 recording the Titan Core architecture decision, including alternatives considered and trade-offs.
+- `roadmap.md`: seven new phases (005–011) inserted to implement each Titan Core engine in dependency order; subsequent phases renumbered (former 004–012 → 004, 012–016).
+- `project_state.json`: new `titan_core` block tracking per-engine implementation status and phase assignment.
+
+### Changed
+- `architecture.md` Section 1 status updated from "principles-only" to reflect that Phase 003 (Architecture Design) is complete.
+- `master_plan.md` Section 4 updated: the product scope is no longer open-ended — it is now Titan AI, realized as Titan Core. New Section 4a added mapping each engine to the vision and guiding philosophy in Sections 1–2.
+- `tech_stack.md`: status header, stack-selection process (Section 2), and criteria (new Section 3a, "Titan-Core-Specific Criterion") updated so Phase 002 evaluates stacks against the now-approved architecture.
+- `roadmap.md`: dependency between Phase 002 (Tech Stack) and Phase 003 (Architecture) intentionally reversed — Architecture Design now precedes Technical Discovery, so the stack is chosen to fit the approved engine boundaries rather than the reverse. Phase 001 (Requirements & Product Definition) marked complete, since the product is now defined as Titan AI/Titan Core.
+- `current_phase.md`: active phase updated to 003 (complete), next phase updated to 002 (not-started), with explicit sequencing notes.
+- `project_state.json`: `current_phase`, `next_phase`, `architecture.status` (→ `approved`), `project.name`/`description`, and counters (`adrs_recorded`, `phases_completed`, `sessions_logged`) all updated to reflect this session's changes.
+
+### Notes
+- No application or engine code was implemented in this update, per explicit instruction — this release is a documentation/architecture update only.
+
+---
+
+## [0.0.1] — 2026-07-08 — Governance Initialization
+
+### Added
+- Created `.titan/` governance directory at repository root.
+- Added `constitution.md` defining supreme governance rules, prime directives, roles, and amendment process.
+- Added `master_plan.md` defining long-term vision and strategic objectives.
+- Added `roadmap.md` defining the 13-phase (000–012) execution sequence.
+- Added `architecture.md` defining binding architectural principles pending concrete Phase 003 design.
+- Added `current_phase.md` establishing Phase 000 as complete and Phase 001 as next.
+- Added `project_state.json` as the machine-readable project state snapshot.
+- Added `decisions.md` with ADR-0001 (adoption of the Titan AI governance model).
+- Added `tech_stack.md` with the stack-selection decision framework.
+- Added `coding_standards.md`, `naming_conventions.md` defining universal engineering conventions.
+- Added `security_policy.md` defining baseline security requirements.
+- Added `testing_strategy.md` defining the testing pyramid and quality gates.
+- Added `deployment_strategy.md` defining environment and release strategy.
+- Added folders `prompts/`, `phases/`, `sessions/`, `reviews/`, `rules/`, `templates/`, `knowledge/`, each populated with a README and reusable templates.
+- Added `phases/phase-000-governance-initialization.md` recording this phase in full.
+- Added first session log in `sessions/`.
+
+### Notes
+- No application code exists yet. This release is governance-only, by design (per the instruction that established this system).
