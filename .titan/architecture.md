@@ -55,7 +55,39 @@ Cross-cutting concerns (logging, configuration, error handling) are implemented 
 2. All external data (user input, API responses, files) is validated/sanitized at the boundary before entering application logic.
 3. Mutations to persistent state go through the application layer, never directly from `/interfaces` to `/infrastructure`.
 
-## 6. Titan Core Architecture (Approved)
+## 6. Security Architecture
+
+**Status:** Binding on all future Titan AI design and implementation work. Security is treated as a first-class architectural concern, not a later patch.
+
+### 6.1 Security Architecture Principles
+
+Titan AI must be designed around the following mandatory security principles:
+
+- **Zero Trust architecture** — no component is trusted by default; every request, engine interaction, and external input is authenticated, authorized, and validated.
+- **Least privilege** — every engine, identity, and process receives only the minimum access required to perform its role.
+- **Defense in depth** — multiple independent controls protect critical boundaries so one control failing does not compromise the whole system.
+- **Secure by default** — safe settings are the default; insecure behavior requires explicit opt-in with documented approval.
+- **Sandboxed execution** — untrusted code or commands run only inside isolated execution boundaries with restricted access.
+- **Immutable audit logs** — privileged actions, state changes, and security events are recorded in append-only logs that cannot be silently altered.
+- **Encryption at rest** — secrets and sensitive data are encrypted when stored.
+- **Encryption in transit** — all network communications involving credentials, state changes, or sensitive data use encrypted transport.
+- **Engine isolation** — every engine must be isolated by responsibility and runtime boundary so a compromise in one engine does not automatically compromise another.
+- **Secret management** — secrets must be stored and handled through approved controls and never committed to repositories.
+- **Runtime security** — the framework must support runtime monitoring, containment, and graceful shutdown when a security condition is detected.
+
+### 6.2 Security Boundaries in Titan Core
+
+The Titan Core architecture must preserve explicit trust boundaries between:
+
+- human users and the system,
+- engines and the shared runtime,
+- runtime execution environments and the host,
+- sensitive configuration and runtime state,
+- internal network or event transport and external systems.
+
+These boundaries must be documented and enforced through the framework, policies, and runtime contracts.
+
+## 7. Titan Core Architecture (Approved)
 
 **Status:** Approved via ADR-0002 (`decisions.md`). This is the concrete architecture of Titan AI itself — the autonomous engineering system this `.titan/` governance layer supports. It is the product of Phase 003.
 
@@ -176,7 +208,7 @@ Each engine is implemented as its own module respecting the `/domain`, `/applica
 
 No engine imports another engine's internals directly — only its published contract types from `/shared`.
 
-## 7. Extension Protocol
+## 8. Extension Protocol
 
 When Phase 003 (or any future architecture work) adds concrete design decisions:
 
@@ -184,7 +216,7 @@ When Phase 003 (or any future architecture work) adds concrete design decisions:
 2. Any deviation from Sections 1–6 requires an ADR in `decisions.md` explaining why the default pattern doesn't fit.
 3. Diagrams should be included as Mermaid code blocks for portability across tools and agents.
 
-## 8. Anti-Patterns (Explicitly Disallowed)
+## 9. Anti-Patterns (Explicitly Disallowed)
 
 - God objects/modules that own unrelated responsibilities.
 - Business logic embedded in UI components or route handlers.

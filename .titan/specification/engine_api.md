@@ -164,7 +164,19 @@ The shutdown contract is part of the public interface. The stop() method must be
 
 The public contract is intentionally stable, but the system must support future extension. Extensions must be additive, optional, and versioned. An engine may expose additional capability-specific interfaces or optional metadata fields, but those additions must not change the required semantics of initialize(), start(), stop(), health(), metadata(), or version().
 
-## 15. Non-Goals
+## 15. Mandatory Security Contracts
+
+Every engine must implement the following security contracts as part of the public framework contract:
+
+- **Authentication** — engines must authenticate requests and privileged operations according to the framework policy and the engine's trust boundary.
+- **Authorization** — engines must enforce role-based authorization before performing privileged actions.
+- **Audit logging** — engines must emit audit events for privileged actions, configuration changes, and security-relevant state transitions.
+- **Secret handling** — engines must never expose secrets in logs, metadata, health output, or event payloads.
+- **Input validation** — engines must validate all input before acting on it and reject malformed or unsafe input.
+- **Secure configuration** — engines must load configuration through the framework and reject insecure or missing required configuration.
+- **Permission model** — engines must align with the approved role and permission model defined in `security/authorization.md`.
+
+## 16. Non-Goals
 
 This document does not define:
 

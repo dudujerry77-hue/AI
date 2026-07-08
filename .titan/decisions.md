@@ -193,6 +193,34 @@ The shared framework was implemented during Phase 006 as a reusable runtime pack
 
 ---
 
-## ADR-0006 through ADR-000N
+## ADR-0006: Make Security a First-Class Architecture Concern
+
+- **Status:** accepted
+- **Date:** 2026-07-08
+- **Author:** Claude (acting as Principal Software Architect per assignment)
+
+### Context
+
+Titan AI is evolving from a governance and engine framework repository into an autonomous software engineering platform. As the system gains the ability to execute actions, access repositories, read secrets, and coordinate multiple engines, security can no longer remain a late-stage concern or a documentation appendix. Without explicit architectural security requirements, future engine implementations could bypass controls, mishandle secrets, or weaken isolation in ways that are difficult to correct later.
+
+### Decision
+
+Security is now a first-class architectural concern for Titan AI. The architecture, engine framework, and engine API contract will explicitly require zero-trust behavior, least privilege, defense in depth, secure-by-default configuration, sandboxed execution, immutable audit logging, encryption at rest and in transit, engine isolation, secret management, and runtime security controls. This decision is reflected in `architecture.md`, `engine_framework.md`, `specification/engine_api.md`, and the new governance documents under `.titan/security/`.
+
+### Alternatives Considered
+
+1. **Treat security as an application-layer concern only.** Rejected because it leaves shared infrastructure and engine boundaries without mandatory protections.
+2. **Add security controls after the engine implementations are complete.** Rejected because it would require retrofitting every engine contract and would increase the risk of inconsistent controls.
+3. **Keep security guidance only in `security_policy.md`.** Rejected because the architecture itself must enforce the boundaries and requirements that future engines rely on.
+
+### Consequences
+
+- **Positive:** Security requirements are now part of the shared architecture and framework contract, reducing ambiguity and improving consistency across engines.
+- **Negative:** Governance scope grows and future engine phases must now satisfy additional security expectations from the start.
+- **Mitigation:** The new security governance package provides a structured, reusable reference for future implementation work without introducing implementation code.
+
+---
+
+## ADR-0007 through ADR-000N
 
 No further decisions have been made yet. Add new entries below this line using `templates/adr-template.md`, incrementing the number sequentially. Do not skip numbers; do not reuse numbers.

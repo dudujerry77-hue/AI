@@ -64,6 +64,19 @@ The framework provides a common metrics interface so engines can expose runtime 
 
 The framework defines a graceful shutdown sequence that allows engines to stop safely, release resources, and preserve state where appropriate.
 
-## 14. Future Extension Points
+## 14. Mandatory Security Requirements
+
+Every engine that uses the framework must comply with the following security requirements:
+
+- expose health and version information through the framework contract
+- authenticate requests and privileged operations
+- authorize operations using the approved role and permission model
+- validate all external and internal inputs before acting on them
+- emit audit logs for privileged actions and security-relevant state changes
+- never expose secrets in logs, health output, events, or metadata
+- support graceful shutdown and controlled termination during security events
+- consume secure configuration values through the framework rather than ad hoc access paths
+
+## 15. Future Extension Points
 
 The framework should be designed so that future capabilities such as remote execution, distributed orchestration, or additional engine-specific services can be added without changing the fundamental engine model.

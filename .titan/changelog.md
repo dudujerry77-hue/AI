@@ -10,6 +10,7 @@
 
 ### Added
 - A governance update introducing a shared Engine Framework as a required architecture prerequisite before additional Titan engine implementation begins.
+- A new `.titan/security/` governance package covering security architecture, threat modeling, authentication, authorization, secret management, secure execution, audit logging, incident response, and deployment checklist.
 - A new shared Titan Runtime package under `runtime/` implementing the Engine Framework's reusable infrastructure: lifecycle management, engine registration, event-driven communication, configuration, structured logging, health monitoring, metrics collection, and a runtime error hierarchy.
 - A new governance specification, `specification/engine_api.md`, defining the mandatory public contract for every Titan engine, including lifecycle, event, health, configuration, logging, error handling, capability discovery, and compatibility expectations.
 - Initial Titan AI repository scaffold with production-style folders for `apps/`, `engines/`, `packages/`, `services/`, `shared/`, `tests/`, `scripts/`, and `docs/`.
