@@ -4,14 +4,24 @@ import { InitializationError, ShutdownError } from '../errors/errors';
 
 export type LifecycleState = 'created' | 'initialized' | 'running' | 'stopped' | 'failed';
 
+const DEFAULT_SUPPORTED_CONTRACT_VERSIONS = ['1.0.0'];
+
+const VALID_TRANSITIONS: Record<LifecycleState, LifecycleState[]> = {
+  created: ['initialized'],
+  initialized: ['running', 'failed'],
+  running: ['stopped', 'failed'],
+  stopped: ['initialized'],
+  failed: ['initialized'],
+};
+
 export interface LifecycleManagerOptions {
   readonly eventBus?: EventBus;
   readonly logger?: Logger;
+  readonly supportedContractVersions?: readonly string[];
 }
 
 export class LifecycleManager {
   private state: LifecycleState = 'created';
-  private startupCompleted = false;
 
   constructor(private readonly options: LifecycleManagerOptions = {}) {}
 
@@ -19,17 +29,17 @@ export class LifecycleManager {
     return this.state;
   }
 
-  async initialize(): Promise<void> {
+  async initialize(contractVersion?: string): Promise<void> {
     if (this.state === 'initialized') {
       return;
     }
 
-    if (this.state === 'running') {
-      throw new InitializationError('Engine is already running');
+    if (contractVersion) {
+      this.validateContractVersion(contractVersion);
     }
 
+    this.assertTransition('initialized');
     this.state = 'initialized';
-    this.startupCompleted = true;
     await this.emit('initialized');
   }
 
@@ -38,10 +48,7 @@ export class LifecycleManager {
       return;
     }
 
-    if (this.state !== 'initialized') {
-      throw new InitializationError('Engine must be initialized before start');
-    }
-
+    this.assertTransition('running');
     this.state = 'running';
     await this.emit('running');
   }
@@ -51,17 +58,42 @@ export class LifecycleManager {
       return;
     }
 
-    if (this.state === 'failed') {
-      throw new ShutdownError('Cannot stop a failed engine');
-    }
-
+    this.assertTransition('stopped');
     this.state = 'stopped';
     await this.emit('stopped');
   }
 
   markFailed(error: Error): void {
+    if (this.state === 'failed') {
+      return;
+    }
+
+    this.assertTransition('failed');
     this.state = 'failed';
     void this.emit('failed', error);
+  }
+
+  validateContractVersion(contractVersion: string): void {
+    const supported = this.options.supportedContractVersions ?? DEFAULT_SUPPORTED_CONTRACT_VERSIONS;
+    if (!supported.includes(contractVersion)) {
+      throw new InitializationError(
+        `Unsupported engine contract version: ${contractVersion}. Supported: ${supported.join(', ')}`,
+      );
+    }
+  }
+
+  isTransitionAllowed(from: LifecycleState, to: LifecycleState): boolean {
+    return VALID_TRANSITIONS[from].includes(to);
+  }
+
+  private assertTransition(target: LifecycleState): void {
+    if (!this.isTransitionAllowed(this.state, target)) {
+      if (target === 'stopped') {
+        throw new ShutdownError(`Invalid lifecycle transition from ${this.state} to ${target}`);
+      }
+
+      throw new InitializationError(`Invalid lifecycle transition from ${this.state} to ${target}`);
+    }
   }
 
   private async emit(state: LifecycleState, error?: Error): Promise<void> {

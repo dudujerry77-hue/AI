@@ -13,7 +13,21 @@ One file per phase from `roadmap.md`, named `phase-XXX-<kebab-case-name>.md` (e.
 | File | Phase | Status |
 |---|---|---|
 | `phase-000-governance-initialization.md` | 000 | complete |
-| *(pending)* `phase-001-requirements-and-product-definition.md` | 001 | complete — file not yet written; product defined as Titan AI/Titan Core per `decisions.md` ADR-0002, dedicated phase file should be backfilled by the next agent |
-| *(pending)* `phase-003-architecture-design.md` | 003 | complete — see `architecture.md` Section 6 and `decisions.md` ADR-0002 for full content; dedicated phase file should be backfilled by the next agent using `templates/phase-template.md` |
-
-**Note:** Phases 001 and 003 were completed and recorded in `architecture.md`, `decisions.md`, and `sessions/` during this session, but dedicated `phases/phase-001-*.md` and `phases/phase-003-*.md` files have not yet been backfilled. This is a known gap, not an inconsistency — the next agent touching phase records should create them from `templates/phase-template.md` using the content already captured in ADR-0002 and the session log `sessions/2026-07-08-0100-titan-core-architecture-approval.md`.
+| `phase-001-requirements-and-product-definition.md` | 001 | complete |
+| `phase-003-architecture-design.md` | 003 | complete |
+| `phase-002-technical-discovery-and-stack-selection.md` | 002 | complete |
+| `phase-004-environment-and-tooling-setup.md` | 004 | complete |
+| `phase-005-context-engine-implementation.md` | 005 | complete |
+| `phase-006-engine-framework.md` | 006 | complete |
+| `phase-006a-security-architecture-governance.md` | 006a | complete |
+| `phase-007-knowledge-engine-implementation.md` | 007 | not-started |
+| `phase-008-planner-engine-implementation.md` | 008 | not-started |
+| `phase-009-orchestrator-engine-implementation.md` | 009 | not-started |
+| `phase-010-execution-engine-implementation.md` | 010 | not-started |
+| `phase-011-validation-engine-implementation.md` | 011 | not-started |
+| `phase-012-learning-engine-implementation.md` | 012 | not-started |
+| `phase-013-titan-core-integration-and-hardening.md` | 013 | not-started |
+| `phase-014-test-coverage-completion.md` | 014 | not-started |
+| `phase-015-deployment-readiness.md` | 015 | not-started |
+| `phase-016-production-release.md` | 016 | not-started |
+| `phase-017-maintenance-and-continuous-improvement.md` | 017 | not-started |

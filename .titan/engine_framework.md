@@ -36,6 +36,10 @@ Engines must not communicate directly unless explicitly allowed through an appro
 
 The framework provides an internal event bus so engine activity can be routed, observed, and coordinated without direct coupling between engines.
 
+The runtime event bus must attach a standard event envelope to every published event with these fields: `eventId`, `correlationId`, `traceId`, `timestamp`, `sessionId`, `engineId`, `phaseId`, `version`, and `eventType`.
+
+For backward compatibility, object payload fields should remain accessible to subscribers while the full payload body is preserved in a dedicated `payload` field.
+
 ## 7. Dependency Injection
 
 The framework provides a dependency injection model so engines receive collaborators and services through explicit injection rather than hidden shared state.
@@ -76,6 +80,8 @@ Every engine that uses the framework must comply with the following security req
 - never expose secrets in logs, health output, events, or metadata
 - support graceful shutdown and controlled termination during security events
 - consume secure configuration values through the framework rather than ad hoc access paths
+
+The runtime framework should expose these concerns as injectable interfaces so engine implementations depend on contracts rather than concrete security implementations. The current runtime contract layer includes interface-only abstractions for authentication, authorization, permission checks, audit logging, and secret retrieval.
 
 ## 15. Future Extension Points
 

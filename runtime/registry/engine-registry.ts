@@ -1,21 +1,22 @@
-import type { TitanEngine } from '../engine/types';
+import { resolveEngineMetadata, type EngineContract } from '../engine/types';
 
 export class EngineRegistry {
-  private readonly engines = new Map<string, TitanEngine>();
+  private readonly engines = new Map<string, EngineContract>();
 
-  register(engine: TitanEngine): void {
-    this.engines.set(engine.metadata.id, engine);
+  register(engine: EngineContract): void {
+    const metadata = resolveEngineMetadata(engine);
+    this.engines.set(metadata.id, engine);
   }
 
-  get(id: string): TitanEngine | undefined {
+  get(id: string): EngineContract | undefined {
     return this.engines.get(id);
   }
 
-  list(): TitanEngine[] {
+  list(): EngineContract[] {
     return Array.from(this.engines.values());
   }
 
-  findByCapability(capability: string): TitanEngine[] {
-    return this.list().filter((engine) => engine.metadata.capabilities.includes(capability));
+  findByCapability(capability: string): EngineContract[] {
+    return this.list().filter((engine) => resolveEngineMetadata(engine).capabilities.includes(capability));
   }
 }

@@ -88,11 +88,18 @@ Event names should be structured and consistent, for example:
 
 Event payloads must be structured, typed, and contain enough context to be understood without inspecting hidden state. Each event should include at minimum:
 
-- event name
-- source engine identifier
+- eventId
+- correlationId
+- traceId
 - timestamp
-- correlation identifier
+- sessionId
+- engineId
+- phaseId
+- version
+- eventType
 - payload body
+
+To preserve compatibility with existing subscribers, object payload fields may be exposed directly in the delivered event object as long as the complete payload body is still available under `payload`.
 
 Payloads must not include secrets or implementation-specific internals that are not required by the contract.
 
@@ -175,6 +182,8 @@ Every engine must implement the following security contracts as part of the publ
 - **Input validation** — engines must validate all input before acting on it and reject malformed or unsafe input.
 - **Secure configuration** — engines must load configuration through the framework and reject insecure or missing required configuration.
 - **Permission model** — engines must align with the approved role and permission model defined in `security/authorization.md`.
+
+Security contract integration should be interface-driven in the runtime layer so engines can depend on common abstractions without coupling to concrete authentication, authorization, audit, or secret-management implementations.
 
 ## 16. Non-Goals
 

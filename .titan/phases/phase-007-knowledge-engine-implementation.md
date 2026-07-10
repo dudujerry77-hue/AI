@@ -1,0 +1,47 @@
+# Phase 007: Knowledge Engine Implementation
+
+- **Status:** not-started
+- **Started:** <date>
+- **Completed:** <date or blank>
+- **Agent(s) involved:** <names>
+
+## Objective
+
+Implement the Knowledge Engine to provide long-term, programmatic read/write access to Titan governance memory.
+
+## Scope
+
+- Build governance corpus retrieval and persistence interfaces.
+- Support policy-aware knowledge queries for other engines.
+- Maintain clear separation from Context Engine responsibilities.
+
+## Deliverables
+
+- Knowledge Engine contract and implementation.
+- Tests for retrieval, persistence, and boundary behavior.
+- Updated docs for usage and constraints.
+
+## Acceptance Criteria
+
+- Knowledge operations work reliably for required governance artifacts.
+- Access patterns respect security and authorization constraints.
+- Engine boundaries with Context/Planner/Orchestrator remain explicit.
+
+## Dependencies
+
+- Phase 006a completion.
+
+## Risks
+
+- Blurred boundaries between short-term context and long-term knowledge.
+- Inconsistent indexing/retrieval behavior across governance artifacts.
+
+## Exit Criteria
+
+- [ ] Knowledge Engine implementation passes build/test quality gates.
+- [ ] Integration points for downstream Planner Engine are validated.
+- [ ] Governance and session records document final design choices.
+
+## Handoff Notes
+
+Next phase (008) should consume Knowledge Engine through stable contracts only, without introducing direct coupling to storage internals.
