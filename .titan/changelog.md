@@ -8,6 +8,17 @@
 
 ## [Unreleased]
 
+### Milestones
+
+- 2026-07-08: Governance Initialization - established the `.titan/` governance layer, constitutional rules, roadmap, and supporting templates.
+- 2026-07-08: Project Scaffold - created the TypeScript monorepo scaffold, workspace tooling, and repository structure for implementation phases.
+- 2026-07-08: Context Engine - implemented the session-scoped context engine as the runtime state foundation.
+- 2026-07-08: Runtime Framework - implemented the shared runtime package for lifecycle, registry, events, health, configuration, logging, metrics, and errors.
+- 2026-07-08: Security Governance - established the security governance package covering threat model, authentication, authorization, secrets, secure execution, audit logging, incident response, and checklist controls.
+- 2026-07-08: Engine Framework - completed the framework governance contract and runtime implementation prerequisite for later engines.
+- 2026-07-10: Documentation Improvements - completed START_HERE, VISION, security governance expansions, and phase-specification backfill.
+- 2026-07-10: Governance Synchronization - aligned roadmap, current phase, project state, phase specs, and security/runtime governance docs.
+
 ### Added
 - A governance update introducing a shared Engine Framework as a required architecture prerequisite before additional Titan engine implementation begins.
 - A new `.titan/security/` governance package covering security architecture, threat modeling, authentication, authorization, secret management, secure execution, audit logging, incident response, and deployment checklist.

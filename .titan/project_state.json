@@ -1,8 +1,11 @@
 {
   "$schema": "titan-project-state-v1",
   "titan_version": "1.0.0",
+  "governance_version": "1.0.0",
+  "runtime_version": "0.1.0",
+  "documentation_version": "1.0.0",
   "last_updated": "2026-07-10",
-  "last_updated_by": "GitHub Copilot (Phase 3.5 governance synchronization)",
+  "last_updated_by": "GitHub Copilot (Phase 3 finalization and closeout)",
   "project": {
     "name": "Titan AI",
     "description": "Autonomous software engineering operating system, implemented as Titan Core: seven cooperating engines (Planner, Orchestrator, Context, Knowledge, Execution, Validation, Learning). See architecture.md Section 7 and decisions.md ADR-0002.",
@@ -89,7 +92,8 @@
     "phases_completed": 8
   },
   "agents_involved_to_date": [
-    "Claude"
+    "Claude",
+    "GitHub Copilot"
   ],
   "human_action_required": [
     "Review the initial monorepo scaffold and confirm whether CI workflows or pre-commit hooks should be added in a follow-up step."
