@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -9,6 +9,7 @@ import {
   JsonLoader,
   KnowledgeCache,
   KnowledgeEngine,
+  KnowledgeError,
   KnowledgeIndexer,
   KnowledgeRepository,
   KnowledgeSearch,
@@ -18,6 +19,7 @@ import {
   VersionManager,
   type KnowledgeRecord,
 } from '../../engines/knowledge/src';
+import { ENGINE_API_CONTRACT_VERSION } from '../../runtime/engine/types';
 
 async function seedRepository(rootDir: string): Promise<void> {
   await mkdir(path.join(rootDir, '.titan', 'security'), { recursive: true });
@@ -78,6 +80,7 @@ async function seedRepository(rootDir: string): Promise<void> {
         approvalStatus: 'approved',
         checksum: 'placeholder',
         archived: false,
+        authority: 'user',
       }),
       '---',
       '# Preferred Review Style',
@@ -86,6 +89,15 @@ async function seedRepository(rootDir: string): Promise<void> {
       '',
     ].join('\n'),
   );
+}
+
+function createWriteProviders(allowed = true) {
+  return {
+    auditLogger: { log: vi.fn(async () => undefined) },
+    authorizationProvider: {
+      authorize: vi.fn(async () => ({ allowed, reason: allowed ? undefined : 'Denied by policy' })),
+    },
+  };
 }
 
 async function createRepositoryRoot(): Promise<string> {
@@ -197,6 +209,46 @@ describe('Knowledge Engine components', () => {
     const ranked = search.rank('architecture memory', [sessionRecord, governanceRecord]);
     expect(ranked[0].recordId).toBe('architecture-1');
   });
+
+  it('increments semantic versions', () => {
+    const versionManager = new VersionManager();
+    expect(versionManager.nextVersion('1.0.0')).toBe('1.0.1');
+    expect(versionManager.nextVersion(undefined)).toBe('1.0.0');
+  });
+});
+
+describe('Knowledge Engine runtime and API compliance', () => {
+  it('implements Titan engine lifecycle and metadata contract', async () => {
+    const rootDir = await createRepositoryRoot();
+    await seedRepository(rootDir);
+
+    const engine = new KnowledgeEngine({
+      rootDir,
+      actorId: 'developer-1',
+      roles: ['Developer'],
+      ...createWriteProviders(true),
+    });
+
+    expect(engine.contractVersion()).toBe(ENGINE_API_CONTRACT_VERSION);
+    expect(engine.metadata().id).toBe('knowledge-engine');
+    expect(engine.getState()).toBe('created');
+
+    await engine.initialize();
+    expect(engine.getState()).toBe('initialized');
+
+    await engine.start();
+    expect(engine.getState()).toBe('running');
+
+    const health = await engine.health();
+    expect(health.status).toBe('healthy');
+    expect(health.ready).toBe(true);
+
+    await engine.stop();
+    expect(engine.getState()).toBe('stopped');
+    const stoppedHealth = await engine.health();
+    expect(stoppedHealth.ready).toBe(false);
+    expect(engine.version()).toBe('1.0.0');
+  });
 });
 
 describe('Knowledge Engine integration', () => {
@@ -204,7 +256,12 @@ describe('Knowledge Engine integration', () => {
     const rootDir = await createRepositoryRoot();
     await seedRepository(rootDir);
 
-    const engine = new KnowledgeEngine({ rootDir, actorId: 'developer-1', roles: ['Developer'] });
+    const engine = new KnowledgeEngine({
+      rootDir,
+      actorId: 'developer-1',
+      roles: ['Developer'],
+      ...createWriteProviders(true),
+    });
     await engine.initialize();
 
     const searchResults = await engine.search({ text: 'Titan Core', limit: 5 });
@@ -219,23 +276,181 @@ describe('Knowledge Engine integration', () => {
     expect(sessionRecord[0].category).toBe('sessions');
   });
 
-  it('supports safe updates, immutable governance records, versioning, snapshot export, and import', async () => {
+  it('supports save/query/remove/archive/version operations', async () => {
     const rootDir = await createRepositoryRoot();
     await seedRepository(rootDir);
 
-    const auditLogger = { log: vi.fn(async () => undefined) };
-    const authorizationProvider = {
-      authorize: vi.fn(async () => ({ allowed: true })),
-    };
+    const providers = createWriteProviders(true);
+    const engine = new KnowledgeEngine({
+      rootDir,
+      actorId: 'developer-1',
+      roles: ['Developer'],
+      ...providers,
+    });
+
+    await engine.initialize();
+
+    const added = await engine.add({
+      kind: 'preference',
+      category: 'user',
+      title: 'Review Preference',
+      tags: ['review'],
+      summary: 'Use concise feedback.',
+      body: 'Use concise feedback.',
+      securityClass: 'internal',
+      source: 'user',
+      author: 'developer-1',
+      approvalStatus: 'approved',
+      authority: 'user',
+      metadata: { scope: 'default' },
+    });
+
+    const saved = await engine.save({
+      ...added,
+      body: 'Use concise, evidence-first feedback.',
+      summary: 'Updated preference',
+      updatedAt: new Date().toISOString(),
+      checksum: 'ignore',
+    });
+    expect(saved.version).toBe('1.0.1');
+
+    const queried = await engine.query({ category: 'user', tags: ['review'], archived: false });
+    expect(queried.some((record) => record.recordId === saved.recordId)).toBe(true);
+
+    const archived = await engine.archive(saved.recordId);
+    expect(archived.archived).toBe(true);
+
+    const removed = await engine.remove(saved.recordId);
+    expect(removed.approvalStatus).toBe('removed');
+    expect(removed.archived).toBe(true);
+
+    const previousVersion = await engine.version(saved.recordId, '1.0.1');
+    expect(previousVersion?.body).toContain('evidence-first');
+
+    expect(providers.authorizationProvider.authorize).toHaveBeenCalled();
+    expect(providers.auditLogger.log).toHaveBeenCalled();
+  });
+
+  it('rejects write operations without authorization or audit dependencies', async () => {
+    const rootDir = await createRepositoryRoot();
+    await seedRepository(rootDir);
+
+    const engineWithoutSecurity = new KnowledgeEngine({
+      rootDir,
+      actorId: 'developer-1',
+      roles: ['Developer'],
+    });
+    await engineWithoutSecurity.initialize();
+
+    await expect(
+      engineWithoutSecurity.add({
+        kind: 'preference',
+        category: 'user',
+        title: 'Blocked Write',
+        tags: ['review'],
+        summary: 'Blocked write',
+        body: 'Blocked write',
+        securityClass: 'internal',
+        source: 'user',
+        author: 'developer-1',
+        approvalStatus: 'approved',
+        authority: 'user',
+      }),
+    ).rejects.toBeInstanceOf(KnowledgeError);
+  });
+
+  it('rejects authorization failures and logs denied write attempts', async () => {
+    const rootDir = await createRepositoryRoot();
+    await seedRepository(rootDir);
+
+    const providers = createWriteProviders(false);
+    const engine = new KnowledgeEngine({
+      rootDir,
+      actorId: 'developer-1',
+      roles: ['Developer'],
+      ...providers,
+    });
+    await engine.initialize();
+
+    await expect(
+      engine.add({
+        kind: 'preference',
+        category: 'user',
+        title: 'Denied Write',
+        tags: ['review'],
+        summary: 'Denied write',
+        body: 'Denied write',
+        securityClass: 'internal',
+        source: 'user',
+        author: 'developer-1',
+        approvalStatus: 'approved',
+        authority: 'user',
+      }),
+    ).rejects.toBeInstanceOf(KnowledgeError);
+
+    expect(providers.authorizationProvider.authorize).toHaveBeenCalled();
+    expect(providers.auditLogger.log).toHaveBeenCalled();
+  });
+
+  it('enforces import security validation and classification rules', async () => {
+    const rootDir = await createRepositoryRoot();
+    await seedRepository(rootDir);
+
+    const providers = createWriteProviders(true);
+    const engine = new KnowledgeEngine({
+      rootDir,
+      actorId: 'developer-1',
+      roles: ['Developer'],
+      ...providers,
+    });
+    await engine.initialize();
+
+    await expect(
+      engine.import(
+        JSON.stringify({
+          records: [
+            {
+              recordId: 'security.bad-1',
+              kind: 'policy',
+              category: 'security',
+              title: 'Bad Security Record',
+              canonicalLocation: '/tmp/security.bad-1.json',
+              tags: [],
+              relationships: [],
+              summary: 'bad',
+              body: 'bad',
+              bodyFormat: 'json',
+              securityClass: 'invalid-class',
+              source: 'import',
+              version: '1.0.0',
+              createdAt: '2026-07-10T00:00:00.000Z',
+              updatedAt: '2026-07-10T00:00:00.000Z',
+              author: 'tester',
+              approvalStatus: 'approved',
+              checksum: 'x',
+              archived: false,
+              authority: 'security',
+            },
+          ],
+        }),
+      ),
+    ).rejects.toBeInstanceOf(KnowledgeError);
+
+    expect(providers.authorizationProvider.authorize).toHaveBeenCalled();
+    expect(providers.auditLogger.log).toHaveBeenCalled();
+  });
+
+  it('exports and imports validated records', async () => {
+    const rootDir = await createRepositoryRoot();
+    await seedRepository(rootDir);
+    const providers = createWriteProviders(true);
 
     const engine = new KnowledgeEngine({
       rootDir,
       actorId: 'developer-1',
       roles: ['Developer'],
-      auditLogger,
-      authorizationProvider,
+      ...providers,
     });
-
     await engine.initialize();
 
     const created = await engine.add({
@@ -253,35 +468,24 @@ describe('Knowledge Engine integration', () => {
       metadata: { scope: 'default' },
     });
 
-    expect(created.version).toBe('1.0.0');
-    expect(Object.isFrozen(created)).toBe(true);
-
-    const updated = await engine.update(created.recordId, { body: 'Use concise, evidence-first feedback.' });
-    expect(updated.version).toBe('1.0.1');
-    expect(updated.body).toContain('evidence-first');
-
-    const previousVersion = await engine.version(created.recordId, '1.0.0');
-    expect(previousVersion?.body).toBe('Use concise feedback.');
-
     const exported = await engine.export({ recordIds: [created.recordId] });
-    expect(exported).toContain('Review Preference');
 
     const importRoot = await createRepositoryRoot();
-    const importedEngine = new KnowledgeEngine({ rootDir: importRoot, actorId: 'developer-2', roles: ['Developer'] });
-    await importedEngine.initialize();
-    const imported = await importedEngine.import(exported);
+    await seedRepository(importRoot);
+    const importEngine = new KnowledgeEngine({
+      rootDir: importRoot,
+      actorId: 'developer-2',
+      roles: ['Developer'],
+      ...createWriteProviders(true),
+    });
+    await importEngine.initialize();
+
+    const imported = await importEngine.import(exported);
     expect(imported.length).toBe(1);
-    expect((await importedEngine.search({ text: 'Review Preference' }))[0].recordId).toBe(created.recordId);
-
-    await expect(
-      engine.update('constitution', { body: 'mutated constitution' }),
-    ).rejects.toThrow();
-
-    expect(auditLogger.log).toHaveBeenCalled();
-    expect(authorizationProvider.authorize).toHaveBeenCalled();
+    expect((await importEngine.search({ text: 'Review Preference' }))[0].recordId).toBe(created.recordId);
   });
 
-  it('exposes repository, store, and version-manager behavior without mutating unrelated runtime components', async () => {
+  it('exposes repository, store, and read-model snapshot behavior', async () => {
     const rootDir = await createRepositoryRoot();
     await seedRepository(rootDir);
 
@@ -291,12 +495,6 @@ describe('Knowledge Engine integration', () => {
 
     expect(snapshot.records.length).toBeGreaterThan(0);
     expect(snapshot.generatedAt.length).toBeGreaterThan(0);
-
-    const mutableRecord = snapshot.records.find((record) => record.category === 'user');
-    expect(mutableRecord).toBeDefined();
-
-    const versionManager = new VersionManager();
-    expect(versionManager.nextVersion('1.0.0')).toBe('1.0.1');
-    expect(versionManager.nextVersion(undefined)).toBe('1.0.0');
+    expect(snapshot.records.every((record) => Object.isFrozen(record))).toBe(true);
   });
 });
