@@ -7,34 +7,34 @@
 
 ## Active Phase
 
-- **Phase ID:** 006
-- **Name:** Engine Framework
+- **Phase ID:** 006a
+- **Name:** Security Architecture Governance
 - **Status:** complete
 - **Started:** 2026-07-08
 - **Completed:** 2026-07-08
 
 ## What This Phase Was
 
-Implementing the shared Titan Runtime as the reusable infrastructure layer that every future engine will depend on. The phase introduced a dependency-injection-friendly engine contract, a lifecycle manager, engine registry, event bus, configuration service, structured logger, health monitor, metrics collector, and a runtime error hierarchy without implementing AI behavior, planning, memory, orchestration, execution, or validation logic.
+Defining the security architecture governance baseline for Titan AI as a first-class architectural concern. This phase established threat modeling, authentication and authorization policy, secret handling policy, secure execution constraints, audit logging expectations, incident response workflow, and deployment security checklist requirements.
 
 ## Exit Criteria (all met)
 
-- [x] The shared runtime exists as an isolated package under `runtime/`.
-- [x] The runtime exposes a `TitanEngine` interface and a `BaseEngine` implementation.
-- [x] The runtime provides a registry, lifecycle manager, event bus, configuration service, logger, health monitor, metrics collector, and error hierarchy.
-- [x] Unit tests cover lifecycle transitions, registration, configuration validation, logging, health reporting, and metrics/error semantics.
-- [x] The package documentation explains the architectural scope of the Titan Runtime.
+- [x] A dedicated security governance package exists under `.titan/security/`.
+- [x] The security package includes threat model, authentication, authorization, secret management, secure execution, audit logging, incident response, and deployment checklist documents.
+- [x] `architecture.md`, `engine_framework.md`, and `specification/engine_api.md` include explicit security architecture and security contract requirements.
+- [x] Roadmap and project state include the security governance phase before Knowledge Engine implementation.
+- [x] Security governance changes are recorded in `changelog.md`, `decisions.md`, and session logs.
 
 ## Next Phase
 
 - **Phase ID:** 007
 - **Name:** Knowledge Engine Implementation
 - **Status:** not-started
-- **Entry Criteria:** The Engine Framework is implemented and verified.
-- **What the next agent should do first:** Build the Knowledge Engine on top of the framework and continue the dependency-ordered engine rollout without introducing AI behavior or planning logic.
+- **Entry Criteria:** Engine Framework and Security Architecture Governance are implemented and verified.
+- **What the next agent should do first:** Build the Knowledge Engine on top of the framework and security contracts, preserving strict engine boundaries and governance traceability.
 
 ## Instructions for Whoever Reads This Next
 
-1. Continue with the next phase in dependency order: Engine Framework (006) → Knowledge Engine (007) → Planner Engine (008) → Orchestrator Engine (009) → Execution Engine (010) → Validation Engine (011) → Learning Engine (012), per `architecture.md` Section 6.1 and `roadmap.md`.
+1. Continue with the next phase in dependency order: Engine Framework (006) → Security Architecture Governance (006a) → Knowledge Engine (007) → Planner Engine (008) → Orchestrator Engine (009) → Execution Engine (010) → Validation Engine (011) → Learning Engine (012), per `roadmap.md`.
 2. When you complete work, update this file's Active Phase status, update `project_state.json`, and append to `changelog.md`.
 3. If you are picking this project back up after a long gap, also skim the last 2–3 files in `sessions/` for tacit context not yet promoted into these governance docs.

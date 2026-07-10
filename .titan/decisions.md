@@ -62,7 +62,7 @@ Adopt **Titan Core**: an architecture of seven engines, each with a single, non-
 6. **Validation Engine** — independently verifies Execution Engine output.
 7. **Learning Engine** — observes full cycles and feeds durable lessons back into the Knowledge Engine.
 
-Full responsibilities, boundaries, and data flow are recorded in `architecture.md` Section 6. `roadmap.md` has been updated to implement these engines as Phases 005–011, in the dependency order: Context → Knowledge → Planner → Orchestrator → Execution → Validation → Learning.
+Full responsibilities, boundaries, and data flow are recorded in `architecture.md` Section 7. `roadmap.md` has been updated to implement these engines as Phases 005–011, in the dependency order: Context → Knowledge → Planner → Orchestrator → Execution → Validation → Learning.
 
 As part of this decision, the roadmap dependency between Phase 002 (Technical Discovery & Stack Selection) and Phase 003 (Architecture Design) is **reversed** from the original plan: architecture is now defined before the stack is chosen, since engine boundaries are conceptual and stack-agnostic, and should constrain and inform stack selection rather than be constrained by a stack chosen blind to them.
 
@@ -77,13 +77,13 @@ As part of this decision, the roadmap dependency between Phase 002 (Technical Di
 ### Consequences
 
 - **Positive:** Clear separation of powers mirrors well-understood distributed-systems and compiler-pipeline patterns (plan/execute/verify), making the system easier to reason about, test in isolation, and extend. It gives `constitution.md`'s "Definition of Done" and "no engine grades its own homework" properties an architectural home rather than leaving them as unenforced conventions. It also gives future stack selection (Phase 002) concrete, non-negotiable shape constraints instead of an open-ended design space.
-- **Negative:** Seven engines with strict boundaries add coordination overhead compared to a simpler design — more inter-engine contracts to define, version, and keep in sync (`/shared` types per `architecture.md` Section 6.4). Early phases (005–011) will take longer collectively than building one undifferentiated agent loop would.
-- **Mitigation:** The phased roadmap (005–011) builds engines in strict dependency order so integration risk is caught early rather than all at once in Phase 012. `architecture.md` Section 6.3's cross-cutting rules (explicit calls only, no bypassing the Orchestrator except for pure state/knowledge reads) keep the coordination overhead bounded and inspectable rather than ad hoc.
+- **Negative:** Seven engines with strict boundaries add coordination overhead compared to a simpler design — more inter-engine contracts to define, version, and keep in sync (`/shared` types per `architecture.md` Section 7.4). Early phases (005–011) will take longer collectively than building one undifferentiated agent loop would.
+- **Mitigation:** The phased roadmap (005–011) builds engines in strict dependency order so integration risk is caught early rather than all at once in Phase 012. `architecture.md` Section 7.3's cross-cutting rules (explicit calls only, no bypassing the Orchestrator except for pure state/knowledge reads) keep the coordination overhead bounded and inspectable rather than ad hoc.
 
 ### Follow-Up Required
 
 - Phase 002 must select a stack evaluated explicitly against `tech_stack.md` Section 3a (engine-fit criteria) before any engine implementation begins.
-- Each engine phase (005–011) should, on completion, log any boundary friction discovered in its `sessions/` entry — recurring friction is a signal for the Learning Engine (once built) or a future ADR revising Section 6, not something to route around silently.
+- Each engine phase (005–011) should, on completion, log any boundary friction discovered in its `sessions/` entry — recurring friction is a signal for the Learning Engine (once built) or a future ADR revising Section 7, not something to route around silently.
 
 ---
 
@@ -159,7 +159,7 @@ Implement the Context Engine as an isolated package responsible only for runtime
 
 ### Context
 
-After the Context Engine was documented and the broader Titan Core architecture was approved, the project had a clear need for a shared runtime contract for all future engines. Without a common framework, each engine would risk introducing its own lifecycle model, communication pattern, dependency injection strategy, logging, health model, and error-handling approach. That would increase coupling, make testing harder, and weaken the engine-boundary rules established in `architecture.md` Section 6.
+After the Context Engine was documented and the broader Titan Core architecture was approved, the project had a clear need for a shared runtime contract for all future engines. Without a common framework, each engine would risk introducing its own lifecycle model, communication pattern, dependency injection strategy, logging, health model, and error-handling approach. That would increase coupling, make testing harder, and weaken the engine-boundary rules established in `architecture.md` Section 7.
 
 ### Decision
 

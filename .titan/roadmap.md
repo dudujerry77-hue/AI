@@ -20,9 +20,9 @@
 |---|---|---|---|---|
 | 000 | Governance Initialization | Establish `.titan/` as the permanent memory/governance layer | complete | — |
 | 001 | Requirements & Product Definition | Define what is being built: Titan AI itself, realized as Titan Core | complete | 000 |
-| 003 | Architecture Design | Approve the Titan Core engine architecture (`architecture.md` Section 6) | complete | 001 |
-| 002 | Technical Discovery & Stack Selection | Choose and record the technology stack that fits Titan Core, via `tech_stack.md` | not-started | 003 |
-| 004 | Environment & Tooling Setup | Repo scaffold, CI/CD skeleton, linting, formatting, pre-commit hooks | in-progress | 002 |
+| 003 | Architecture Design | Approve the Titan Core engine architecture (`architecture.md` Section 7) | complete | 001 |
+| 002 | Technical Discovery & Stack Selection | Choose and record the technology stack that fits Titan Core, via `tech_stack.md` | complete | 003 |
+| 004 | Environment & Tooling Setup | Repo scaffold, CI/CD skeleton, linting, formatting, pre-commit hooks | complete | 002 |
 | 005 | Context Engine Implementation | Build session/live-state management: the foundation every other engine reads from | complete | 004 |
 | 006 | Engine Framework | Build the shared runtime infrastructure that every Titan engine will use, including the TitanEngine interface, BaseEngine implementation, EngineRegistry, EventBus, Dependency Injection container, Lifecycle Manager, Health Monitor, Configuration Service, Logging Service, Metrics interface, Error Handling framework, and the public engine API contract documented in `specification/engine_api.md` | complete | 005 |
 | 006a | Security Architecture Governance | Define the security architecture baseline, threat model, secure execution model, authentication/authorization model, secret strategy, audit logging, incident response, and deployment checklist for Titan AI | complete | 006 |
@@ -40,10 +40,10 @@
 
 ## 3. Notes on Sequencing
 
-- **Phases 001 and 003 are complete; Phase 002 is next.** This is a deliberate reordering from the original roadmap: the Titan Core engine boundaries (Phase 003) were approved before the technology stack (Phase 002) so that stack selection in `tech_stack.md` can be evaluated against a concrete architecture instead of guessing at requirements. This reordering is recorded in ADR-0002; it is not a silent renumbering.
-- **Phases 005–012 implement the shared framework and the seven Titan Core engines in dependency order**, matching `architecture.md` Section 6.1's data-flow diagram: Context first, then the shared Engine Framework, then Knowledge, then Planner, then Orchestrator, then Execution, then Validation, then Learning last (it depends on observing a full plan → execute → validate cycle to have anything to learn from).
+- **Phases 000–006a are complete; Phase 007 is next.** The dependency between Phase 002 and Phase 003 remains intentionally reversed from the original roadmap: architecture boundaries were approved before final stack selection so the stack could be evaluated against a concrete engine model. This reordering is recorded in ADR-0002.
+- **Phases 005–012 implement the shared framework and the seven Titan Core engines in dependency order**, with Security Architecture Governance inserted as Phase 006a before Knowledge Engine implementation.
 - Each engine/framework phase (005–012) may be split into sub-phases (e.g., `007a`, `007b`) if its scope is large; sub-phases still roll up to a single row here.
-- **Phase 013 (Integration & Hardening)** exists specifically to validate cross-engine boundaries hold under real end-to-end operation, per `architecture.md` Section 6.3 and the anti-patterns in Section 8.
+- **Phase 013 (Integration & Hardening)** exists specifically to validate cross-engine boundaries hold under real end-to-end operation, per the Titan Core cross-cutting architecture rules and the anti-patterns in Section 9.
 - **Phase 017 has no end date.** It represents steady-state operation and is revisited indefinitely; each maintenance cycle gets its own session log rather than its own phase number.
 
 ## 4. Changing the Roadmap

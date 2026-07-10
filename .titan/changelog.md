@@ -20,6 +20,12 @@
 - Governance updates recording the Phase 004 scaffold and the selected TypeScript stack in `tech_stack.md`, `project_state.json`, `current_phase.md`, and `decisions.md`.
 - A completed Context Engine package implementing typed runtime context interfaces, a `ContextManager`, immutable snapshots, versioning, serialization/deserialization, and load/save support.
 
+### Changed
+- Synchronized governance state across `current_phase.md`, `project_state.json`, and `roadmap.md` so current phase, completed phases, and next phase are internally consistent.
+- Updated roadmap phase status ordering to reflect completed phases through Security Architecture Governance (006a) and Knowledge Engine (007) as the next not-started phase.
+- Updated stale architecture section references in governance state files after the security architecture insertion.
+- Updated `project_state.json` counters to match repository history: session logs, accepted ADR count, and completed phase count.
+
 ---
 
 ## [0.1.0] — 2026-07-08 — Titan Core Architecture Approved
