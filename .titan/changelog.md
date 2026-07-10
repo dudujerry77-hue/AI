@@ -8,6 +8,14 @@
 
 ## [Unreleased]
 
+### Added
+- `specification/knowledge_engine.md`, defining the approved architecture blueprint for the Knowledge Engine, including responsibility boundaries, knowledge model, retrieval strategy, storage strategy, security model, extension points, and scalability guidance.
+
+### Changed
+- `architecture.md` now explicitly points the Knowledge Engine definition to `specification/knowledge_engine.md` for detailed design.
+- `current_phase.md` and `phases/phase-007-knowledge-engine-implementation.md` now direct future implementation work to the approved Knowledge Engine blueprint.
+- `project_state.json` now includes the Knowledge Engine specification in initialized governance documents, increments the ADR count, and updates documentation metadata to reflect the new design artifact.
+
 ### Milestones
 
 - 2026-07-08: Governance Initialization - established the `.titan/` governance layer, constitutional rules, roadmap, and supporting templates.
@@ -18,6 +26,7 @@
 - 2026-07-08: Engine Framework - completed the framework governance contract and runtime implementation prerequisite for later engines.
 - 2026-07-10: Documentation Improvements - completed START_HERE, VISION, security governance expansions, and phase-specification backfill.
 - 2026-07-10: Governance Synchronization - aligned roadmap, current phase, project state, phase specs, and security/runtime governance docs.
+- 2026-07-10: Knowledge Engine Architecture & Design - approved the Knowledge Engine architectural blueprint without starting production implementation.
 
 ### Added
 - A governance update introducing a shared Engine Framework as a required architecture prerequisite before additional Titan engine implementation begins.

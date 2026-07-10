@@ -3,9 +3,9 @@
   "titan_version": "1.0.0",
   "governance_version": "1.0.0",
   "runtime_version": "0.1.0",
-  "documentation_version": "1.0.0",
+  "documentation_version": "1.1.0",
   "last_updated": "2026-07-10",
-  "last_updated_by": "GitHub Copilot (Phase 3 finalization and closeout)",
+  "last_updated_by": "GitHub Copilot (Knowledge Engine architecture and design blueprint)",
   "project": {
     "name": "Titan AI",
     "description": "Autonomous software engineering operating system, implemented as Titan Core: seven cooperating engines (Planner, Orchestrator, Context, Knowledge, Execution, Validation, Learning). See architecture.md Section 7 and decisions.md ADR-0002.",
@@ -31,6 +31,7 @@
       "architecture.md",
       "engine_framework.md",
       "specification/engine_api.md",
+      "specification/knowledge_engine.md",
       "current_phase.md",
       "project_state.json",
       "changelog.md",
@@ -88,7 +89,7 @@
   },
   "counters": {
     "sessions_logged": 7,
-    "adrs_recorded": 6,
+    "adrs_recorded": 7,
     "phases_completed": 8
   },
   "agents_involved_to_date": [

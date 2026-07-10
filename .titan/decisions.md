@@ -221,6 +221,47 @@ Security is now a first-class architectural concern for Titan AI. The architectu
 
 ---
 
-## ADR-0007 through ADR-000N
+## ADR-0007: Adopt a Repository-Canonical Knowledge Engine Architecture with Pluggable Indexing
+
+- **Status:** accepted
+- **Date:** 2026-07-10
+- **Author:** GitHub Copilot
+
+### Context
+
+Titan Core requires a durable, model-agnostic memory system that can preserve governance, decisions, architecture, sessions, lessons learned, and technical documentation across disconnected work sessions. The approved architecture already defines the Knowledge Engine at a high level, but Phase 007 implementation needs a specific architectural blueprint before code is written. Without that design, implementation risks overlapping with the Context Engine, embedding LLM-specific assumptions, or choosing storage and retrieval patterns that conflict with the repository-first governance model.
+
+### Decision
+
+Adopt a Knowledge Engine architecture in which:
+
+1. The canonical durable knowledge store remains repository-backed Markdown and JSON files, with `.titan/` as the primary governance corpus.
+2. The Knowledge Engine exposes a model-agnostic public API for loading, saving, searching, querying, updating, archiving, importing, exporting, and versioning knowledge.
+3. Exact and structured retrieval are first-class requirements from the beginning.
+4. SQLite is the recommended current read-model/index layer for fast local retrieval, full-text search, relationships, and version lookups.
+5. Semantic/vector retrieval and cloud-backed storage are future extension points behind pluggable adapters, not initial requirements.
+6. The Knowledge Engine remains strictly separate from Context, Planner, Orchestrator, Validation, and Learning responsibilities.
+
+The detailed blueprint is recorded in `specification/knowledge_engine.md`.
+
+### Alternatives Considered
+
+1. **Vector database as the primary initial store.** Rejected because it would overfit the design to semantic retrieval before exact governance fidelity is solved, and it would weaken repository inspectability.
+2. **Flat file retrieval only, with no structured index.** Rejected because even the initial repository needs reliable exact, relationship-aware, and scalable structured retrieval.
+3. **Merge Context and Knowledge into a single memory engine.** Rejected because ephemeral session state and durable knowledge have different lifecycles, consistency requirements, and security semantics.
+4. **LLM-specific memory architecture.** Rejected because Titan must remain independent of any specific model or provider.
+
+### Consequences
+
+- **Positive:** Preserves git-traceable canonical knowledge, keeps the system model-agnostic, and provides a scalable path from repository-native retrieval to richer indexing and semantic search later.
+- **Negative:** Requires maintaining both canonical files and one or more derived read models, which increases implementation complexity compared to a single-store design.
+- **Mitigation:** Derived indexes are explicitly disposable and rebuildable from canonical records, reducing corruption and migration risk.
+
+### Follow-Up Required
+
+- Phase 007 implementation must follow `specification/knowledge_engine.md`.
+- Any future move to cloud-backed or vector-first canonical storage requires a new ADR.
+
+## ADR-0008 through ADR-000N
 
 No further decisions have been made yet. Add new entries below this line using `templates/adr-template.md`, incrementing the number sequentially. Do not skip numbers; do not reuse numbers.

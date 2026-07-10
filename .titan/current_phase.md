@@ -31,7 +31,7 @@ Defining the security architecture governance baseline for Titan AI as a first-c
 - **Name:** Knowledge Engine Implementation
 - **Status:** not-started
 - **Entry Criteria:** Engine Framework and Security Architecture Governance are implemented and verified.
-- **What the next agent should do first:** Build the Knowledge Engine on top of the framework and security contracts, preserving strict engine boundaries and governance traceability.
+- **What the next agent should do first:** Use `specification/knowledge_engine.md` as the approved architecture blueprint, then implement the Knowledge Engine on top of the framework and security contracts while preserving strict engine boundaries and governance traceability.
 
 ## Instructions for Whoever Reads This Next
 

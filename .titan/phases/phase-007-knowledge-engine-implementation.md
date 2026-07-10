@@ -17,6 +17,7 @@ Implement the Knowledge Engine to provide long-term, programmatic read/write acc
 
 ## Deliverables
 
+- Approved architecture blueprint in `specification/knowledge_engine.md` before production implementation begins.
 - Knowledge Engine contract and implementation.
 - Tests for retrieval, persistence, and boundary behavior.
 - Updated docs for usage and constraints.
@@ -44,4 +45,4 @@ Implement the Knowledge Engine to provide long-term, programmatic read/write acc
 
 ## Handoff Notes
 
-Next phase (008) should consume Knowledge Engine through stable contracts only, without introducing direct coupling to storage internals.
+Implementation should follow `specification/knowledge_engine.md`. Next phase (008) should consume Knowledge Engine through stable contracts only, without introducing direct coupling to storage internals.

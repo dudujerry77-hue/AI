@@ -137,7 +137,7 @@ flowchart TD
 - **Responsibility:** Titan AI's long-term memory. Owns and serves the entire `.titan/` governance corpus: constitution, architecture, decisions, past sessions, phases, rules, and any learned heuristics. It is the authoritative interface through which every other engine reads governance and history.
 - **Consumes:** Updates from the Learning Engine (new heuristics, patterns), new ADRs and session logs as they are written, human amendments to governance documents.
 - **Produces:** Governance rules, historical precedent, and prior decisions served to the Planner, Orchestrator, and Execution engines on request.
-- **Boundary:** The Knowledge Engine is read/write over persistent knowledge only — it never holds live/ephemeral session state (Context Engine's job) and never makes a decision on its own; it answers queries and stores what it's told to store. It cannot unilaterally alter `constitution.md` — amendments still require the human-gated process in `constitution.md` Section 8.
+- **Boundary:** The Knowledge Engine is read/write over persistent knowledge only — it never holds live/ephemeral session state (Context Engine's job) and never makes a decision on its own; it answers queries and stores what it's told to store. It cannot unilaterally alter `constitution.md` — amendments still require the human-gated process in `constitution.md` Section 8. Its detailed architecture is defined in `specification/knowledge_engine.md`.
 
 **Execution Engine**
 - **Responsibility:** Performs the concrete, low-level work: writing and editing code, running commands, calling external APIs/tools, modifying files. This is Titan AI's "hands."
