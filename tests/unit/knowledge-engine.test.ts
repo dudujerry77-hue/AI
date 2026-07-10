@@ -91,8 +91,16 @@ async function seedRepository(rootDir: string): Promise<void> {
   );
 }
 
-function createWriteProviders(allowed = true) {
+function createWriteProviders(allowed = true, authenticated = true) {
   return {
+    authenticationProvider: {
+      authenticate: vi.fn(async () => ({
+        authenticated,
+        actorId: authenticated ? 'developer-1' : undefined,
+        method: 'runtime-test',
+        reason: authenticated ? undefined : 'Not authenticated',
+      })),
+    },
     auditLogger: { log: vi.fn(async () => undefined) },
     authorizationProvider: {
       authorize: vi.fn(async () => ({ allowed, reason: allowed ? undefined : 'Denied by policy' })),
@@ -327,11 +335,12 @@ describe('Knowledge Engine integration', () => {
     const previousVersion = await engine.version(saved.recordId, '1.0.1');
     expect(previousVersion?.body).toContain('evidence-first');
 
+    expect(providers.authenticationProvider.authenticate).toHaveBeenCalled();
     expect(providers.authorizationProvider.authorize).toHaveBeenCalled();
     expect(providers.auditLogger.log).toHaveBeenCalled();
   });
 
-  it('rejects write operations without authorization or audit dependencies', async () => {
+  it('rejects write operations without required authentication, authorization, or audit dependencies', async () => {
     const rootDir = await createRepositoryRoot();
     await seedRepository(rootDir);
 
@@ -388,8 +397,45 @@ describe('Knowledge Engine integration', () => {
       }),
     ).rejects.toBeInstanceOf(KnowledgeError);
 
+    expect(providers.authenticationProvider.authenticate).toHaveBeenCalled();
     expect(providers.authorizationProvider.authorize).toHaveBeenCalled();
+    expect(providers.authenticationProvider.authenticate.mock.invocationCallOrder[0]).toBeLessThan(
+      providers.authorizationProvider.authorize.mock.invocationCallOrder[0],
+    );
     expect(providers.auditLogger.log).toHaveBeenCalled();
+  });
+
+  it('rejects unauthenticated write requests before authorization', async () => {
+    const rootDir = await createRepositoryRoot();
+    await seedRepository(rootDir);
+
+    const providers = createWriteProviders(true, false);
+    const engine = new KnowledgeEngine({
+      rootDir,
+      actorId: 'developer-1',
+      roles: ['Developer'],
+      ...providers,
+    });
+    await engine.initialize();
+
+    await expect(
+      engine.add({
+        kind: 'preference',
+        category: 'user',
+        title: 'Unauthenticated Write',
+        tags: ['review'],
+        summary: 'Unauthenticated write',
+        body: 'Unauthenticated write',
+        securityClass: 'internal',
+        source: 'user',
+        author: 'developer-1',
+        approvalStatus: 'approved',
+        authority: 'user',
+      }),
+    ).rejects.toBeInstanceOf(KnowledgeError);
+
+    expect(providers.authenticationProvider.authenticate).toHaveBeenCalled();
+    expect(providers.authorizationProvider.authorize).not.toHaveBeenCalled();
   });
 
   it('enforces import security validation and classification rules', async () => {
@@ -436,6 +482,7 @@ describe('Knowledge Engine integration', () => {
       ),
     ).rejects.toBeInstanceOf(KnowledgeError);
 
+    expect(providers.authenticationProvider.authenticate).toHaveBeenCalled();
     expect(providers.authorizationProvider.authorize).toHaveBeenCalled();
     expect(providers.auditLogger.log).toHaveBeenCalled();
   });

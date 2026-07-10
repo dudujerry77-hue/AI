@@ -1228,6 +1228,9 @@ export class KnowledgeEngine {
     fn: () => Promise<T> | T,
   ): Promise<T> {
     const startedAt = Date.now();
+    if (!this.options.authenticationProvider) {
+      throw new KnowledgeError('Authentication provider is required for write operations');
+    }
     if (!this.options.authorizationProvider) {
       throw new KnowledgeError('Authorization provider is required for write operations');
     }
@@ -1236,6 +1239,7 @@ export class KnowledgeEngine {
     }
 
     try {
+      await this.assertExternalAuthentication(action, target);
       await this.assertExternalAuthorization(action, target);
       const result = await Promise.resolve(fn());
       await this.logAudit(action, target, 'success');
@@ -1269,6 +1273,32 @@ export class KnowledgeEngine {
         error: error instanceof Error ? error.message : String(error ?? 'unknown error'),
       });
       throw error;
+    }
+  }
+
+  private async assertExternalAuthentication(action: string, resource: string): Promise<void> {
+    const authenticationProvider = this.options.authenticationProvider;
+    if (!authenticationProvider) {
+      throw new KnowledgeError('Authentication provider is required for write operations');
+    }
+
+    const result = await authenticationProvider.authenticate({
+      actorId: this.options.actorId,
+      metadata: {
+        action,
+        resource,
+        roles: [...this.options.roles],
+      },
+    });
+
+    if (!result.authenticated) {
+      this.metrics.counter('knowledge.authentication.failure').increment();
+      this.logger.warn('knowledge.authentication.denied', {
+        action,
+        resource,
+        reason: result.reason,
+      });
+      throw new KnowledgeError(result.reason ?? 'Authentication denied');
     }
   }
 

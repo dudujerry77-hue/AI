@@ -16,6 +16,7 @@ This package implements Phase 007 Knowledge Engine behavior:
 
 All write-capable operations enforce:
 
+- authentication checks (`AuthenticationProvider`),
 - authorization checks (`AuthorizationProvider`),
 - input validation,
 - classification rules,
