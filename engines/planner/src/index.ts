@@ -1,25 +1,62 @@
 import { BaseEngine } from '../../../runtime/engine/base';
 import { ENGINE_API_CONTRACT_VERSION, type BaseEngineOptions } from '../../../runtime/engine/types';
+import type {
+  Goal,
+  Plan,
+  PlanEstimate,
+  PlanExplanation,
+  PlanningContext,
+  Constraint,
+} from './models/types';
+
+export type {
+  Goal,
+  GoalType,
+  GoalPriority,
+  GoalStatus,
+  Plan,
+  PlanStatus,
+  PlanMetadata,
+  PlanStep,
+  StepType,
+  StepStatus,
+  Task,
+  TaskStatus,
+  Dependency,
+  DependencyType,
+  Constraint,
+  ConstraintType,
+  PlanningContext,
+  PlanEstimate,
+  CostEstimate,
+  TimeEstimate,
+  ResourceEstimate,
+  PlanExplanation,
+} from './models/types';
 
 export interface PlannerCreatePlanRequest {
-  readonly goal: string;
-  readonly context?: Record<string, unknown>;
+  readonly goal: Goal;
+  readonly context?: PlanningContext;
 }
 
 export interface PlannerValidatePlanRequest {
-  readonly planId: string;
+  readonly plan: Plan;
+  readonly context?: PlanningContext;
 }
 
 export interface PlannerOptimizePlanRequest {
-  readonly planId: string;
+  readonly plan: Plan;
+  readonly constraints?: readonly Constraint[];
 }
 
 export interface PlannerEstimatePlanRequest {
-  readonly planId: string;
+  readonly plan: Plan;
+  readonly context?: PlanningContext;
 }
 
 export interface PlannerExplainPlanRequest {
-  readonly planId: string;
+  readonly plan: Plan;
+  readonly context?: PlanningContext;
 }
 
 export interface PlannerCancelPlanRequest {
@@ -30,6 +67,14 @@ export interface PlannerCancelPlanRequest {
 export interface PlannerPlaceholderResult {
   readonly status: 'not-implemented';
   readonly message: string;
+}
+
+export interface PlannerEstimatePlaceholderResult extends PlannerPlaceholderResult {
+  readonly estimate?: PlanEstimate;
+}
+
+export interface PlannerExplainPlaceholderResult extends PlannerPlaceholderResult {
+  readonly explanation?: PlanExplanation;
 }
 
 export interface PlannerEngineOptions extends Omit<BaseEngineOptions, 'id' | 'name' | 'version'> {
@@ -89,11 +134,11 @@ export class PlannerEngine extends BaseEngine {
     throw new NotImplementedError('PlannerEngine.optimizePlan is not implemented in Milestone 1');
   }
 
-  async estimatePlan(_request: PlannerEstimatePlanRequest): Promise<PlannerPlaceholderResult> {
+  async estimatePlan(_request: PlannerEstimatePlanRequest): Promise<PlannerEstimatePlaceholderResult> {
     throw new NotImplementedError('PlannerEngine.estimatePlan is not implemented in Milestone 1');
   }
 
-  async explainPlan(_request: PlannerExplainPlanRequest): Promise<PlannerPlaceholderResult> {
+  async explainPlan(_request: PlannerExplainPlanRequest): Promise<PlannerExplainPlaceholderResult> {
     throw new NotImplementedError('PlannerEngine.explainPlan is not implemented in Milestone 1');
   }
 
