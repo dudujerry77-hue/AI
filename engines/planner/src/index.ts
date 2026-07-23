@@ -11,6 +11,7 @@ import type {
 import { GoalAnalyzer, type GoalAnalysisResult } from './analysis/goal-analyzer';
 import { GoalDecomposer } from './decomposition/goal-decomposer';
 import { PlanValidator, type PlanValidationResult } from './validation/plan-validator';
+import { PlanOptimizer } from './optimization/plan-optimizer';
 import { NotImplementedError, PlanningValidationError } from './errors/planner-errors';
 
 
@@ -42,6 +43,7 @@ export type {
 export { GoalAnalyzer, type GoalAnalysisResult } from './analysis/goal-analyzer';
 export { GoalDecomposer } from './decomposition/goal-decomposer';
 export { PlanValidator, type PlanValidationResult } from './validation/plan-validator';
+export { PlanOptimizer } from './optimization/plan-optimizer';
 export {
   NotImplementedError,
   PlanningValidationError,
@@ -102,6 +104,7 @@ export class PlannerEngine extends BaseEngine {
   private readonly goalAnalyzer: GoalAnalyzer;
   private readonly goalDecomposer: GoalDecomposer;
   private readonly planValidator: PlanValidator;
+  private readonly planOptimizer: PlanOptimizer;
 
   constructor(options: PlannerEngineOptions = {}) {
     super({
@@ -111,7 +114,7 @@ export class PlannerEngine extends BaseEngine {
       contractVersion: options.contractVersion ?? ENGINE_API_CONTRACT_VERSION,
       description:
         options.description ??
-        'Goal-to-plan engine for Titan AI. Milestone 3 implements deterministic goal analysis and decomposition for createPlan; Milestone 4 implements structural plan validation for validatePlan. All other planner APIs remain NotImplementedError stubs.',
+        'Goal-to-plan engine for Titan AI. Milestone 3 implements deterministic goal analysis and decomposition for createPlan; Milestone 4 implements structural plan validation for validatePlan; Milestone 5 implements deterministic structural optimization for optimizePlan. All other planner APIs remain NotImplementedError stubs.',
 
       capabilities: options.capabilities ?? [
         'planner.create-plan',
@@ -137,6 +140,7 @@ export class PlannerEngine extends BaseEngine {
     this.goalAnalyzer = new GoalAnalyzer();
     this.goalDecomposer = new GoalDecomposer();
     this.planValidator = new PlanValidator();
+    this.planOptimizer = new PlanOptimizer();
   }
 
   /**
@@ -172,8 +176,28 @@ export class PlannerEngine extends BaseEngine {
     return this.planValidator.validate(request.plan);
   }
 
-  async optimizePlan(_request: PlannerOptimizePlanRequest): Promise<PlannerPlaceholderResult> {
-    throw new NotImplementedError('PlannerEngine.optimizePlan is not implemented in Milestone 3');
+  /**
+   * Validate the request's `Plan` using `PlanValidator`. If the plan is
+   * invalid, throw `PlanningValidationError`. Otherwise, delegate to
+   * `PlanOptimizer` and return the optimized `Plan`.
+   *
+   * Milestone 5 scope only: deterministic structural optimization only.
+   * No AI, no heuristics, no cost/time/resource optimization, no
+   * scheduling, no parallel execution, no critical-path analysis, no
+   * cycle detection, no graph algorithms, no machine learning, and no
+   * calls to any other engine.
+   */
+  async optimizePlan(request: PlannerOptimizePlanRequest): Promise<Plan> {
+    const validation: PlanValidationResult = this.planValidator.validate(request.plan);
+
+    if (!validation.valid) {
+      throw new PlanningValidationError(
+        `Plan ${validation.planId || '(unknown)'} failed validation.`,
+        validation.issues,
+      );
+    }
+
+    return this.planOptimizer.optimize(request.plan);
   }
 
   async estimatePlan(_request: PlannerEstimatePlanRequest): Promise<PlannerEstimatePlaceholderResult> {

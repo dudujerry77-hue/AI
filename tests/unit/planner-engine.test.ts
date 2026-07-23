@@ -5,6 +5,7 @@ import {
   GoalAnalyzer,
   GoalDecomposer,
   PlanValidator,
+  PlanOptimizer,
   NotImplementedError,
   PlanningValidationError,
   type Goal,
@@ -204,7 +205,6 @@ describe('Planner Engine Milestone 1', () => {
   it('returns stub behavior by throwing NotImplementedError for the remaining planner APIs', async () => {
     const engine = new PlannerEngine();
 
-    await expect(engine.optimizePlan({ plan: samplePlan, constraints: samplePlan.constraints })).rejects.toBeInstanceOf(NotImplementedError);
     await expect(engine.estimatePlan({ plan: samplePlan, context: sampleContext })).rejects.toBeInstanceOf(NotImplementedError);
     await expect(engine.explainPlan({ plan: samplePlan, context: sampleContext })).rejects.toBeInstanceOf(NotImplementedError);
     await expect(engine.cancelPlan({ planId: 'plan-1', reason: 'test' })).rejects.toBeInstanceOf(NotImplementedError);
@@ -381,10 +381,9 @@ describe('PlannerEngine.createPlan (Milestone 3)', () => {
     );
   });
 
-  it('still throws NotImplementedError for optimizePlan, estimatePlan, explainPlan, and cancelPlan', async () => {
+  it('still throws NotImplementedError for estimatePlan, explainPlan, and cancelPlan', async () => {
     const engine = new PlannerEngine();
 
-    await expect(engine.optimizePlan({ plan: samplePlan, constraints: samplePlan.constraints })).rejects.toBeInstanceOf(NotImplementedError);
     await expect(engine.estimatePlan({ plan: samplePlan, context: sampleContext })).rejects.toBeInstanceOf(NotImplementedError);
     await expect(engine.explainPlan({ plan: samplePlan, context: sampleContext })).rejects.toBeInstanceOf(NotImplementedError);
     await expect(engine.cancelPlan({ planId: 'plan-1', reason: 'test' })).rejects.toBeInstanceOf(NotImplementedError);
@@ -587,10 +586,261 @@ describe('PlannerEngine.validatePlan (Milestone 4)', () => {
     expect(plan.tasks).toHaveLength(5);
   });
 
-  it('still throws NotImplementedError for optimizePlan, estimatePlan, explainPlan, and cancelPlan', async () => {
+  it('still throws NotImplementedError for estimatePlan, explainPlan, and cancelPlan', async () => {
     const engine = new PlannerEngine();
 
-    await expect(engine.optimizePlan({ plan: samplePlan, constraints: samplePlan.constraints })).rejects.toBeInstanceOf(NotImplementedError);
+    await expect(engine.estimatePlan({ plan: samplePlan, context: sampleContext })).rejects.toBeInstanceOf(NotImplementedError);
+    await expect(engine.explainPlan({ plan: samplePlan, context: sampleContext })).rejects.toBeInstanceOf(NotImplementedError);
+    await expect(engine.cancelPlan({ planId: 'plan-1', reason: 'test' })).rejects.toBeInstanceOf(NotImplementedError);
+  });
+});
+
+const unorderedPlan: Plan = {
+  planId: 'plan-unordered',
+  goalId: 'goal-unordered',
+  status: 'draft',
+  metadata: {
+    createdAt: '2026-07-10T00:00:00.000Z',
+    updatedAt: '2026-07-10T00:00:00.000Z',
+    createdBy: 'planner-user-1',
+    revision: 1,
+    labels: [],
+  },
+  steps: [
+    {
+      stepId: 'step-b',
+      title: 'Step B',
+      description: 'Second step',
+      type: 'design',
+      status: 'pending',
+      taskIds: ['task-b2', 'task-b1', 'task-b1'],
+    },
+    {
+      stepId: 'step-a',
+      title: 'Step A',
+      description: 'First step',
+      type: 'analysis',
+      status: 'pending',
+      taskIds: ['task-a1'],
+      dependsOnStepIds: [],
+    },
+  ],
+  tasks: [
+    {
+      taskId: 'task-b1',
+      stepId: 'step-b',
+      title: 'Task B1',
+      description: 'First task of step B',
+      status: 'pending',
+    },
+    {
+      taskId: 'task-a1',
+      stepId: 'step-a',
+      title: 'Task A1',
+      description: 'First task of step A',
+      status: 'pending',
+    },
+    {
+      taskId: 'task-b2',
+      stepId: 'step-b',
+      title: 'Task B2',
+      description: 'Second task of step B',
+      status: 'pending',
+    },
+  ],
+  dependencies: [
+    {
+      dependencyId: 'dep-2',
+      type: 'requires',
+      sourceId: 'task-b1',
+      targetId: 'step-b',
+    },
+    {
+      dependencyId: 'dep-1',
+      type: 'sequential',
+      sourceId: 'step-a',
+      targetId: 'step-b',
+    },
+  ],
+  constraints: [],
+};
+
+const unorderedPlanWithDuplicateDependency: Plan = {
+  ...unorderedPlan,
+  dependencies: [
+    ...unorderedPlan.dependencies,
+    {
+      dependencyId: 'dep-1-duplicate',
+      type: 'sequential',
+      sourceId: 'step-a',
+      targetId: 'step-b',
+    },
+  ],
+};
+
+describe('PlanOptimizer (Milestone 5)', () => {
+  it('returns a new, valid, optimized Plan for a valid plan', () => {
+    const optimizer = new PlanOptimizer();
+    const optimized = optimizer.optimize(samplePlan);
+
+    expect(optimized.planId).toBe(samplePlan.planId);
+    expect(optimized.goalId).toBe(samplePlan.goalId);
+    expect(optimized).not.toBe(samplePlan);
+  });
+
+  it('is deterministic: optimizing the same plan repeatedly yields the same result', () => {
+    const optimizer = new PlanOptimizer();
+    const first = optimizer.optimize(samplePlan);
+    const second = optimizer.optimize(samplePlan);
+
+    expect(second).toEqual(first);
+  });
+
+  it('never mutates the original Plan', () => {
+    const optimizer = new PlanOptimizer();
+    const originalSnapshot = JSON.parse(JSON.stringify(samplePlan));
+
+    optimizer.optimize(samplePlan);
+
+    expect(samplePlan).toEqual(originalSnapshot);
+  });
+
+  it('preserves all step, task, and dependency IDs', () => {
+    const optimizer = new PlanOptimizer();
+    const optimized = optimizer.optimize(unorderedPlan);
+
+    const originalStepIds = new Set(unorderedPlan.steps.map((step) => step.stepId));
+    const optimizedStepIds = new Set(optimized.steps.map((step) => step.stepId));
+    expect(optimizedStepIds).toEqual(originalStepIds);
+
+    const originalTaskIds = new Set(unorderedPlan.tasks.map((task) => task.taskId));
+    const optimizedTaskIds = new Set(optimized.tasks.map((task) => task.taskId));
+    expect(optimizedTaskIds).toEqual(originalTaskIds);
+  });
+
+  it('removes duplicate dependencies (same type + sourceId + targetId)', () => {
+    const optimizer = new PlanOptimizer();
+    const optimized = optimizer.optimize(unorderedPlanWithDuplicateDependency);
+
+    const sequentialAtoB = optimized.dependencies.filter(
+      (dependency) =>
+        dependency.type === 'sequential' && dependency.sourceId === 'step-a' && dependency.targetId === 'step-b',
+    );
+
+    expect(sequentialAtoB).toHaveLength(1);
+    expect(optimized.dependencies).toHaveLength(2);
+  });
+
+  it('normalizes dependency ordering deterministically', () => {
+    const optimizer = new PlanOptimizer();
+    const optimized = optimizer.optimize(unorderedPlan);
+
+    expect(optimized.dependencies.map((dependency) => dependency.dependencyId)).toEqual([
+      'dep-2',
+      'dep-1',
+    ]);
+  });
+
+  it('is deterministic and produces a validator-passing Plan for the deduplicated dependency case', () => {
+    const optimizer = new PlanOptimizer();
+    const validator = new PlanValidator();
+    const optimized = optimizer.optimize(unorderedPlanWithDuplicateDependency);
+
+    const result = validator.validate(optimized);
+    expect(result.valid).toBe(true);
+  });
+
+  it('normalizes step ordering deterministically by stepId', () => {
+    const optimizer = new PlanOptimizer();
+    const optimized = optimizer.optimize(unorderedPlan);
+
+    expect(optimized.steps.map((step) => step.stepId)).toEqual(['step-a', 'step-b']);
+  });
+
+  it('normalizes task ordering deterministically by taskId', () => {
+    const optimizer = new PlanOptimizer();
+    const optimized = optimizer.optimize(unorderedPlan);
+
+    expect(optimized.tasks.map((task) => task.taskId)).toEqual(['task-a1', 'task-b1', 'task-b2']);
+  });
+
+  it('deduplicates and sorts taskIds within a step', () => {
+    const optimizer = new PlanOptimizer();
+    const optimized = optimizer.optimize(unorderedPlan);
+
+    const stepB = optimized.steps.find((step) => step.stepId === 'step-b');
+    expect(stepB?.taskIds).toEqual(['task-b1', 'task-b2']);
+  });
+
+  it('removes redundant empty collections (empty labels, empty dependsOnStepIds)', () => {
+    const optimizer = new PlanOptimizer();
+    const optimized = optimizer.optimize(unorderedPlan);
+
+    expect(optimized.metadata.labels).toBeUndefined();
+
+    const stepA = optimized.steps.find((step) => step.stepId === 'step-a');
+    expect(stepA?.dependsOnStepIds).toBeUndefined();
+  });
+
+  it('increments metadata.revision by exactly 1 and preserves createdAt/createdBy', () => {
+    const optimizer = new PlanOptimizer();
+    const optimized = optimizer.optimize(samplePlan);
+
+    expect(optimized.metadata.revision).toBe(samplePlan.metadata.revision + 1);
+    expect(optimized.metadata.createdAt).toBe(samplePlan.metadata.createdAt);
+    expect(optimized.metadata.createdBy).toBe(samplePlan.metadata.createdBy);
+  });
+});
+
+describe('PlannerEngine.optimizePlan (Milestone 5)', () => {
+  it('validates the plan, then delegates to PlanOptimizer and returns the optimized Plan', async () => {
+    const engine = new PlannerEngine();
+
+    const optimized = await engine.optimizePlan({ plan: unorderedPlan });
+
+    expect(optimized.steps.map((step) => step.stepId)).toEqual(['step-a', 'step-b']);
+    expect(optimized.tasks.map((task) => task.taskId)).toEqual(['task-a1', 'task-b1', 'task-b2']);
+    expect(optimized.dependencies).toHaveLength(2);
+  });
+
+  it('throws PlanningValidationError and does not optimize an invalid plan', async () => {
+    const engine = new PlannerEngine();
+    const invalidPlan = { ...samplePlan, planId: '' } as Plan;
+
+    await expect(engine.optimizePlan({ plan: invalidPlan })).rejects.toBeInstanceOf(PlanningValidationError);
+  });
+
+  it('is deterministic: optimizing the same plan repeatedly yields the same result', async () => {
+    const engine = new PlannerEngine();
+
+    const first = await engine.optimizePlan({ plan: samplePlan });
+    const second = await engine.optimizePlan({ plan: samplePlan });
+
+    expect(second).toEqual(first);
+  });
+
+  it('still allows createPlan to work unchanged', async () => {
+    const engine = new PlannerEngine();
+
+    const plan = await engine.createPlan({ goal: sampleGoal, context: sampleContext });
+
+    expect(plan.goalId).toBe(sampleGoal.goalId);
+    expect(plan.steps).toHaveLength(5);
+    expect(plan.tasks).toHaveLength(5);
+  });
+
+  it('still allows validatePlan to work unchanged', async () => {
+    const engine = new PlannerEngine();
+
+    const result = await engine.validatePlan({ plan: samplePlan, context: sampleContext });
+
+    expect(result.valid).toBe(true);
+    expect(result.issues).toEqual([]);
+  });
+
+  it('still throws NotImplementedError for estimatePlan, explainPlan, and cancelPlan', async () => {
+    const engine = new PlannerEngine();
+
     await expect(engine.estimatePlan({ plan: samplePlan, context: sampleContext })).rejects.toBeInstanceOf(NotImplementedError);
     await expect(engine.explainPlan({ plan: samplePlan, context: sampleContext })).rejects.toBeInstanceOf(NotImplementedError);
     await expect(engine.cancelPlan({ planId: 'plan-1', reason: 'test' })).rejects.toBeInstanceOf(NotImplementedError);

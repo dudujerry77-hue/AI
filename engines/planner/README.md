@@ -8,6 +8,8 @@ Milestone 3 adds deterministic goal analysis and goal decomposition, and impleme
 
 Milestone 4 adds deterministic structural plan validation, and implements `validatePlan()`.
 
+Milestone 5 adds deterministic structural plan optimization, and implements `optimizePlan()`.
+
 ## Scope (Milestone 1)
 
 - Implements the Titan runtime engine contract via lifecycle, health, metadata, version, and state methods.
@@ -77,8 +79,8 @@ offline, structural processing of a single `Goal`:
 
 - `NotImplementedError` — thrown by planner APIs that remain unimplemented.
 - `PlanningValidationError` — thrown by `createPlan()` when goal analysis fails (carries the
-  structured `GoalValidationIssue[]` list), and thrown by `PlanValidator.validate()` only for
-  malformed input.
+  structured `GoalValidationIssue[]` list), thrown by `PlanValidator.validate()` only for
+  malformed input, and thrown by `PlannerEngine.optimizePlan()` when plan validation fails.
 
 ## Plan Validation (Milestone 4)
 
@@ -117,10 +119,53 @@ Milestone 4 implements deterministic, offline **structural** validation of a `Pl
 - Delegates entirely to `PlanValidator.validate()` and returns its `PlanValidationResult`.
 - Does not modify `createPlan()`, `GoalAnalyzer`, or `GoalDecomposer`.
 
+## Plan Optimization (Milestone 5)
+
+Milestone 5 implements deterministic, offline **structural** optimization of a `Plan`:
+
+### `PlanOptimizer`
+
+- Accepts a structurally valid `Plan` (assumed already checked by `PlanValidator`) and returns
+  a new, optimized `Plan`. The original `Plan` object, and all of its nested arrays/objects,
+  are never mutated.
+- Preserves plan semantics and every `stepId`, `taskId`, and `dependencyId` exactly.
+- Implements only the following structural optimizations:
+  - Removes duplicate dependencies (same `type` + `sourceId` + `targetId`).
+  - Normalizes dependency ordering (deterministic sort by `type`, then `sourceId`, then
+    `targetId`, then `dependencyId`).
+  - Normalizes step ordering (deterministic sort by `stepId`).
+  - Normalizes task ordering (deterministic sort by `taskId`).
+  - Deduplicates and sorts each step's `taskIds` and `dependsOnStepIds`.
+  - Removes redundant empty collections (an empty `metadata.labels` or an empty/absent
+    `dependsOnStepIds` is omitted from the optimized output rather than kept as `[]`).
+- `metadata.createdAt`, `metadata.createdBy`, and (when non-empty) `metadata.labels` are
+  preserved; `metadata.revision` is incremented by exactly 1 to mark the new, optimized
+  revision. `metadata.updatedAt` is left unchanged so the operation remains fully
+  deterministic (no wall-clock reads).
+- Produces stable, identical output for identical input (pure function, no randomness).
+- Does **not** perform AI-assisted or heuristic optimization.
+- Does **not** perform cost, time, or resource optimization.
+- Does **not** perform scheduling or parallel-execution planning.
+- Does **not** perform critical-path analysis.
+- Does **not** perform cycle detection or any other graph algorithm.
+- Does **not** use machine learning.
+- Does **not** call the Knowledge Engine, Context Engine, or Orchestrator.
+
+### `PlannerEngine.optimizePlan()`
+
+- Validates the request's `Plan` using the existing `PlanValidator`.
+- If the plan is invalid, throws `PlanningValidationError` (with the structured issue list)
+  and does not attempt optimization.
+- Otherwise, delegates to `PlanOptimizer` and returns the optimized `Plan`.
+- Does not modify `createPlan()`, `validatePlan()`, `GoalAnalyzer`, `GoalDecomposer`, or
+  `PlanValidator`.
+
 ## Current Behavior
 
 - `createPlan()` is implemented (Milestone 3): deterministic goal analysis + decomposition.
 - `validatePlan()` is implemented (Milestone 4): deterministic structural plan validation.
-- `optimizePlan()`, `estimatePlan()`, `explainPlan()`, and `cancelPlan()` remain stubs and
-  throw `NotImplementedError`. No functionality for these four APIs is implemented in this
+- `optimizePlan()` is implemented (Milestone 5): validates via `PlanValidator`, then delegates
+  to `PlanOptimizer` for deterministic structural optimization.
+- `estimatePlan()`, `explainPlan()`, and `cancelPlan()` remain stubs and throw
+  `NotImplementedError`. No functionality for these three APIs is implemented in this
   milestone.
