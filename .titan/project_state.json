@@ -3,24 +3,24 @@
   "titan_version": "1.0.0",
   "governance_version": "1.0.0",
   "runtime_version": "0.1.0",
-  "documentation_version": "1.1.0",
-  "last_updated": "2026-07-10",
-  "last_updated_by": "GitHub Copilot (Phase 4 final verification and phase transition)",
+  "documentation_version": "1.2.0",
+  "last_updated": "2026-07-23",
+  "last_updated_by": "GitHub Copilot (Phase 008 final verification and phase transition)",
   "project": {
     "name": "Titan AI",
     "description": "Autonomous software engineering operating system, implemented as Titan Core: seven cooperating engines (Planner, Orchestrator, Context, Knowledge, Execution, Validation, Learning). See architecture.md Section 7 and decisions.md ADR-0002.",
     "repository_root": "."
   },
   "current_phase": {
-    "id": "008",
-    "name": "Planner Engine Implementation",
+    "id": "009",
+    "name": "Orchestrator Engine Implementation",
     "status": "in-progress"
   },
   "next_phase": {
-    "id": "009",
-    "name": "Orchestrator Engine Implementation",
+    "id": "010",
+    "name": "Execution Engine Implementation",
     "status": "not-started",
-    "blocked_reason": "Awaiting Phase 008 completion."
+    "blocked_reason": "Awaiting Phase 009 completion."
   },
   "governance": {
     "constitution_version": "1.0.0",
@@ -63,7 +63,7 @@
     "notes": "architecture.md Section 7 defines the approved Titan Core engine architecture (7 engines), with security architecture governance established in Section 6."
   },
   "titan_core": {
-    "status": "knowledge-engine-complete-planner-in-progress",
+    "status": "planner-engine-complete-orchestrator-in-progress",
     "engine_framework_required_before_future_engine_implementation": true,
     "engine_framework_phase": "006",
     "shared_framework": {
@@ -72,8 +72,8 @@
       "implementation_phase": "006"
     },
     "engines": [
-      { "name": "Planner Engine", "status": "in-progress", "implementation_phase": "008" },
-      { "name": "Orchestrator Engine", "status": "not-implemented", "implementation_phase": "009" },
+      { "name": "Planner Engine", "status": "implemented", "implementation_phase": "008", "notes": "createPlan, validatePlan, optimizePlan, estimatePlan, and explainPlan are implemented (Milestones 1-6). cancelPlan remains a NotImplementedError stub; not required by any Phase 008 exit criterion." },
+      { "name": "Orchestrator Engine", "status": "in-progress", "implementation_phase": "009" },
       { "name": "Context Engine", "status": "implemented", "implementation_phase": "005" },
       { "name": "Knowledge Engine", "status": "implemented", "implementation_phase": "007" },
       { "name": "Execution Engine", "status": "not-implemented", "implementation_phase": "010" },
@@ -90,7 +90,7 @@
   "counters": {
     "sessions_logged": 7,
     "adrs_recorded": 7,
-    "phases_completed": 9
+    "phases_completed": 10
   },
   "agents_involved_to_date": [
     "Claude",

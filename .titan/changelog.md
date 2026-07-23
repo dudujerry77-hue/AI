@@ -9,16 +9,21 @@
 ## [Unreleased]
 
 ### Added
+- Planner Engine Milestone 3: `GoalAnalyzer` (deterministic structural goal validation) and `GoalDecomposer` (deterministic fixed-pipeline goal-to-plan decomposition), plus a working `PlannerEngine.createPlan()` implementation.
+- Planner Engine Milestone 4: `PlanValidator` (deterministic structural plan validation covering required fields, enums, metadata, steps, tasks, dependencies, duplicate and self-dependency detection), plus a working `PlannerEngine.validatePlan()` implementation.
+- Planner Engine Milestone 5: `PlanOptimizer` (deterministic structural plan normalization: dependency de-duplication, dependency/step/task ordering, taskId/dependsOnStepIds de-duplication and sorting, redundant empty-collection removal, revision increment), plus a working `PlannerEngine.optimizePlan()` implementation.
+- Planner Engine Milestone 6: `PlanEstimator` (deterministic structural estimation: total steps/tasks/dependency counts, estimated duration/effort hours, complexity level) and `PlanExplainer` (deterministic structural explanation: step/task counts, dependency summary by type, execution order, validation status), plus working `PlannerEngine.estimatePlan()` and `PlannerEngine.explainPlan()` implementations. Adds additive, backward-compatible optional fields to the `PlanEstimate` and `PlanExplanation` domain types.
 - `specification/knowledge_engine.md`, defining the approved architecture blueprint for the Knowledge Engine, including responsibility boundaries, knowledge model, retrieval strategy, storage strategy, security model, extension points, and scalability guidance.
 
 ### Changed
+- Governance phase tracking now marks Phase 008 (Planner Engine) as complete and Phase 009 (Orchestrator Engine) as active across `roadmap.md`, `current_phase.md`, `project_state.json`, and `phases/phase-008-planner-engine-implementation.md`. `PlannerEngine.cancelPlan()` remains an unimplemented `NotImplementedError` stub; this is recorded as known remaining Planner API surface and was confirmed not to be required by any Phase 008 exit criterion.
 - `architecture.md` now explicitly points the Knowledge Engine definition to `specification/knowledge_engine.md` for detailed design.
 - `current_phase.md` and `phases/phase-007-knowledge-engine-implementation.md` now direct future implementation work to the approved Knowledge Engine blueprint.
 - `project_state.json` now includes the Knowledge Engine specification in initialized governance documents, increments the ADR count, and updates documentation metadata to reflect the new design artifact.
-- Governance phase tracking now marks Phase 007 (Knowledge Engine) as complete and Phase 008 (Planner Engine) as active across `roadmap.md`, `current_phase.md`, `project_state.json`, and phase detail files.
 
 ### Milestones
 
+- 2026-07-23: Planner Engine Milestones 3–6 - completed goal analysis/decomposition, plan validation, plan optimization, and plan estimation/explanation; verified lint/test/build all passing (97/97 tests, 71 Planner Engine tests) and transitioned governance state to active Orchestrator Engine phase (009).
 - 2026-07-08: Governance Initialization - established the `.titan/` governance layer, constitutional rules, roadmap, and supporting templates.
 - 2026-07-08: Project Scaffold - created the TypeScript monorepo scaffold, workspace tooling, and repository structure for implementation phases.
 - 2026-07-08: Context Engine - implemented the session-scoped context engine as the runtime state foundation.
@@ -29,6 +34,7 @@
 - 2026-07-10: Governance Synchronization - aligned roadmap, current phase, project state, phase specs, and security/runtime governance docs.
 - 2026-07-10: Knowledge Engine Architecture & Design - approved the Knowledge Engine architectural blueprint without starting production implementation.
 - 2026-07-10: Knowledge Engine Final Verification - completed independent Phase 4 verification with lint/test/build passing and transitioned governance state to active Planner Engine phase.
+
 
 ### Added
 - A governance update introducing a shared Engine Framework as a required architecture prerequisite before additional Titan engine implementation begins.

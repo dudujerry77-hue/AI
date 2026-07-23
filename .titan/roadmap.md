@@ -27,8 +27,8 @@
 | 006 | Engine Framework | Build the shared runtime infrastructure that every Titan engine will use, including the TitanEngine interface, BaseEngine implementation, EngineRegistry, EventBus, Dependency Injection container, Lifecycle Manager, Health Monitor, Configuration Service, Logging Service, Metrics interface, Error Handling framework, and the public engine API contract documented in `specification/engine_api.md` | complete | 005 |
 | 006a | Security Architecture Governance | Define the security architecture baseline, threat model, secure execution model, authentication/authorization model, secret strategy, audit logging, incident response, and deployment checklist for Titan AI | complete | 006 |
 | 007 | Knowledge Engine Implementation | Build long-term memory: programmatic read/write access to `.titan/` governance corpus | complete | 006a |
-| 008 | Planner Engine Implementation | Build goal-to-plan decomposition, consuming Context + Knowledge engines | in-progress | 007 |
-| 009 | Orchestrator Engine Implementation | Build central coordination: task sequencing, dispatch, escalation enforcement | not-started | 008 |
+| 008 | Planner Engine Implementation | Build goal-to-plan decomposition, consuming Context + Knowledge engines | complete | 007 |
+| 009 | Orchestrator Engine Implementation | Build central coordination: task sequencing, dispatch, escalation enforcement | in-progress | 008 |
 | 010 | Execution Engine Implementation | Build the action-taking layer dispatched to by the Orchestrator | not-started | 009 |
 | 011 | Validation Engine Implementation | Build independent verification of Execution Engine output | not-started | 010 |
 | 012 | Learning Engine Implementation | Build outcome observation and Knowledge Engine feedback loop | not-started | 011 |
@@ -40,7 +40,7 @@
 
 ## 3. Notes on Sequencing
 
-- **Phases 000–007 are complete; Phase 008 is active.** The dependency between Phase 002 and Phase 003 remains intentionally reversed from the original roadmap: architecture boundaries were approved before final stack selection so the stack could be evaluated against a concrete engine model. This reordering is recorded in ADR-0002.
+- **Phases 000–008 are complete; Phase 009 is active.** The dependency between Phase 002 and Phase 003 remains intentionally reversed from the original roadmap: architecture boundaries were approved before final stack selection so the stack could be evaluated against a concrete engine model. This reordering is recorded in ADR-0002.
 - **Phases 005–012 implement the shared framework and the seven Titan Core engines in dependency order**, with Security Architecture Governance inserted as Phase 006a before Knowledge Engine implementation.
 - Each engine/framework phase (005–012) may be split into sub-phases (e.g., `007a`, `007b`) if its scope is large; sub-phases still roll up to a single row here.
 - **Phase 013 (Integration & Hardening)** exists specifically to validate cross-engine boundaries hold under real end-to-end operation, per the Titan Core cross-cutting architecture rules and the anti-patterns in Section 9.

@@ -7,40 +7,41 @@
 
 ## Active Phase
 
-- **Phase ID:** 008
-- **Name:** Planner Engine Implementation
+- **Phase ID:** 009
+- **Name:** Orchestrator Engine Implementation
 - **Status:** in-progress
-- **Started:** 2026-07-10
+- **Started:** 2026-07-23
 - **Completed:** 
 
 ## What This Phase Is
 
-Implementing the Planner Engine to translate goals into executable, dependency-aware plans using Context and Knowledge inputs while preserving strict engine boundaries.
+Implementing the Orchestrator Engine as the central coordinator for task sequencing, dispatch, escalation, and policy-compliant flow control, consuming Planner Engine outputs as authoritative plans.
 
 ## Prior Phase Completed
 
-- **Phase ID:** 007
-- **Name:** Knowledge Engine Implementation
+- **Phase ID:** 008
+- **Name:** Planner Engine Implementation
 - **Status:** complete
-- **Completed:** 2026-07-10
+- **Completed:** 2026-07-23
 
 ## Exit Criteria (current phase)
 
-- [ ] Planner Engine implementation passes build/test quality gates.
-- [ ] Planner plan contracts are consumable by Orchestrator Engine.
-- [ ] Governance docs and session records capture final planner boundaries and constraints.
+- [ ] Orchestrator Engine passes build/test quality gates.
+- [ ] Dispatch and escalation flows are validated end to end in phase scope.
+- [ ] Handoff artifacts support Execution Engine implementation.
 
 ## Next Phase
 
-- **Phase ID:** 009
-- **Name:** Orchestrator Engine Implementation
+- **Phase ID:** 010
+- **Name:** Execution Engine Implementation
 - **Status:** not-started
-- **Entry Criteria:** Planner Engine is implemented and verified.
-- **What the next agent should do first:** Consume Planner outputs as authoritative plans and implement coordination logic without embedding planning or execution behavior.
+- **Entry Criteria:** Orchestrator Engine is implemented and verified.
+- **What the next agent should do first:** Consume Orchestrator dispatch outputs and implement the action-taking layer without embedding coordination or planning behavior.
 
 ## Notes
 
-- Phase 007 was independently verified with lint, test, and build all passing before activating Phase 008.
+- Phase 008 (Planner Engine) was verified with lint, test, and build all passing (97/97 tests, including 71 Planner Engine tests across Milestones 1–6) before activating Phase 009.
+- Planner Milestones 3–6 (Goal Analysis & Decomposition, Plan Validation, Plan Optimization, Plan Estimation & Explanation) are complete. `PlannerEngine.cancelPlan()` remains an unimplemented `NotImplementedError` stub; no Phase 008 exit criterion required its implementation, so this did not block Phase 008 closure.
 
 ## Instructions for Whoever Reads This Next
 

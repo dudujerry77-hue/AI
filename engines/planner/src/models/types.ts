@@ -163,17 +163,68 @@ export interface ResourceEstimate {
 }
 
 /**
+ * Deterministic, structurally-derived complexity classification for a
+ * plan, produced by `PlanEstimator` (Milestone 6).
+ */
+export type ComplexityLevel = 'low' | 'medium' | 'high';
+
+/**
  * Full estimate bundle for a plan.
+ *
+ * `confidence`, `cost`, `time`, and `resources` are the original
+ * Milestone 2 estimate fields and retain their original meaning.
+ *
+ * The remaining fields are additive, optional Milestone 6 fields
+ * populated by `PlanEstimator` from purely structural counts on the
+ * `Plan` itself (step count, task count, dependency count). They are
+ * optional so that any existing `PlanEstimate` value constructed
+ * before Milestone 6 remains valid without modification.
  */
 export interface PlanEstimate {
   readonly confidence: number;
   readonly cost: CostEstimate;
   readonly time: TimeEstimate;
   readonly resources: ResourceEstimate;
+  readonly totalSteps?: number;
+  readonly totalTasks?: number;
+  readonly dependencyCount?: number;
+  readonly estimatedDurationHours?: number;
+  readonly estimatedEffortHours?: number;
+  readonly complexityLevel?: ComplexityLevel;
+}
+
+/**
+ * Deterministic summary of a plan's dependency edges, grouped by
+ * `DependencyType`, produced by `PlanExplainer` (Milestone 6).
+ */
+export interface DependencySummary {
+  readonly total: number;
+  readonly byType: Readonly<Record<DependencyType, number>>;
+}
+
+/**
+ * Deterministic validation-status summary embedded in a plan
+ * explanation, produced by `PlanExplainer` (Milestone 6) by delegating
+ * to `PlanValidator`.
+ */
+export interface PlanValidationStatus {
+  readonly valid: boolean;
+  readonly issueCount: number;
 }
 
 /**
  * Human-readable plan explanation model.
+ *
+ * `planId`, `summary`, `rationale`, `assumptions`, and `tradeoffs` are
+ * the original Milestone 2 explanation fields and retain their
+ * original meaning (free-form, human-authored or caller-provided
+ * text).
+ *
+ * The remaining fields are additive, optional Milestone 6 fields
+ * populated by `PlanExplainer` directly from information already
+ * present on the `Plan` (and its `PlanValidator` result). They are
+ * optional so that any existing `PlanExplanation` value constructed
+ * before Milestone 6 remains valid without modification.
  */
 export interface PlanExplanation {
   readonly planId: string;
@@ -181,6 +232,11 @@ export interface PlanExplanation {
   readonly rationale: string;
   readonly assumptions?: readonly string[];
   readonly tradeoffs?: readonly string[];
+  readonly stepCount?: number;
+  readonly taskCount?: number;
+  readonly dependencySummary?: DependencySummary;
+  readonly executionOrder?: readonly string[];
+  readonly validationStatus?: PlanValidationStatus;
 }
 
 /**

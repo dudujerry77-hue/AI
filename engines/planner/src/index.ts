@@ -12,6 +12,8 @@ import { GoalAnalyzer, type GoalAnalysisResult } from './analysis/goal-analyzer'
 import { GoalDecomposer } from './decomposition/goal-decomposer';
 import { PlanValidator, type PlanValidationResult } from './validation/plan-validator';
 import { PlanOptimizer } from './optimization/plan-optimizer';
+import { PlanEstimator } from './estimation/plan-estimator';
+import { PlanExplainer } from './explanation/plan-explainer';
 import { NotImplementedError, PlanningValidationError } from './errors/planner-errors';
 
 
@@ -37,13 +39,18 @@ export type {
   CostEstimate,
   TimeEstimate,
   ResourceEstimate,
+  ComplexityLevel,
   PlanExplanation,
+  DependencySummary,
+  PlanValidationStatus,
 } from './models/types';
 
 export { GoalAnalyzer, type GoalAnalysisResult } from './analysis/goal-analyzer';
 export { GoalDecomposer } from './decomposition/goal-decomposer';
 export { PlanValidator, type PlanValidationResult } from './validation/plan-validator';
 export { PlanOptimizer } from './optimization/plan-optimizer';
+export { PlanEstimator } from './estimation/plan-estimator';
+export { PlanExplainer } from './explanation/plan-explainer';
 export {
   NotImplementedError,
   PlanningValidationError,
@@ -86,25 +93,13 @@ export interface PlannerPlaceholderResult {
   readonly message: string;
 }
 
-export interface PlannerEstimatePlaceholderResult extends PlannerPlaceholderResult {
-  readonly estimate?: PlanEstimate;
-}
-
-export interface PlannerExplainPlaceholderResult extends PlannerPlaceholderResult {
-  readonly explanation?: PlanExplanation;
-}
-
-export interface PlannerEngineOptions extends Omit<BaseEngineOptions, 'id' | 'name' | 'version'> {
-  readonly id?: string;
-  readonly name?: string;
-  readonly version?: string;
-}
-
 export class PlannerEngine extends BaseEngine {
   private readonly goalAnalyzer: GoalAnalyzer;
   private readonly goalDecomposer: GoalDecomposer;
   private readonly planValidator: PlanValidator;
   private readonly planOptimizer: PlanOptimizer;
+  private readonly planEstimator: PlanEstimator;
+  private readonly planExplainer: PlanExplainer;
 
   constructor(options: PlannerEngineOptions = {}) {
     super({
@@ -114,7 +109,7 @@ export class PlannerEngine extends BaseEngine {
       contractVersion: options.contractVersion ?? ENGINE_API_CONTRACT_VERSION,
       description:
         options.description ??
-        'Goal-to-plan engine for Titan AI. Milestone 3 implements deterministic goal analysis and decomposition for createPlan; Milestone 4 implements structural plan validation for validatePlan; Milestone 5 implements deterministic structural optimization for optimizePlan. All other planner APIs remain NotImplementedError stubs.',
+        'Goal-to-plan engine for Titan AI. Milestone 3 implements deterministic goal analysis and decomposition for createPlan; Milestone 4 implements structural plan validation for validatePlan; Milestone 5 implements deterministic structural optimization for optimizePlan; Milestone 6 implements deterministic structural estimation for estimatePlan and deterministic structural explanation for explainPlan. cancelPlan remains a NotImplementedError stub.',
 
       capabilities: options.capabilities ?? [
         'planner.create-plan',
@@ -141,6 +136,8 @@ export class PlannerEngine extends BaseEngine {
     this.goalDecomposer = new GoalDecomposer();
     this.planValidator = new PlanValidator();
     this.planOptimizer = new PlanOptimizer();
+    this.planEstimator = new PlanEstimator();
+    this.planExplainer = new PlanExplainer();
   }
 
   /**
@@ -200,20 +197,65 @@ export class PlannerEngine extends BaseEngine {
     return this.planOptimizer.optimize(request.plan);
   }
 
-  async estimatePlan(_request: PlannerEstimatePlanRequest): Promise<PlannerEstimatePlaceholderResult> {
-    throw new NotImplementedError('PlannerEngine.estimatePlan is not implemented in Milestone 3');
+  /**
+   * Validate the request's `Plan` using `PlanValidator`. If the plan is
+   * invalid, throw `PlanningValidationError`. Otherwise, delegate to
+   * `PlanEstimator` and return the resulting `PlanEstimate`.
+   *
+   * Milestone 6 scope only: deterministic structural estimation only,
+   * derived from step/task/dependency counts already present on the
+   * plan. No AI, no historical data, no machine learning, and no
+   * external services.
+   */
+  async estimatePlan(request: PlannerEstimatePlanRequest): Promise<PlanEstimate> {
+    const validation: PlanValidationResult = this.planValidator.validate(request.plan);
+
+    if (!validation.valid) {
+      throw new PlanningValidationError(
+        `Plan ${validation.planId || '(unknown)'} failed validation.`,
+        validation.issues,
+      );
+    }
+
+    return this.planEstimator.estimate(request.plan);
   }
 
-  async explainPlan(_request: PlannerExplainPlanRequest): Promise<PlannerExplainPlaceholderResult> {
-    throw new NotImplementedError('PlannerEngine.explainPlan is not implemented in Milestone 3');
+  /**
+   * Validate the request's `Plan` using `PlanValidator`. If the plan is
+   * invalid, throw `PlanningValidationError`. Otherwise, delegate to
+   * `PlanExplainer` and return the resulting `PlanExplanation`.
+   *
+   * Milestone 6 scope only: deterministic structural explanation only,
+   * derived exclusively from information already present on the plan.
+   * No AI-generated explanations and no inference of missing
+   * information.
+   */
+  async explainPlan(request: PlannerExplainPlanRequest): Promise<PlanExplanation> {
+    const validation: PlanValidationResult = this.planValidator.validate(request.plan);
+
+    if (!validation.valid) {
+      throw new PlanningValidationError(
+        `Plan ${validation.planId || '(unknown)'} failed validation.`,
+        validation.issues,
+      );
+    }
+
+    return this.planExplainer.explain(request.plan);
   }
 
   async cancelPlan(_request: PlannerCancelPlanRequest): Promise<PlannerPlaceholderResult> {
-    throw new NotImplementedError('PlannerEngine.cancelPlan is not implemented in Milestone 3');
+    throw new NotImplementedError('PlannerEngine.cancelPlan is not implemented in Milestone 6');
   }
+}
+
+export interface PlannerEngineOptions extends Omit<BaseEngineOptions, 'id' | 'name' | 'version'> {
+  readonly id?: string;
+  readonly name?: string;
+  readonly version?: string;
 }
 
 export const plannerEngine = {
   name: 'planner' as const,
-  description: 'Planner Engine with deterministic createPlan (Milestone 3); remaining APIs are stubs.',
+  description:
+    'Planner Engine with deterministic createPlan, validatePlan, optimizePlan, estimatePlan, and explainPlan (Milestones 3-6); cancelPlan remains a stub.',
 };

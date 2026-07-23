@@ -10,6 +10,9 @@ Milestone 4 adds deterministic structural plan validation, and implements `valid
 
 Milestone 5 adds deterministic structural plan optimization, and implements `optimizePlan()`.
 
+Milestone 6 adds deterministic structural plan estimation and explanation, and implements
+`estimatePlan()` and `explainPlan()`.
+
 ## Scope (Milestone 1)
 
 - Implements the Titan runtime engine contract via lifecycle, health, metadata, version, and state methods.
@@ -77,10 +80,12 @@ offline, structural processing of a single `Goal`:
 
 `engines/planner/src/errors/planner-errors.ts` hosts:
 
-- `NotImplementedError` — thrown by planner APIs that remain unimplemented.
+- `NotImplementedError` — thrown by planner APIs that remain unimplemented (currently
+  `cancelPlan()` only).
 - `PlanningValidationError` — thrown by `createPlan()` when goal analysis fails (carries the
-  structured `GoalValidationIssue[]` list), thrown by `PlanValidator.validate()` only for
-  malformed input, and thrown by `PlannerEngine.optimizePlan()` when plan validation fails.
+  structured `GoalValidationIssue[]` list); thrown by `PlanValidator.validate()` only for
+  malformed input; and thrown by `PlannerEngine.optimizePlan()`, `PlannerEngine.estimatePlan()`,
+  and `PlannerEngine.explainPlan()` when plan validation fails.
 
 ## Plan Validation (Milestone 4)
 
@@ -160,12 +165,86 @@ Milestone 5 implements deterministic, offline **structural** optimization of a `
 - Does not modify `createPlan()`, `validatePlan()`, `GoalAnalyzer`, `GoalDecomposer`, or
   `PlanValidator`.
 
+## Plan Estimation & Explanation (Milestone 6)
+
+Milestone 6 implements deterministic, offline **structural** estimation and explanation of a
+`Plan`. Both components are additive: they read a `Plan` and its already-existing structure,
+and produce new, optional, backward-compatible fields on `PlanEstimate` and `PlanExplanation`
+without changing the meaning of any pre-existing field.
+
+### Additive domain model fields
+
+`engines/planner/src/models/types.ts` adds the following **optional** fields (all
+backward-compatible; no existing field was removed, renamed, or had its meaning changed):
+
+- `PlanEstimate` gains: `totalSteps?`, `totalTasks?`, `dependencyCount?`,
+  `estimatedDurationHours?`, `estimatedEffortHours?`, `complexityLevel?` (new
+  `ComplexityLevel = 'low' | 'medium' | 'high'` type).
+- `PlanExplanation` gains: `stepCount?`, `taskCount?`, `dependencySummary?` (new
+  `DependencySummary = { total, byType }` type), `executionOrder?`, `validationStatus?` (new
+  `PlanValidationStatus = { valid, issueCount }` type).
+
+### `PlanEstimator`
+
+- Accepts a `Plan` (assumed already checked by `PlanValidator`) and returns a new
+  `PlanEstimate`. The original `Plan` is never mutated.
+- Computes purely structural counts already present on the plan:
+  - `totalSteps` = `plan.steps.length`.
+  - `totalTasks` = `plan.tasks.length`.
+  - `dependencyCount` = `plan.dependencies.length`.
+- Derives `estimatedDurationHours` and `estimatedEffortHours` using fixed, deterministic
+  per-unit constants (hours per step, hours per task) — simple arithmetic only, no AI,
+  no historical data, no machine learning, no external services.
+- Derives `complexityLevel` (`'low' | 'medium' | 'high'`) from fixed, deterministic
+  thresholds applied to the plan's total structural size (steps + tasks + dependencies).
+- Also populates the original Milestone 2 `confidence`/`cost`/`time`/`resources` fields with
+  fixed, deterministic values consistent with the new structural fields.
+- Produces stable, identical output for identical input (pure function, no randomness).
+
+### `PlanExplainer`
+
+- Accepts a `Plan` (assumed already checked by `PlanValidator`) and returns a new
+  `PlanExplanation`. The original `Plan` is never mutated.
+- Uses only information already present on the plan:
+  - `stepCount` = `plan.steps.length`; `taskCount` = `plan.tasks.length`.
+  - `dependencySummary` = a deterministic count of `plan.dependencies`, grouped by
+    `DependencyType` (every type is always present in `byType`, with `0` for types that do
+    not appear on the plan).
+  - `executionOrder` = the plan's own `steps` array order (`stepId`s in existing declared
+    order) — no graph traversal, no cycle detection, no reordering.
+  - `validationStatus` = `{ valid, issueCount }` obtained by delegating to the existing
+    `PlanValidator` (no re-implementation of validation logic).
+- `summary` and `rationale` are plain, deterministic strings describing the plan's own
+  `planId`/`goalId`/step count/task count — no AI-generated text and no inference of
+  information that is not already present on the plan.
+- Produces stable, identical output for identical input (pure function, no randomness).
+
+### `PlannerEngine.estimatePlan()`
+
+- Validates the request's `Plan` using the existing `PlanValidator`.
+- If the plan is invalid, throws `PlanningValidationError` (with the structured issue list)
+  and does not attempt estimation.
+- Otherwise, delegates to `PlanEstimator` and returns the resulting `PlanEstimate`.
+
+### `PlannerEngine.explainPlan()`
+
+- Validates the request's `Plan` using the existing `PlanValidator`.
+- If the plan is invalid, throws `PlanningValidationError` (with the structured issue list)
+  and does not attempt explanation.
+- Otherwise, delegates to `PlanExplainer` and returns the resulting `PlanExplanation`.
+
+Neither method modifies `createPlan()`, `validatePlan()`, `optimizePlan()`, `GoalAnalyzer`,
+`GoalDecomposer`, `PlanValidator`, or `PlanOptimizer`.
+
 ## Current Behavior
 
 - `createPlan()` is implemented (Milestone 3): deterministic goal analysis + decomposition.
 - `validatePlan()` is implemented (Milestone 4): deterministic structural plan validation.
 - `optimizePlan()` is implemented (Milestone 5): validates via `PlanValidator`, then delegates
   to `PlanOptimizer` for deterministic structural optimization.
-- `estimatePlan()`, `explainPlan()`, and `cancelPlan()` remain stubs and throw
-  `NotImplementedError`. No functionality for these three APIs is implemented in this
-  milestone.
+- `estimatePlan()` is implemented (Milestone 6): validates via `PlanValidator`, then delegates
+  to `PlanEstimator` for deterministic structural estimation.
+- `explainPlan()` is implemented (Milestone 6): validates via `PlanValidator`, then delegates
+  to `PlanExplainer` for deterministic structural explanation.
+- `cancelPlan()` remains a stub and throws `NotImplementedError`. No functionality for this
+  API is implemented as of Milestone 6.

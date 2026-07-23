@@ -6,6 +6,8 @@ import {
   GoalDecomposer,
   PlanValidator,
   PlanOptimizer,
+  PlanEstimator,
+  PlanExplainer,
   NotImplementedError,
   PlanningValidationError,
   type Goal,
@@ -202,11 +204,9 @@ describe('Planner Engine Milestone 1', () => {
     expect(explainSignatureCheck).toBe(true);
   });
 
-  it('returns stub behavior by throwing NotImplementedError for the remaining planner APIs', async () => {
+  it('returns stub behavior by throwing NotImplementedError for cancelPlan', async () => {
     const engine = new PlannerEngine();
 
-    await expect(engine.estimatePlan({ plan: samplePlan, context: sampleContext })).rejects.toBeInstanceOf(NotImplementedError);
-    await expect(engine.explainPlan({ plan: samplePlan, context: sampleContext })).rejects.toBeInstanceOf(NotImplementedError);
     await expect(engine.cancelPlan({ planId: 'plan-1', reason: 'test' })).rejects.toBeInstanceOf(NotImplementedError);
   });
 });
@@ -379,14 +379,6 @@ describe('PlannerEngine.createPlan (Milestone 3)', () => {
     await expect(engine.createPlan({ goal: invalidGoal, context: sampleContext })).rejects.toBeInstanceOf(
       PlanningValidationError,
     );
-  });
-
-  it('still throws NotImplementedError for estimatePlan, explainPlan, and cancelPlan', async () => {
-    const engine = new PlannerEngine();
-
-    await expect(engine.estimatePlan({ plan: samplePlan, context: sampleContext })).rejects.toBeInstanceOf(NotImplementedError);
-    await expect(engine.explainPlan({ plan: samplePlan, context: sampleContext })).rejects.toBeInstanceOf(NotImplementedError);
-    await expect(engine.cancelPlan({ planId: 'plan-1', reason: 'test' })).rejects.toBeInstanceOf(NotImplementedError);
   });
 });
 
@@ -584,14 +576,6 @@ describe('PlannerEngine.validatePlan (Milestone 4)', () => {
     expect(plan.goalId).toBe(sampleGoal.goalId);
     expect(plan.steps).toHaveLength(5);
     expect(plan.tasks).toHaveLength(5);
-  });
-
-  it('still throws NotImplementedError for estimatePlan, explainPlan, and cancelPlan', async () => {
-    const engine = new PlannerEngine();
-
-    await expect(engine.estimatePlan({ plan: samplePlan, context: sampleContext })).rejects.toBeInstanceOf(NotImplementedError);
-    await expect(engine.explainPlan({ plan: samplePlan, context: sampleContext })).rejects.toBeInstanceOf(NotImplementedError);
-    await expect(engine.cancelPlan({ planId: 'plan-1', reason: 'test' })).rejects.toBeInstanceOf(NotImplementedError);
   });
 });
 
@@ -837,12 +821,216 @@ describe('PlannerEngine.optimizePlan (Milestone 5)', () => {
     expect(result.valid).toBe(true);
     expect(result.issues).toEqual([]);
   });
+});
 
-  it('still throws NotImplementedError for estimatePlan, explainPlan, and cancelPlan', async () => {
+describe('PlanEstimator (Milestone 6)', () => {
+  it('returns a valid PlanEstimate with structural counts for a valid plan', () => {
+    const estimator = new PlanEstimator();
+    const estimate = estimator.estimate(samplePlan);
+
+    expect(estimate.totalSteps).toBe(samplePlan.steps.length);
+    expect(estimate.totalTasks).toBe(samplePlan.tasks.length);
+    expect(estimate.dependencyCount).toBe(samplePlan.dependencies.length);
+    expect(typeof estimate.estimatedDurationHours).toBe('number');
+    expect(typeof estimate.estimatedEffortHours).toBe('number');
+    expect(['low', 'medium', 'high']).toContain(estimate.complexityLevel);
+  });
+
+  it('is deterministic: estimating the same plan repeatedly yields the same result', () => {
+    const estimator = new PlanEstimator();
+    const first = estimator.estimate(samplePlan);
+    const second = estimator.estimate(samplePlan);
+
+    expect(second).toEqual(first);
+  });
+
+  it('never mutates the original Plan', () => {
+    const estimator = new PlanEstimator();
+    const originalSnapshot = JSON.parse(JSON.stringify(samplePlan));
+
+    estimator.estimate(samplePlan);
+
+    expect(samplePlan).toEqual(originalSnapshot);
+  });
+
+  it('reports higher complexity for a larger plan', () => {
+    const estimator = new PlanEstimator();
+
+    const smallEstimate = estimator.estimate(samplePlan);
+
+    const largePlan: Plan = {
+      ...samplePlan,
+      steps: Array.from({ length: 10 }, (_, index) => ({
+        stepId: `step-${index}`,
+        title: `Step ${index}`,
+        description: `Step ${index} description`,
+        type: 'implementation' as const,
+        status: 'pending' as const,
+        taskIds: [`task-${index}`],
+      })),
+      tasks: Array.from({ length: 10 }, (_, index) => ({
+        taskId: `task-${index}`,
+        stepId: `step-${index}`,
+        title: `Task ${index}`,
+        description: `Task ${index} description`,
+        status: 'pending' as const,
+      })),
+      dependencies: Array.from({ length: 9 }, (_, index) => ({
+        dependencyId: `dep-${index}`,
+        type: 'sequential' as const,
+        sourceId: `step-${index}`,
+        targetId: `step-${index + 1}`,
+      })),
+    };
+
+    const largeEstimate = estimator.estimate(largePlan);
+
+    expect(largeEstimate.totalSteps).toBeGreaterThan(smallEstimate.totalSteps ?? 0);
+    expect(largeEstimate.complexityLevel).not.toBe('low');
+  });
+});
+
+describe('PlanExplainer (Milestone 6)', () => {
+  it('returns a valid PlanExplanation using only existing plan information', () => {
+    const explainer = new PlanExplainer();
+    const explanation = explainer.explain(samplePlan);
+
+    expect(explanation.planId).toBe(samplePlan.planId);
+    expect(explanation.stepCount).toBe(samplePlan.steps.length);
+    expect(explanation.taskCount).toBe(samplePlan.tasks.length);
+    expect(explanation.executionOrder).toEqual(samplePlan.steps.map((step) => step.stepId));
+    expect(explanation.dependencySummary?.total).toBe(samplePlan.dependencies.length);
+    expect(explanation.validationStatus?.valid).toBe(true);
+    expect(explanation.validationStatus?.issueCount).toBe(0);
+  });
+
+  it('is deterministic: explaining the same plan repeatedly yields the same result', () => {
+    const explainer = new PlanExplainer();
+    const first = explainer.explain(samplePlan);
+    const second = explainer.explain(samplePlan);
+
+    expect(second).toEqual(first);
+  });
+
+  it('never mutates the original Plan', () => {
+    const explainer = new PlanExplainer();
+    const originalSnapshot = JSON.parse(JSON.stringify(samplePlan));
+
+    explainer.explain(samplePlan);
+
+    expect(samplePlan).toEqual(originalSnapshot);
+  });
+
+  it('reports a dependencySummary broken down by dependency type using only existing dependencies', () => {
+    const explainer = new PlanExplainer();
+    const explanation = explainer.explain(unorderedPlan);
+
+    expect(explanation.dependencySummary?.total).toBe(unorderedPlan.dependencies.length);
+    expect(explanation.dependencySummary?.byType.sequential).toBe(1);
+    expect(explanation.dependencySummary?.byType.requires).toBe(1);
+    expect(explanation.dependencySummary?.byType.blocks).toBe(0);
+  });
+
+  it('reports validationStatus reflecting an invalid plan without altering the input', () => {
+    const explainer = new PlanExplainer();
+    const invalidPlan = { ...samplePlan, planId: '' } as Plan;
+
+    const explanation = explainer.explain(invalidPlan);
+
+    expect(explanation.validationStatus?.valid).toBe(false);
+    expect(explanation.validationStatus?.issueCount).toBeGreaterThan(0);
+  });
+});
+
+describe('PlannerEngine.estimatePlan (Milestone 6)', () => {
+  it('validates the plan, then delegates to PlanEstimator and returns the PlanEstimate', async () => {
     const engine = new PlannerEngine();
 
-    await expect(engine.estimatePlan({ plan: samplePlan, context: sampleContext })).rejects.toBeInstanceOf(NotImplementedError);
-    await expect(engine.explainPlan({ plan: samplePlan, context: sampleContext })).rejects.toBeInstanceOf(NotImplementedError);
+    const estimate = await engine.estimatePlan({ plan: samplePlan, context: sampleContext });
+
+    expect(estimate.totalSteps).toBe(samplePlan.steps.length);
+    expect(estimate.totalTasks).toBe(samplePlan.tasks.length);
+    expect(estimate.dependencyCount).toBe(samplePlan.dependencies.length);
+  });
+
+  it('throws PlanningValidationError and does not estimate an invalid plan', async () => {
+    const engine = new PlannerEngine();
+    const invalidPlan = { ...samplePlan, planId: '' } as Plan;
+
+    await expect(engine.estimatePlan({ plan: invalidPlan })).rejects.toBeInstanceOf(PlanningValidationError);
+  });
+
+  it('is deterministic: estimating the same plan repeatedly yields the same result', async () => {
+    const engine = new PlannerEngine();
+
+    const first = await engine.estimatePlan({ plan: samplePlan });
+    const second = await engine.estimatePlan({ plan: samplePlan });
+
+    expect(second).toEqual(first);
+  });
+});
+
+describe('PlannerEngine.explainPlan (Milestone 6)', () => {
+  it('validates the plan, then delegates to PlanExplainer and returns the PlanExplanation', async () => {
+    const engine = new PlannerEngine();
+
+    const explanation = await engine.explainPlan({ plan: samplePlan, context: sampleContext });
+
+    expect(explanation.planId).toBe(samplePlan.planId);
+    expect(explanation.stepCount).toBe(samplePlan.steps.length);
+    expect(explanation.taskCount).toBe(samplePlan.tasks.length);
+    expect(explanation.validationStatus?.valid).toBe(true);
+  });
+
+  it('throws PlanningValidationError and does not explain an invalid plan', async () => {
+    const engine = new PlannerEngine();
+    const invalidPlan = { ...samplePlan, planId: '' } as Plan;
+
+    await expect(engine.explainPlan({ plan: invalidPlan })).rejects.toBeInstanceOf(PlanningValidationError);
+  });
+
+  it('is deterministic: explaining the same plan repeatedly yields the same result', async () => {
+    const engine = new PlannerEngine();
+
+    const first = await engine.explainPlan({ plan: samplePlan });
+    const second = await engine.explainPlan({ plan: samplePlan });
+
+    expect(second).toEqual(first);
+  });
+});
+
+describe('PlannerEngine Milestone 6 regression checks', () => {
+  it('still allows createPlan to work unchanged', async () => {
+    const engine = new PlannerEngine();
+
+    const plan = await engine.createPlan({ goal: sampleGoal, context: sampleContext });
+
+    expect(plan.goalId).toBe(sampleGoal.goalId);
+    expect(plan.steps).toHaveLength(5);
+    expect(plan.tasks).toHaveLength(5);
+  });
+
+  it('still allows validatePlan to work unchanged', async () => {
+    const engine = new PlannerEngine();
+
+    const result = await engine.validatePlan({ plan: samplePlan, context: sampleContext });
+
+    expect(result.valid).toBe(true);
+    expect(result.issues).toEqual([]);
+  });
+
+  it('still allows optimizePlan to work unchanged', async () => {
+    const engine = new PlannerEngine();
+
+    const optimized = await engine.optimizePlan({ plan: unorderedPlan });
+
+    expect(optimized.steps.map((step) => step.stepId)).toEqual(['step-a', 'step-b']);
+    expect(optimized.tasks.map((task) => task.taskId)).toEqual(['task-a1', 'task-b1', 'task-b2']);
+  });
+
+  it('still throws NotImplementedError for cancelPlan', async () => {
+    const engine = new PlannerEngine();
+
     await expect(engine.cancelPlan({ planId: 'plan-1', reason: 'test' })).rejects.toBeInstanceOf(NotImplementedError);
   });
 });
