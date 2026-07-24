@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   OrchestratorEngine,
-  NotImplementedError,
   OrchestratorValidationError,
   WorkflowBuilder,
   WorkflowValidator,
   WorkflowStatusTracker,
+  WorkflowLifecycleManager,
   type Plan,
   type Workflow,
   type WorkflowContext,
@@ -107,7 +107,7 @@ function buildPlanFixture(): Plan {
 
 /**
  * Builds a deterministic, structurally valid `Workflow` fixture for
- * Milestone 4-5 tests, derived from `buildPlanFixture()` via
+ * Milestone 4-6 tests, derived from `buildPlanFixture()` via
  * `WorkflowBuilder` (Milestone 3), so it always reflects a real,
  * structurally correct translation output.
  */
@@ -136,6 +136,16 @@ function buildStatusRichWorkflowFixture(): Workflow {
       { ...base.tasks[2], status: 'pending' },
     ],
   };
+}
+
+/**
+ * Builds a `Workflow` fixture with a specific top-level `status`, for
+ * Milestone 6 lifecycle transition tests. Derived from
+ * `buildWorkflowFixture()` so all IDs, steps, tasks, and dependencies
+ * remain valid and unrelated to the transition being tested.
+ */
+function buildWorkflowWithStatus(status: WorkflowStatus): Workflow {
+  return { ...buildWorkflowFixture(), status };
 }
 
 describe('Orchestrator Engine Milestone 1', () => {
@@ -206,24 +216,6 @@ describe('Orchestrator Engine Milestone 1', () => {
     expect(typeof engine.resumeWorkflow).toBe('function');
     expect(typeof engine.cancelWorkflow).toBe('function');
     expect(typeof engine.getWorkflowStatus).toBe('function');
-  });
-
-  it('throws NotImplementedError for pauseWorkflow', async () => {
-    const engine = new OrchestratorEngine();
-
-    await expect(engine.pauseWorkflow({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(NotImplementedError);
-  });
-
-  it('throws NotImplementedError for resumeWorkflow', async () => {
-    const engine = new OrchestratorEngine();
-
-    await expect(engine.resumeWorkflow({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(NotImplementedError);
-  });
-
-  it('throws NotImplementedError for cancelWorkflow', async () => {
-    const engine = new OrchestratorEngine();
-
-    await expect(engine.cancelWorkflow({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(NotImplementedError);
   });
 });
 
@@ -1015,14 +1007,6 @@ describe('Orchestrator Engine Milestone 5 — getWorkflowStatus()', () => {
     expect(workflow).toEqual(snapshot);
   });
 
-  it('still throws NotImplementedError for pauseWorkflow(), resumeWorkflow(), and cancelWorkflow()', async () => {
-    const engine = new OrchestratorEngine();
-
-    await expect(engine.pauseWorkflow({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(NotImplementedError);
-    await expect(engine.resumeWorkflow({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(NotImplementedError);
-    await expect(engine.cancelWorkflow({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(NotImplementedError);
-  });
-
   it('leaves orchestrate() and executeWorkflow() unchanged in Milestone 5', async () => {
     const engine = new OrchestratorEngine();
     const plan = buildPlanFixture();
@@ -1035,6 +1019,483 @@ describe('Orchestrator Engine Milestone 5 — getWorkflowStatus()', () => {
   });
 
   it('leaves the runtime lifecycle contract unchanged in Milestone 5', async () => {
+    const engine = new OrchestratorEngine();
+
+    expect(engine.getState()).toBe('created');
+    await engine.initialize();
+    expect(engine.getState()).toBe('initialized');
+    await engine.start();
+    expect(engine.getState()).toBe('running');
+    await engine.stop();
+    expect(engine.getState()).toBe('stopped');
+  });
+});
+
+describe('Orchestrator Engine Milestone 6 — WorkflowLifecycleManager', () => {
+  describe('pause()', () => {
+    it('transitions a running workflow to paused', () => {
+      const manager = new WorkflowLifecycleManager();
+      const workflow = buildWorkflowWithStatus('running');
+
+      const result = manager.pause(workflow);
+
+      expect(result.status).toBe('paused');
+    });
+
+    it('increments revision by exactly 1 when pausing a running workflow', () => {
+      const manager = new WorkflowLifecycleManager();
+      const workflow = buildWorkflowWithStatus('running');
+      const originalRevision = workflow.metadata.revision;
+
+      const result = manager.pause(workflow);
+
+      expect(result.metadata.revision).toBe(originalRevision + 1);
+    });
+
+    it.each<WorkflowStatus>(['pending', 'paused', 'completed', 'failed', 'cancelled'])(
+      'leaves status and revision unchanged when pausing a %s workflow',
+      (status) => {
+        const manager = new WorkflowLifecycleManager();
+        const workflow = buildWorkflowWithStatus(status);
+
+        const result = manager.pause(workflow);
+
+        expect(result.status).toBe(status);
+        expect(result.metadata.revision).toBe(workflow.metadata.revision);
+      },
+    );
+
+    it('never mutates the input workflow', () => {
+      const manager = new WorkflowLifecycleManager();
+      const workflow = buildWorkflowWithStatus('running');
+      const snapshot = JSON.parse(JSON.stringify(workflow));
+
+      manager.pause(workflow);
+
+      expect(workflow).toEqual(snapshot);
+    });
+
+    it('preserves createdAt, createdBy, IDs, steps, tasks, and dependencies', () => {
+      const manager = new WorkflowLifecycleManager();
+      const workflow = buildWorkflowWithStatus('running');
+
+      const result = manager.pause(workflow);
+
+      expect(result.workflowId).toBe(workflow.workflowId);
+      expect(result.planId).toBe(workflow.planId);
+      expect(result.metadata.createdAt).toBe(workflow.metadata.createdAt);
+      expect(result.metadata.createdBy).toBe(workflow.metadata.createdBy);
+      expect(result.steps).toEqual(workflow.steps);
+      expect(result.tasks).toEqual(workflow.tasks);
+      expect(result.dependencies).toEqual(workflow.dependencies);
+    });
+
+    it('returns a new object, not the same reference', () => {
+      const manager = new WorkflowLifecycleManager();
+      const workflow = buildWorkflowWithStatus('running');
+
+      const result = manager.pause(workflow);
+
+      expect(result).not.toBe(workflow);
+    });
+
+    it('produces deterministic output for identical input', () => {
+      const manager = new WorkflowLifecycleManager();
+
+      const first = manager.pause(buildWorkflowWithStatus('running'));
+      const second = manager.pause(buildWorkflowWithStatus('running'));
+
+      expect(first).toEqual(second);
+    });
+
+    it('rejects malformed input (null, undefined, non-object) with OrchestratorValidationError', () => {
+      const manager = new WorkflowLifecycleManager();
+
+      expect(() => manager.pause(null as unknown as Workflow)).toThrow(OrchestratorValidationError);
+      expect(() => manager.pause(undefined as unknown as Workflow)).toThrow(OrchestratorValidationError);
+      expect(() => manager.pause('not-an-object' as unknown as Workflow)).toThrow(OrchestratorValidationError);
+    });
+  });
+
+  describe('resume()', () => {
+    it('transitions a paused workflow to running', () => {
+      const manager = new WorkflowLifecycleManager();
+      const workflow = buildWorkflowWithStatus('paused');
+
+      const result = manager.resume(workflow);
+
+      expect(result.status).toBe('running');
+    });
+
+    it('increments revision by exactly 1 when resuming a paused workflow', () => {
+      const manager = new WorkflowLifecycleManager();
+      const workflow = buildWorkflowWithStatus('paused');
+      const originalRevision = workflow.metadata.revision;
+
+      const result = manager.resume(workflow);
+
+      expect(result.metadata.revision).toBe(originalRevision + 1);
+    });
+
+    it.each<WorkflowStatus>(['pending', 'running', 'completed', 'failed', 'cancelled'])(
+      'leaves status and revision unchanged when resuming a %s workflow',
+      (status) => {
+        const manager = new WorkflowLifecycleManager();
+        const workflow = buildWorkflowWithStatus(status);
+
+        const result = manager.resume(workflow);
+
+        expect(result.status).toBe(status);
+        expect(result.metadata.revision).toBe(workflow.metadata.revision);
+      },
+    );
+
+    it('never mutates the input workflow', () => {
+      const manager = new WorkflowLifecycleManager();
+      const workflow = buildWorkflowWithStatus('paused');
+      const snapshot = JSON.parse(JSON.stringify(workflow));
+
+      manager.resume(workflow);
+
+      expect(workflow).toEqual(snapshot);
+    });
+
+    it('preserves createdAt, createdBy, IDs, steps, tasks, and dependencies', () => {
+      const manager = new WorkflowLifecycleManager();
+      const workflow = buildWorkflowWithStatus('paused');
+
+      const result = manager.resume(workflow);
+
+      expect(result.workflowId).toBe(workflow.workflowId);
+      expect(result.planId).toBe(workflow.planId);
+      expect(result.metadata.createdAt).toBe(workflow.metadata.createdAt);
+      expect(result.metadata.createdBy).toBe(workflow.metadata.createdBy);
+      expect(result.steps).toEqual(workflow.steps);
+      expect(result.tasks).toEqual(workflow.tasks);
+      expect(result.dependencies).toEqual(workflow.dependencies);
+    });
+
+    it('returns a new object, not the same reference', () => {
+      const manager = new WorkflowLifecycleManager();
+      const workflow = buildWorkflowWithStatus('paused');
+
+      const result = manager.resume(workflow);
+
+      expect(result).not.toBe(workflow);
+    });
+
+    it('produces deterministic output for identical input', () => {
+      const manager = new WorkflowLifecycleManager();
+
+      const first = manager.resume(buildWorkflowWithStatus('paused'));
+      const second = manager.resume(buildWorkflowWithStatus('paused'));
+
+      expect(first).toEqual(second);
+    });
+
+    it('rejects malformed input (null, undefined, non-object) with OrchestratorValidationError', () => {
+      const manager = new WorkflowLifecycleManager();
+
+      expect(() => manager.resume(null as unknown as Workflow)).toThrow(OrchestratorValidationError);
+      expect(() => manager.resume(undefined as unknown as Workflow)).toThrow(OrchestratorValidationError);
+      expect(() => manager.resume('not-an-object' as unknown as Workflow)).toThrow(OrchestratorValidationError);
+    });
+  });
+
+  describe('cancel()', () => {
+    it.each<WorkflowStatus>(['pending', 'running', 'paused', 'failed'])(
+      'transitions an active (%s) workflow to cancelled',
+      (status) => {
+        const manager = new WorkflowLifecycleManager();
+        const workflow = buildWorkflowWithStatus(status);
+
+        const result = manager.cancel(workflow);
+
+        expect(result.status).toBe('cancelled');
+      },
+    );
+
+    it.each<WorkflowStatus>(['pending', 'running', 'paused', 'failed'])(
+      'increments revision by exactly 1 when cancelling an active (%s) workflow',
+      (status) => {
+        const manager = new WorkflowLifecycleManager();
+        const workflow = buildWorkflowWithStatus(status);
+        const originalRevision = workflow.metadata.revision;
+
+        const result = manager.cancel(workflow);
+
+        expect(result.metadata.revision).toBe(originalRevision + 1);
+      },
+    );
+
+    it('leaves status and revision unchanged when cancelling an already completed workflow', () => {
+      const manager = new WorkflowLifecycleManager();
+      const workflow = buildWorkflowWithStatus('completed');
+
+      const result = manager.cancel(workflow);
+
+      expect(result.status).toBe('completed');
+      expect(result.metadata.revision).toBe(workflow.metadata.revision);
+    });
+
+    it('leaves status and revision unchanged when cancelling an already cancelled workflow', () => {
+      const manager = new WorkflowLifecycleManager();
+      const workflow = buildWorkflowWithStatus('cancelled');
+
+      const result = manager.cancel(workflow);
+
+      expect(result.status).toBe('cancelled');
+      expect(result.metadata.revision).toBe(workflow.metadata.revision);
+    });
+
+    it('never mutates the input workflow', () => {
+      const manager = new WorkflowLifecycleManager();
+      const workflow = buildWorkflowWithStatus('running');
+      const snapshot = JSON.parse(JSON.stringify(workflow));
+
+      manager.cancel(workflow);
+
+      expect(workflow).toEqual(snapshot);
+    });
+
+    it('preserves createdAt, createdBy, IDs, steps, tasks, and dependencies', () => {
+      const manager = new WorkflowLifecycleManager();
+      const workflow = buildWorkflowWithStatus('running');
+
+      const result = manager.cancel(workflow);
+
+      expect(result.workflowId).toBe(workflow.workflowId);
+      expect(result.planId).toBe(workflow.planId);
+      expect(result.metadata.createdAt).toBe(workflow.metadata.createdAt);
+      expect(result.metadata.createdBy).toBe(workflow.metadata.createdBy);
+      expect(result.steps).toEqual(workflow.steps);
+      expect(result.tasks).toEqual(workflow.tasks);
+      expect(result.dependencies).toEqual(workflow.dependencies);
+    });
+
+    it('returns a new object, not the same reference', () => {
+      const manager = new WorkflowLifecycleManager();
+      const workflow = buildWorkflowWithStatus('running');
+
+      const result = manager.cancel(workflow);
+
+      expect(result).not.toBe(workflow);
+    });
+
+    it('produces deterministic output for identical input', () => {
+      const manager = new WorkflowLifecycleManager();
+
+      const first = manager.cancel(buildWorkflowWithStatus('running'));
+      const second = manager.cancel(buildWorkflowWithStatus('running'));
+
+      expect(first).toEqual(second);
+    });
+
+    it('rejects malformed input (null, undefined, non-object) with OrchestratorValidationError', () => {
+      const manager = new WorkflowLifecycleManager();
+
+      expect(() => manager.cancel(null as unknown as Workflow)).toThrow(OrchestratorValidationError);
+      expect(() => manager.cancel(undefined as unknown as Workflow)).toThrow(OrchestratorValidationError);
+      expect(() => manager.cancel('not-an-object' as unknown as Workflow)).toThrow(OrchestratorValidationError);
+    });
+  });
+});
+
+describe('Orchestrator Engine Milestone 6 — pauseWorkflow()', () => {
+  it('returns a new Workflow with status paused for a running workflow', async () => {
+    const engine = new OrchestratorEngine();
+    const workflow = buildWorkflowWithStatus('running');
+
+    const result = await engine.pauseWorkflow({ workflow });
+
+    expect(result.status).toBe('paused');
+    expect(result.metadata.revision).toBe(workflow.metadata.revision + 1);
+  });
+
+  it('leaves status unchanged for a non-running workflow', async () => {
+    const engine = new OrchestratorEngine();
+    const workflow = buildWorkflowWithStatus('pending');
+
+    const result = await engine.pauseWorkflow({ workflow });
+
+    expect(result.status).toBe('pending');
+    expect(result.metadata.revision).toBe(workflow.metadata.revision);
+  });
+
+  it('rejects a malformed request (missing workflow) with OrchestratorValidationError', async () => {
+    const engine = new OrchestratorEngine();
+
+    await expect(
+      engine.pauseWorkflow({ workflow: undefined as unknown as Workflow }),
+    ).rejects.toBeInstanceOf(OrchestratorValidationError);
+  });
+
+  it('rejects a null request with OrchestratorValidationError', async () => {
+    const engine = new OrchestratorEngine();
+
+    await expect(
+      engine.pauseWorkflow(null as unknown as Parameters<typeof engine.pauseWorkflow>[0]),
+    ).rejects.toBeInstanceOf(OrchestratorValidationError);
+  });
+
+  it('produces deterministic output for identical input', async () => {
+    const engine = new OrchestratorEngine();
+
+    const first = await engine.pauseWorkflow({ workflow: buildWorkflowWithStatus('running') });
+    const second = await engine.pauseWorkflow({ workflow: buildWorkflowWithStatus('running') });
+
+    expect(first).toEqual(second);
+  });
+
+  it('never mutates the supplied Workflow', async () => {
+    const engine = new OrchestratorEngine();
+    const workflow = buildWorkflowWithStatus('running');
+    const snapshot = JSON.parse(JSON.stringify(workflow));
+
+    await engine.pauseWorkflow({ workflow });
+
+    expect(workflow).toEqual(snapshot);
+  });
+});
+
+describe('Orchestrator Engine Milestone 6 — resumeWorkflow()', () => {
+  it('returns a new Workflow with status running for a paused workflow', async () => {
+    const engine = new OrchestratorEngine();
+    const workflow = buildWorkflowWithStatus('paused');
+
+    const result = await engine.resumeWorkflow({ workflow });
+
+    expect(result.status).toBe('running');
+    expect(result.metadata.revision).toBe(workflow.metadata.revision + 1);
+  });
+
+  it('leaves status unchanged for a non-paused workflow', async () => {
+    const engine = new OrchestratorEngine();
+    const workflow = buildWorkflowWithStatus('pending');
+
+    const result = await engine.resumeWorkflow({ workflow });
+
+    expect(result.status).toBe('pending');
+    expect(result.metadata.revision).toBe(workflow.metadata.revision);
+  });
+
+  it('rejects a malformed request (missing workflow) with OrchestratorValidationError', async () => {
+    const engine = new OrchestratorEngine();
+
+    await expect(
+      engine.resumeWorkflow({ workflow: undefined as unknown as Workflow }),
+    ).rejects.toBeInstanceOf(OrchestratorValidationError);
+  });
+
+  it('rejects a null request with OrchestratorValidationError', async () => {
+    const engine = new OrchestratorEngine();
+
+    await expect(
+      engine.resumeWorkflow(null as unknown as Parameters<typeof engine.resumeWorkflow>[0]),
+    ).rejects.toBeInstanceOf(OrchestratorValidationError);
+  });
+
+  it('produces deterministic output for identical input', async () => {
+    const engine = new OrchestratorEngine();
+
+    const first = await engine.resumeWorkflow({ workflow: buildWorkflowWithStatus('paused') });
+    const second = await engine.resumeWorkflow({ workflow: buildWorkflowWithStatus('paused') });
+
+    expect(first).toEqual(second);
+  });
+
+  it('never mutates the supplied Workflow', async () => {
+    const engine = new OrchestratorEngine();
+    const workflow = buildWorkflowWithStatus('paused');
+    const snapshot = JSON.parse(JSON.stringify(workflow));
+
+    await engine.resumeWorkflow({ workflow });
+
+    expect(workflow).toEqual(snapshot);
+  });
+});
+
+describe('Orchestrator Engine Milestone 6 — cancelWorkflow()', () => {
+  it('returns a new Workflow with status cancelled for an active workflow', async () => {
+    const engine = new OrchestratorEngine();
+    const workflow = buildWorkflowWithStatus('running');
+
+    const result = await engine.cancelWorkflow({ workflow });
+
+    expect(result.status).toBe('cancelled');
+    expect(result.metadata.revision).toBe(workflow.metadata.revision + 1);
+  });
+
+  it('leaves status unchanged for an already completed workflow', async () => {
+    const engine = new OrchestratorEngine();
+    const workflow = buildWorkflowWithStatus('completed');
+
+    const result = await engine.cancelWorkflow({ workflow });
+
+    expect(result.status).toBe('completed');
+    expect(result.metadata.revision).toBe(workflow.metadata.revision);
+  });
+
+  it('leaves status unchanged for an already cancelled workflow', async () => {
+    const engine = new OrchestratorEngine();
+    const workflow = buildWorkflowWithStatus('cancelled');
+
+    const result = await engine.cancelWorkflow({ workflow });
+
+    expect(result.status).toBe('cancelled');
+    expect(result.metadata.revision).toBe(workflow.metadata.revision);
+  });
+
+  it('rejects a malformed request (missing workflow) with OrchestratorValidationError', async () => {
+    const engine = new OrchestratorEngine();
+
+    await expect(
+      engine.cancelWorkflow({ workflow: undefined as unknown as Workflow }),
+    ).rejects.toBeInstanceOf(OrchestratorValidationError);
+  });
+
+  it('rejects a null request with OrchestratorValidationError', async () => {
+    const engine = new OrchestratorEngine();
+
+    await expect(
+      engine.cancelWorkflow(null as unknown as Parameters<typeof engine.cancelWorkflow>[0]),
+    ).rejects.toBeInstanceOf(OrchestratorValidationError);
+  });
+
+  it('produces deterministic output for identical input', async () => {
+    const engine = new OrchestratorEngine();
+
+    const first = await engine.cancelWorkflow({ workflow: buildWorkflowWithStatus('running') });
+    const second = await engine.cancelWorkflow({ workflow: buildWorkflowWithStatus('running') });
+
+    expect(first).toEqual(second);
+  });
+
+  it('never mutates the supplied Workflow', async () => {
+    const engine = new OrchestratorEngine();
+    const workflow = buildWorkflowWithStatus('running');
+    const snapshot = JSON.parse(JSON.stringify(workflow));
+
+    await engine.cancelWorkflow({ workflow });
+
+    expect(workflow).toEqual(snapshot);
+  });
+
+  it('leaves orchestrate(), executeWorkflow(), and getWorkflowStatus() unchanged in Milestone 6', async () => {
+    const engine = new OrchestratorEngine();
+    const plan = buildPlanFixture();
+
+    const workflow = await engine.orchestrate({ plan });
+    expect(workflow.workflowId).toBe('workflow-plan-1');
+
+    const validationResult = await engine.executeWorkflow({ workflow });
+    expect(validationResult.valid).toBe(true);
+
+    const summary = await engine.getWorkflowStatus({ workflow });
+    expect(summary.workflowId).toBe(workflow.workflowId);
+  });
+
+  it('leaves the runtime lifecycle contract unchanged in Milestone 6', async () => {
     const engine = new OrchestratorEngine();
 
     expect(engine.getState()).toBe('created');
