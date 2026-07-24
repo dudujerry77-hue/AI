@@ -4,11 +4,13 @@ import type { Plan } from '../../planner/src/models/types';
 import { NotImplementedError, OrchestratorValidationError } from './errors/orchestrator-errors';
 import { WorkflowBuilder } from './builders/workflow-builder';
 import { WorkflowValidator, type WorkflowValidationResult } from './validation/workflow-validator';
-import type { Workflow, WorkflowContext } from './models/types';
+import { WorkflowStatusTracker } from './status/workflow-status-tracker';
+import type { Workflow, WorkflowContext, WorkflowSummary } from './models/types';
 
 export { NotImplementedError, OrchestratorValidationError } from './errors/orchestrator-errors';
 export { WorkflowBuilder } from './builders/workflow-builder';
 export { WorkflowValidator, type WorkflowValidationResult } from './validation/workflow-validator';
+export { WorkflowStatusTracker } from './status/workflow-status-tracker';
 
 export type { Plan } from '../../planner/src/models/types';
 
@@ -44,6 +46,10 @@ export type {
  * `executeWorkflow` does not execute anything in Milestone 4 — it
  * validates the supplied `Workflow` and returns the result.
  *
+ * `OrchestratorGetWorkflowStatusRequest.workflow` was introduced in
+ * Milestone 5 so that `getWorkflowStatus` can perform deterministic
+ * structural status reporting via `WorkflowStatusTracker`.
+ *
  * All other request/response shapes are unchanged and remain
  * unimplemented stubs.
  */
@@ -72,7 +78,7 @@ export interface OrchestratorCancelWorkflowRequest {
 }
 
 export interface OrchestratorGetWorkflowStatusRequest {
-  readonly workflowId: string;
+  readonly workflow: Workflow;
 }
 
 export interface OrchestratorPlaceholderResult {
@@ -87,7 +93,7 @@ export interface OrchestratorEngineOptions extends Omit<BaseEngineOptions, 'id' 
 }
 
 /**
- * Orchestrator Engine — Milestone 4 (Workflow Validation).
+ * Orchestrator Engine — Milestone 5 (Workflow Status Reporting).
  *
  * Implements the shared Titan runtime engine contract (via
  * `BaseEngine`, unchanged since Milestone 1) and the Orchestrator
@@ -97,19 +103,26 @@ export interface OrchestratorEngineOptions extends Omit<BaseEngineOptions, 'id' 
  * delegates entirely to `WorkflowBuilder` to deterministically
  * translate the request's Planner `Plan` into a `Workflow`.
  *
- * `executeWorkflow` (Milestone 4, new): validates the request, then
- * delegates entirely to `WorkflowValidator` to deterministically
+ * `executeWorkflow` (Milestone 4, unchanged): validates the request,
+ * then delegates entirely to `WorkflowValidator` to deterministically
  * validate the request's `Workflow`, and returns the resulting
- * `WorkflowValidationResult`. It does not execute, schedule, retry, or
- * run anything concurrently, and it does not call any other engine.
+ * `WorkflowValidationResult`.
  *
- * `pauseWorkflow`, `resumeWorkflow`, `cancelWorkflow`, and
- * `getWorkflowStatus` remain unimplemented stubs that throw
- * `NotImplementedError`, exactly as in Milestone 3.
+ * `getWorkflowStatus` (Milestone 5, new): validates the request, then
+ * delegates entirely to `WorkflowStatusTracker` to deterministically
+ * compute a `WorkflowSummary` for the request's `Workflow`, and
+ * returns it. It does not execute, schedule, retry, or run anything
+ * concurrently; it does not persist or transmit anything; and it does
+ * not call any other engine. It never mutates the supplied `Workflow`.
+ *
+ * `pauseWorkflow`, `resumeWorkflow`, and `cancelWorkflow` remain
+ * unimplemented stubs that throw `NotImplementedError`, exactly as in
+ * Milestone 4.
  */
 export class OrchestratorEngine extends BaseEngine {
   private readonly workflowBuilder: WorkflowBuilder;
   private readonly workflowValidator: WorkflowValidator;
+  private readonly workflowStatusTracker: WorkflowStatusTracker;
 
   constructor(options: OrchestratorEngineOptions = {}) {
     super({
@@ -119,7 +132,7 @@ export class OrchestratorEngine extends BaseEngine {
       contractVersion: options.contractVersion ?? ENGINE_API_CONTRACT_VERSION,
       description:
         options.description ??
-        'Central coordination engine for Titan AI. Milestone 3 implements deterministic structural translation of a Planner Plan into a Workflow for orchestrate(), via WorkflowBuilder. Milestone 4 implements deterministic structural validation of a Workflow for executeWorkflow(), via WorkflowValidator; pauseWorkflow, resumeWorkflow, cancelWorkflow, and getWorkflowStatus remain unimplemented stubs that throw NotImplementedError.',
+        'Central coordination engine for Titan AI. Milestone 3 implements deterministic structural translation of a Planner Plan into a Workflow for orchestrate(), via WorkflowBuilder. Milestone 4 implements deterministic structural validation of a Workflow for executeWorkflow(), via WorkflowValidator. Milestone 5 implements deterministic structural status reporting for getWorkflowStatus(), via WorkflowStatusTracker; pauseWorkflow, resumeWorkflow, and cancelWorkflow remain unimplemented stubs that throw NotImplementedError.',
       capabilities: options.capabilities ?? [
         'orchestrator.orchestrate',
         'orchestrator.execute-workflow',
@@ -143,6 +156,7 @@ export class OrchestratorEngine extends BaseEngine {
 
     this.workflowBuilder = new WorkflowBuilder();
     this.workflowValidator = new WorkflowValidator();
+    this.workflowStatusTracker = new WorkflowStatusTracker();
   }
 
   /**
@@ -150,10 +164,10 @@ export class OrchestratorEngine extends BaseEngine {
    * request's Planner `Plan` into a `Workflow` using
    * `WorkflowBuilder` and return it.
    *
-   * Milestone 3 scope only (unchanged in Milestone 4): pure structural
-   * translation. No execution, no scheduling, no retries, no
-   * concurrency, no calls to `PlannerEngine.createPlan` or any other
-   * engine.
+   * Milestone 3 scope only (unchanged in Milestones 4-5): pure
+   * structural translation. No execution, no scheduling, no retries,
+   * no concurrency, no calls to `PlannerEngine.createPlan` or any
+   * other engine.
    */
   async orchestrate(request: OrchestratorOrchestrateRequest): Promise<Workflow> {
     this.validateOrchestrateRequest(request);
@@ -166,9 +180,9 @@ export class OrchestratorEngine extends BaseEngine {
    * request's `Workflow` using `WorkflowValidator` and return the
    * resulting `WorkflowValidationResult`.
    *
-   * Milestone 4 scope only: pure structural validation. No execution,
-   * no scheduling, no retries, no concurrency, and no calls to any
-   * other engine.
+   * Milestone 4 scope only (unchanged in Milestone 5): pure
+   * structural validation. No execution, no scheduling, no retries,
+   * no concurrency, and no calls to any other engine.
    */
   async executeWorkflow(request: OrchestratorExecuteWorkflowRequest): Promise<WorkflowValidationResult> {
     this.validateExecuteWorkflowRequest(request);
@@ -176,20 +190,32 @@ export class OrchestratorEngine extends BaseEngine {
     return this.workflowValidator.validate(request.workflow);
   }
 
+  /**
+   * Validate the request, then deterministically compute a
+   * `WorkflowSummary` for the request's `Workflow` using
+   * `WorkflowStatusTracker` and return it.
+   *
+   * Milestone 5 scope only: pure structural status reporting. No
+   * execution, no scheduling, no retries, no concurrency, no
+   * persistence, no networking, and no calls to any other engine.
+   * The supplied `Workflow` is never mutated or modified.
+   */
+  async getWorkflowStatus(request: OrchestratorGetWorkflowStatusRequest): Promise<WorkflowSummary> {
+    this.validateGetWorkflowStatusRequest(request);
+
+    return this.workflowStatusTracker.summarize(request.workflow);
+  }
+
   async pauseWorkflow(_request: OrchestratorPauseWorkflowRequest): Promise<OrchestratorPlaceholderResult> {
-    throw new NotImplementedError('OrchestratorEngine.pauseWorkflow is not implemented in Milestone 4');
+    throw new NotImplementedError('OrchestratorEngine.pauseWorkflow is not implemented in Milestone 5');
   }
 
   async resumeWorkflow(_request: OrchestratorResumeWorkflowRequest): Promise<OrchestratorPlaceholderResult> {
-    throw new NotImplementedError('OrchestratorEngine.resumeWorkflow is not implemented in Milestone 4');
+    throw new NotImplementedError('OrchestratorEngine.resumeWorkflow is not implemented in Milestone 5');
   }
 
   async cancelWorkflow(_request: OrchestratorCancelWorkflowRequest): Promise<OrchestratorPlaceholderResult> {
-    throw new NotImplementedError('OrchestratorEngine.cancelWorkflow is not implemented in Milestone 4');
-  }
-
-  async getWorkflowStatus(_request: OrchestratorGetWorkflowStatusRequest): Promise<OrchestratorPlaceholderResult> {
-    throw new NotImplementedError('OrchestratorEngine.getWorkflowStatus is not implemented in Milestone 4');
+    throw new NotImplementedError('OrchestratorEngine.cancelWorkflow is not implemented in Milestone 5');
   }
 
   private validateOrchestrateRequest(request: OrchestratorOrchestrateRequest): void {
@@ -227,10 +253,32 @@ export class OrchestratorEngine extends BaseEngine {
       ]);
     }
   }
+
+  private validateGetWorkflowStatusRequest(request: OrchestratorGetWorkflowStatusRequest): void {
+    if (request === null || request === undefined) {
+      throw new OrchestratorValidationError('OrchestratorGetWorkflowStatusRequest is required.', [
+        {
+          field: 'request',
+          code: 'missing-request',
+          message: 'OrchestratorGetWorkflowStatusRequest is required.',
+        },
+      ]);
+    }
+
+    if (request.workflow === null || request.workflow === undefined) {
+      throw new OrchestratorValidationError('OrchestratorGetWorkflowStatusRequest.workflow is required.', [
+        {
+          field: 'request.workflow',
+          code: 'missing-workflow',
+          message: 'OrchestratorGetWorkflowStatusRequest.workflow is required.',
+        },
+      ]);
+    }
+  }
 }
 
 export const orchestratorEngine = {
   name: 'orchestrator' as const,
   description:
-    'Orchestrator Engine Milestone 4: orchestrate() deterministically translates a Planner Plan into a Workflow via WorkflowBuilder; executeWorkflow() deterministically validates a Workflow via WorkflowValidator; pauseWorkflow, resumeWorkflow, cancelWorkflow, and getWorkflowStatus remain unimplemented stubs.',
+    'Orchestrator Engine Milestone 5: orchestrate() deterministically translates a Planner Plan into a Workflow via WorkflowBuilder; executeWorkflow() deterministically validates a Workflow via WorkflowValidator; getWorkflowStatus() deterministically computes a WorkflowSummary via WorkflowStatusTracker; pauseWorkflow, resumeWorkflow, and cancelWorkflow remain unimplemented stubs.',
 };

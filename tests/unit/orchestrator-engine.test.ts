@@ -6,6 +6,7 @@ import {
   OrchestratorValidationError,
   WorkflowBuilder,
   WorkflowValidator,
+  WorkflowStatusTracker,
   type Plan,
   type Workflow,
   type WorkflowContext,
@@ -106,12 +107,35 @@ function buildPlanFixture(): Plan {
 
 /**
  * Builds a deterministic, structurally valid `Workflow` fixture for
- * Milestone 4 validation tests, derived from `buildPlanFixture()` via
+ * Milestone 4-5 tests, derived from `buildPlanFixture()` via
  * `WorkflowBuilder` (Milestone 3), so it always reflects a real,
  * structurally correct translation output.
  */
 function buildWorkflowFixture(): Workflow {
   return new WorkflowBuilder().build(buildPlanFixture());
+}
+
+/**
+ * Builds a `Workflow` fixture with a deliberately rich mix of step
+ * and task statuses, for Milestone 5 status-reporting tests. Derived
+ * from `buildWorkflowFixture()` so all IDs and references remain
+ * valid.
+ */
+function buildStatusRichWorkflowFixture(): Workflow {
+  const base = buildWorkflowFixture();
+
+  return {
+    ...base,
+    steps: [
+      { ...base.steps[0], status: 'completed' },
+      { ...base.steps[1], status: 'in-progress' },
+    ],
+    tasks: [
+      { ...base.tasks[0], status: 'completed' },
+      { ...base.tasks[1], status: 'failed' },
+      { ...base.tasks[2], status: 'pending' },
+    ],
+  };
 }
 
 describe('Orchestrator Engine Milestone 1', () => {
@@ -200,14 +224,6 @@ describe('Orchestrator Engine Milestone 1', () => {
     const engine = new OrchestratorEngine();
 
     await expect(engine.cancelWorkflow({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(NotImplementedError);
-  });
-
-  it('throws NotImplementedError for getWorkflowStatus', async () => {
-    const engine = new OrchestratorEngine();
-
-    await expect(engine.getWorkflowStatus({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(
-      NotImplementedError,
-    );
   });
 });
 
@@ -355,7 +371,17 @@ describe('Orchestrator Engine Milestone 2 — domain model', () => {
       workflowId: 'workflow-1',
       status: 'pending',
       totalSteps: 3,
+      completedSteps: 1,
+      pendingSteps: 1,
+      runningSteps: 1,
+      failedSteps: 0,
+      cancelledSteps: 0,
       totalTasks: 5,
+      completedTasks: 2,
+      pendingTasks: 2,
+      runningTasks: 1,
+      failedTasks: 0,
+      cancelledTasks: 0,
       dependencyCount: 2,
     };
 
@@ -778,17 +804,6 @@ describe('Orchestrator Engine Milestone 4 — executeWorkflow()', () => {
     ).rejects.toBeInstanceOf(OrchestratorValidationError);
   });
 
-  it('still throws NotImplementedError for the other four Orchestrator public API methods', async () => {
-    const engine = new OrchestratorEngine();
-
-    await expect(engine.pauseWorkflow({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(NotImplementedError);
-    await expect(engine.resumeWorkflow({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(NotImplementedError);
-    await expect(engine.cancelWorkflow({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(NotImplementedError);
-    await expect(engine.getWorkflowStatus({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(
-      NotImplementedError,
-    );
-  });
-
   it('leaves orchestrate() unchanged in Milestone 4', async () => {
     const engine = new OrchestratorEngine();
     const plan = buildPlanFixture();
@@ -798,8 +813,228 @@ describe('Orchestrator Engine Milestone 4 — executeWorkflow()', () => {
     expect(workflow.workflowId).toBe('workflow-plan-1');
     expect(workflow.planId).toBe('plan-1');
   });
+});
 
-  it('leaves the runtime lifecycle contract unchanged in Milestone 4', async () => {
+describe('Orchestrator Engine Milestone 5 — WorkflowStatusTracker', () => {
+  it('computes a correct summary for a valid Workflow', () => {
+    const tracker = new WorkflowStatusTracker();
+    const workflow = buildStatusRichWorkflowFixture();
+
+    const summary = tracker.summarize(workflow);
+
+    expect(summary.workflowId).toBe(workflow.workflowId);
+    expect(summary.status).toBe(workflow.status);
+    expect(summary.totalSteps).toBe(2);
+    expect(summary.totalTasks).toBe(3);
+    expect(summary.dependencyCount).toBe(workflow.dependencies.length);
+  });
+
+  it('computes correct step status counts', () => {
+    const tracker = new WorkflowStatusTracker();
+    const workflow = buildStatusRichWorkflowFixture();
+
+    const summary = tracker.summarize(workflow);
+
+    // steps: [completed, in-progress]
+    expect(summary.completedSteps).toBe(1);
+    expect(summary.runningSteps).toBe(1);
+    expect(summary.pendingSteps).toBe(0);
+    expect(summary.failedSteps).toBe(0);
+    expect(summary.cancelledSteps).toBe(0);
+  });
+
+  it('computes correct task status counts', () => {
+    const tracker = new WorkflowStatusTracker();
+    const workflow = buildStatusRichWorkflowFixture();
+
+    const summary = tracker.summarize(workflow);
+
+    // tasks: [completed, failed, pending]
+    expect(summary.completedTasks).toBe(1);
+    expect(summary.failedTasks).toBe(1);
+    expect(summary.pendingTasks).toBe(1);
+    expect(summary.runningTasks).toBe(0);
+    expect(summary.cancelledTasks).toBe(0);
+  });
+
+  it('classifies every WorkflowStepStatus value deterministically', () => {
+    const tracker = new WorkflowStatusTracker();
+    const base = buildWorkflowFixture();
+    const statuses: readonly WorkflowStepStatus[] = [
+      'pending',
+      'ready',
+      'in-progress',
+      'blocked',
+      'completed',
+      'failed',
+      'skipped',
+      'cancelled',
+    ];
+
+    const workflow: Workflow = {
+      ...base,
+      steps: statuses.map((status, index) => ({
+        stepId: `step-${index}`,
+        title: 'Step',
+        description: 'Step',
+        status,
+        taskIds: [],
+      })),
+      tasks: [],
+      dependencies: [],
+    };
+
+    const summary = tracker.summarize(workflow);
+
+    expect(summary.totalSteps).toBe(8);
+    expect(summary.pendingSteps).toBe(3); // pending, ready, blocked
+    expect(summary.runningSteps).toBe(1); // in-progress
+    expect(summary.completedSteps).toBe(1); // completed
+    expect(summary.failedSteps).toBe(1); // failed
+    expect(summary.cancelledSteps).toBe(2); // skipped, cancelled
+  });
+
+  it('classifies every WorkflowTaskStatus value deterministically', () => {
+    const tracker = new WorkflowStatusTracker();
+    const base = buildWorkflowFixture();
+    const statuses: readonly WorkflowTaskStatus[] = [
+      'pending',
+      'ready',
+      'in-progress',
+      'blocked',
+      'completed',
+      'failed',
+      'cancelled',
+    ];
+
+    const workflow: Workflow = {
+      ...base,
+      steps: [],
+      tasks: statuses.map((status, index) => ({
+        taskId: `task-${index}`,
+        stepId: 'step-x',
+        title: 'Task',
+        description: 'Task',
+        status,
+      })),
+      dependencies: [],
+    };
+
+    const summary = tracker.summarize(workflow);
+
+    expect(summary.totalTasks).toBe(7);
+    expect(summary.pendingTasks).toBe(3); // pending, ready, blocked
+    expect(summary.runningTasks).toBe(1); // in-progress
+    expect(summary.completedTasks).toBe(1); // completed
+    expect(summary.failedTasks).toBe(1); // failed
+    expect(summary.cancelledTasks).toBe(1); // cancelled
+  });
+
+  it('computes the correct dependencyCount', () => {
+    const tracker = new WorkflowStatusTracker();
+    const workflow = buildWorkflowFixture();
+
+    const summary = tracker.summarize(workflow);
+
+    expect(summary.dependencyCount).toBe(2);
+  });
+
+  it('produces deterministic output for identical input', () => {
+    const tracker = new WorkflowStatusTracker();
+
+    const first = tracker.summarize(buildStatusRichWorkflowFixture());
+    const second = tracker.summarize(buildStatusRichWorkflowFixture());
+
+    expect(first).toEqual(second);
+  });
+
+  it('never mutates the input Workflow', () => {
+    const tracker = new WorkflowStatusTracker();
+    const workflow = buildStatusRichWorkflowFixture();
+    const snapshot = JSON.parse(JSON.stringify(workflow));
+
+    tracker.summarize(workflow);
+
+    expect(workflow).toEqual(snapshot);
+  });
+
+  it('rejects malformed input (null, undefined, non-object) with OrchestratorValidationError', () => {
+    const tracker = new WorkflowStatusTracker();
+
+    expect(() => tracker.summarize(null as unknown as Workflow)).toThrow(OrchestratorValidationError);
+    expect(() => tracker.summarize(undefined as unknown as Workflow)).toThrow(OrchestratorValidationError);
+    expect(() => tracker.summarize('not-an-object' as unknown as Workflow)).toThrow(OrchestratorValidationError);
+  });
+});
+
+describe('Orchestrator Engine Milestone 5 — getWorkflowStatus()', () => {
+  it('returns a correct WorkflowSummary for a valid Workflow', async () => {
+    const engine = new OrchestratorEngine();
+    const workflow = buildStatusRichWorkflowFixture();
+
+    const summary = await engine.getWorkflowStatus({ workflow });
+
+    expect(summary.workflowId).toBe(workflow.workflowId);
+    expect(summary.totalSteps).toBe(2);
+    expect(summary.totalTasks).toBe(3);
+    expect(summary.dependencyCount).toBe(workflow.dependencies.length);
+  });
+
+  it('rejects a malformed request (missing workflow) with OrchestratorValidationError', async () => {
+    const engine = new OrchestratorEngine();
+
+    await expect(
+      engine.getWorkflowStatus({ workflow: undefined as unknown as Workflow }),
+    ).rejects.toBeInstanceOf(OrchestratorValidationError);
+  });
+
+  it('rejects a null request with OrchestratorValidationError', async () => {
+    const engine = new OrchestratorEngine();
+
+    await expect(
+      engine.getWorkflowStatus(null as unknown as Parameters<typeof engine.getWorkflowStatus>[0]),
+    ).rejects.toBeInstanceOf(OrchestratorValidationError);
+  });
+
+  it('produces deterministic output for identical input', async () => {
+    const engine = new OrchestratorEngine();
+
+    const first = await engine.getWorkflowStatus({ workflow: buildStatusRichWorkflowFixture() });
+    const second = await engine.getWorkflowStatus({ workflow: buildStatusRichWorkflowFixture() });
+
+    expect(first).toEqual(second);
+  });
+
+  it('never mutates the supplied Workflow', async () => {
+    const engine = new OrchestratorEngine();
+    const workflow = buildStatusRichWorkflowFixture();
+    const snapshot = JSON.parse(JSON.stringify(workflow));
+
+    await engine.getWorkflowStatus({ workflow });
+
+    expect(workflow).toEqual(snapshot);
+  });
+
+  it('still throws NotImplementedError for pauseWorkflow(), resumeWorkflow(), and cancelWorkflow()', async () => {
+    const engine = new OrchestratorEngine();
+
+    await expect(engine.pauseWorkflow({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(NotImplementedError);
+    await expect(engine.resumeWorkflow({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(NotImplementedError);
+    await expect(engine.cancelWorkflow({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(NotImplementedError);
+  });
+
+  it('leaves orchestrate() and executeWorkflow() unchanged in Milestone 5', async () => {
+    const engine = new OrchestratorEngine();
+    const plan = buildPlanFixture();
+
+    const workflow = await engine.orchestrate({ plan });
+    expect(workflow.workflowId).toBe('workflow-plan-1');
+
+    const validationResult = await engine.executeWorkflow({ workflow });
+    expect(validationResult.valid).toBe(true);
+  });
+
+  it('leaves the runtime lifecycle contract unchanged in Milestone 5', async () => {
     const engine = new OrchestratorEngine();
 
     expect(engine.getState()).toBe('created');

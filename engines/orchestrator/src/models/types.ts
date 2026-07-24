@@ -152,11 +152,31 @@ export interface WorkflowResult {
 /**
  * Deterministic, at-a-glance summary of a workflow's shape and
  * current progress.
+ *
+ * Milestone 5 extends this shape with per-status step and task
+ * breakdown counts (`completedSteps`, `pendingSteps`, `runningSteps`,
+ * `failedSteps`, `cancelledSteps`, `completedTasks`, `pendingTasks`,
+ * `runningTasks`, `failedTasks`, `cancelledTasks`), all computed
+ * purely from structural data already present on a `Workflow` by
+ * `WorkflowStatusTracker`. No field here is inferred, executed,
+ * scheduled, or simulated.
  */
 export interface WorkflowSummary {
   readonly workflowId: string;
   readonly status: WorkflowStatus;
   readonly totalSteps: number;
+  readonly completedSteps: number;
+  readonly pendingSteps: number;
+  readonly runningSteps: number;
+  readonly failedSteps: number;
+  readonly cancelledSteps: number;
   readonly totalTasks: number;
+  readonly completedTasks: number;
+  readonly pendingTasks: number;
+  readonly runningTasks: number;
+  readonly failedTasks: number;
+  readonly cancelledTasks: number;
   readonly dependencyCount: number;
 }
+
+
