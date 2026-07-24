@@ -1,42 +1,46 @@
 # Validation Engine
 
-Milestone 2 package for the Titan Core Validation Engine: complete
-planned domain model. Runtime behavior is **unchanged from
-Milestone 1**.
+Milestone 4 package for the Titan Core Validation Engine: a
+deterministic structural validation builder (Milestone 3) and a
+deterministic structural validation validator (Milestone 4).
+`approveValidation` and `rejectValidation` remain unconditional
+`NotImplementedError` stubs, unchanged from Milestone 1.
 
-## Scope (Milestone 2)
-
-This milestone builds on Milestone 1 by expanding
-`src/models/types.ts` into the Validation Engine's complete planned
-domain model, following the exact pattern used by the Execution
-Engine's own Milestone 2. **No runtime behavior changes in this
-milestone.**
+## Scope (Milestones 3–4)
 
 - Retains the Milestone 1 runtime foundation unchanged (lifecycle,
   health, metadata, version, and state methods, inherited from
   `BaseEngine`).
-- Retains all four public API methods (`validate`,
-  `getValidationStatus`, `approveValidation`, `rejectValidation`) as
-  unconditional `NotImplementedError` stubs, unchanged in behavior
-  from Milestone 1. No request field is read by any method.
-- Expands the domain model with pure, immutable data definitions
-  covering every domain concept named by the Phase 011 specification:
-  the validation verdict pipeline, evidence reporting, testing/
-  quality/policy/security/governance checks, escalation triggers, and
-  the planned handoff to the Learning Engine.
-- Updates `ValidationValidateRequest` (in `src/index.ts`) to
-  additionally carry optional `policyRules` and `governanceRules`
-  fields, for future-shape consistency with the new
-  `ValidationPipelineRequest` type. This is a type-only, additive
-  change — `validate()` still unconditionally throws
-  `NotImplementedError` and reads none of its request fields.
-- Exports all new domain types from the package entry point
-  (`src/index.ts`).
+- **Milestone 3** introduces `ValidationBuilder`
+  (`src/builders/validation-builder.ts`): a pure, synchronous,
+  deterministic translator that consumes a `ValidationSubject`
+  (wrapping an Execution Engine `ExecutionRecord` and, optionally, its
+  `ExecutionSummary` — imported by type only) and produces a
+  `ValidationPipelineResult`. `ValidationEngine.validate()` now
+  validates only the shape of its request and delegates entirely to
+  `ValidationBuilder.build`, returning its output unchanged.
+- **Milestone 4** introduces `ValidationValidator`
+  (`src/validation/validation-validator.ts`): a pure, synchronous,
+  deterministic structural validator that checks an already-built
+  `ValidationVerdict` for structural correctness (required
+  identifiers, enum membership, timestamp format, and internal
+  reference consistency) and returns a `ValidationStructuralResult`.
+  `ValidationEngine.getValidationStatus()` now validates only the
+  shape of its request and delegates entirely to
+  `ValidationValidator.validate`, returning its output unchanged. The
+  Milestone 1 `NotImplementedError` stub for this method has been
+  removed.
+- `approveValidation` and `rejectValidation` remain unconditional
+  `NotImplementedError` stubs, unchanged in behavior from Milestone 1.
+  No request field is read by either method.
 
-**This milestone implements no validation logic whatsoever.** No
-verdict is computed, no evidence is collected, no check of any kind
-is performed, no escalation is triggered, and no handoff to the
-Learning Engine occurs anywhere in this package.
+**Neither `ValidationBuilder` nor `ValidationValidator` performs any
+approval, rejection, learning integration, execution, orchestration,
+persistence, networking, AI logic, or heuristic behavior.** No
+scheduling, no retries, and no call to any other Titan engine's
+runtime exist anywhere in this package — the Execution Engine's
+`ExecutionSummary`/`ExecutionRecord` types are used only as read-only,
+type-only input shapes.
 
 ## Runtime Contract (inherited from `BaseEngine`, unchanged since Milestone 1)
 
@@ -65,79 +69,105 @@ full Titan runtime engine contract without any override:
 This is the same complete planned capability list advertised since
 Milestone 1.
 
-## Public API (Milestone 2 — all stubs, unchanged from Milestone 1)
+## Public API (Milestone 4)
 
-| Method | Behavior (Milestone 2) |
+| Method | Behavior (Milestone 4) |
 |---|---|
-| `validate(request)` | Always throws `NotImplementedError`. No request field is read. `request` may now optionally carry `policyRules`/`governanceRules` (type-only addition; still unread). |
-| `getValidationStatus(request)` | Always throws `NotImplementedError`. No request field is read. |
+| `validate(request)` | Validates that `request` is a non-null object, then delegates entirely to `ValidationBuilder.build(request.subject)`. Returns a `ValidationPipelineResult`. `request.policyRules`/`request.governanceRules`, if present, are never read. Throws `ValidationRequestError` for a malformed request or subject. |
+| `getValidationStatus(request)` | Validates that `request` is a non-null object, then delegates entirely to `ValidationValidator.validate(request.verdict)`. Returns a `ValidationStructuralResult`. Throws `ValidationRequestError` for a malformed request or verdict. |
 | `approveValidation(request)` | Always throws `NotImplementedError`. No request field is read. |
 | `rejectValidation(request)` | Always throws `NotImplementedError`. No request field is read. |
 
-Every method remains fully typed, returns the appropriate `Promise`
-type, and contains exactly one statement:
-`throw new NotImplementedError(...)`.
+## `ValidationBuilder` (Milestone 3)
 
-## Domain Model (Milestone 2 — expanded)
+`ValidationBuilder.build(subject, timestamp?)` performs pure
+structural translation only:
+
+- `ValidationTarget.workflowId`, `.itemId`, and `.itemType` are copied
+  verbatim from `subject.summary.target` if `summary` is present,
+  otherwise from `subject.record.target`.
+- `ValidationTarget.executionId` is copied verbatim from
+  `subject.summary.executionId` (falling back to
+  `subject.record.executionId`).
+- `ValidationVerdict.validationId` is deterministically derived as
+  `validation-<workflowId>-<itemId>`.
+- `ValidationVerdict.status` is always `'partial'` — a fixed,
+  structural placeholder; Milestone 3 performs no real check
+  evaluation.
+- `ValidationVerdict.checks` is always `[]`.
+- `ValidationVerdict.createdAt`/`.updatedAt` are set to the same
+  caller-supplied (or freshly read) ISO-8601 timestamp.
+- `ValidationPipelineResult.evidence` and `.escalations` are always
+  `[]`.
+
+`ValidationBuilder` never mutates its input. It throws
+`ValidationRequestError` only when `subject`, `subject.record`, or the
+target identifiers derivable from it are missing or malformed.
+
+## `ValidationValidator` (Milestone 4)
+
+`ValidationValidator.validate(verdict, timestamp?)` checks only the
+*structure* of an already-constructed `ValidationVerdict`:
+
+- Required identifiers (`validationId`, `target.executionId`,
+  `target.workflowId`, `target.itemId`) are non-empty strings.
+- `target.itemType` is a member of `'step' | 'task'`.
+- `status` (verdict-level and per-check) is a member of
+  `'pass' | 'fail' | 'partial'`.
+- Each entry in `checks` is a well-formed object with a non-empty
+  `checkId` and a `checkType` from the known enumeration.
+- `createdAt`/`updatedAt` are well-formed ISO-8601 timestamps, and
+  `updatedAt` is not earlier than `createdAt`.
+
+Ordinary structural defects are collected and returned in
+`ValidationStructuralResult.issues` (never thrown). `validate` throws
+`ValidationRequestError` only when `verdict` itself is not a
+well-formed, inspectable object (e.g. `null`, an array, or missing its
+`target` object entirely).
+
+`ValidationValidator` never approves, rejects, executes policy,
+learns, or performs any business decision — it reports structural
+defects only.
+
+## Domain Model (unchanged from Milestone 2)
 
 All types in `src/models/types.ts` remain pure, immutable data
-definitions only — no algorithms, no helper functions, no validation
-logic, and no runtime behavior. Milestone 1 types are retained
-unchanged; Milestone 2 adds:
+definitions. See Milestone 2 documentation history for the full type
+catalogue; no type was added, removed, or changed in Milestones 3–4.
 
-| Type | Purpose |
-|---|---|
-| `ValidationVerdictStatus` | `'pass' \| 'fail' \| 'partial'` (unchanged from Milestone 1). |
-| `ValidationCheckType` | `'testing' \| 'quality' \| 'policy' \| 'security' \| 'governance'` (unchanged from Milestone 1). |
-| `ValidationTarget` | Identifies which Execution Engine output is under review (unchanged from Milestone 1). |
-| `ValidationCheckResult` | A single structured check result (unchanged from Milestone 1). |
-| `ValidationVerdict` | The structured, reproducible verdict outcome (unchanged from Milestone 1). |
-| `ValidationEvidence` | Supports verdict traceability (unchanged from Milestone 1). |
-| `ValidationLearningHandoff` | Describes the planned handoff to the Learning Engine (unchanged from Milestone 1). |
-| `ValidationSubject` | The (future) Execution Engine output to be verified (unchanged from Milestone 1). |
-| `ValidationIssueCode`, `ValidationIssue` | Reserved for a future milestone's structural validator (unchanged from Milestone 1). |
-| `ValidationStructuralResult` | **New.** Reserved, structural validation report shape parallel to the Execution Engine's `ExecutionValidationResult`. |
-| `ValidationEscalationReason` | **New.** Classification for reasons contributing to an escalation decision. |
-| `ValidationEscalation` | **New.** Structured escalation decision associated with a verdict, for Orchestrator consumption. |
-| `ValidationPolicyRule` | **New.** Declarative policy constraint for a `'policy'`-typed check. |
-| `ValidationGovernanceRule` | **New.** Declarative governance rule for a `'governance'`-typed check. |
-| `ValidationPipelineRequest` | **New.** Planned input shape for the validation verdict pipeline. |
-| `ValidationPipelineResult` | **New.** Planned structured output of the validation verdict pipeline: verdict + evidence + escalations. |
-
-No value of any of these types is created, populated, or transformed
-anywhere in this package in Milestone 2.
-
-## Explicit Non-Goals (Milestone 2)
+## Explicit Non-Goals (Milestones 3–4)
 
 The following are explicitly **not** implemented anywhere in this
 package:
 
-- No validation algorithms of any kind.
-- No approval logic.
-- No rejection logic.
+- No approval logic — `approveValidation` remains an unconditional
+  `NotImplementedError` stub.
+- No rejection logic — `rejectValidation` remains an unconditional
+  `NotImplementedError` stub.
 - No policy evaluation or enforcement — `ValidationPolicyRule` fields
-  are never read, checked, or enforced.
+  are never read, checked, or enforced by `ValidationBuilder` or
+  `ValidationValidator`.
 - No governance rule enforcement — `ValidationGovernanceRule` fields
   are never read, checked, or enforced.
-- No rule engines.
-- No AI reasoning.
-- No scoring.
-- No persistence.
-- No networking.
-- No scheduling.
-- No retries.
-- No orchestration.
-- No execution logic.
-- No learning integration — `ValidationLearningHandoff` is a pure
-  data contract only; no handoff is ever transmitted.
-- No escalation logic — `ValidationEscalation` is a pure data contract
-  only; no escalation is ever triggered or evaluated.
+- No check execution of any kind (testing, quality, policy, security,
+  governance) — `ValidationBuilder` always returns an empty `checks`
+  array; `ValidationValidator` only checks the *shape* of any checks
+  already present.
+- No evidence collection — `ValidationBuilder` always returns an empty
+  `evidence` array.
+- No escalation logic — `ValidationBuilder` always returns an empty
+  `escalations` array.
+- No learning integration — `ValidationLearningHandoff` is a pure data
+  contract only; no handoff is ever transmitted.
+- No scoring, no rule engines, no AI reasoning, no heuristics.
+- No persistence, no networking, no filesystem access.
+- No scheduling, no retries.
+- No orchestration, no execution logic.
 - No cross-engine runtime calls — this package never imports,
   instantiates, or calls the runtime of the Planner, Orchestrator,
-  Execution, Knowledge, or Context engines. The Execution Engine's
-  `ExecutionRecord`/`ExecutionSummary` types are referenced by type
-  only, in `ValidationSubject`, purely to describe a future input
-  shape.
+  Execution, Knowledge, Context, or Learning engines. The Execution
+  Engine's `ExecutionRecord`/`ExecutionSummary` types are referenced by
+  type only, in `ValidationSubject` and `ValidationBuilder`.
 
 ## Explicit Statement of Current Behavior
 
@@ -148,14 +178,19 @@ This package currently provides only:
 2. Working health, metadata, version, and contract-version reporting,
    inherited unchanged from `BaseEngine`.
 3. The Validation Engine's complete planned domain model
-   (`src/models/types.ts`), expanded in this milestone.
-4. Four typed, unimplemented public API stubs (`validate`,
-   `getValidationStatus`, `approveValidation`, `rejectValidation`),
-   each of which always throws `NotImplementedError`, unchanged in
-   behavior from Milestone 1.
+   (`src/models/types.ts`), unchanged since Milestone 2.
+4. A deterministic structural `ValidationBuilder` (Milestone 3),
+   wired into `validate()`.
+5. A deterministic structural `ValidationValidator` (Milestone 4),
+   wired into `getValidationStatus()`.
+6. Two remaining typed, unimplemented public API stubs
+   (`approveValidation`, `rejectValidation`), each of which always
+   throws `NotImplementedError`, unchanged in behavior from
+   Milestone 1.
 
-No independent verification of Execution Engine output, no evidence
-collection, no verdict computation, no escalation logic, no learning
-handoff, and no cross-engine behavior of any kind exists anywhere in
-this package. Those remain out of scope for this milestone and will
-be introduced by later Validation Engine milestones.
+No independent business-level verification, no evidence collection, no
+verdict *evaluation* (only structural translation), no escalation
+logic, no learning handoff, and no cross-engine runtime behavior of
+any kind exists anywhere in this package. Those remain out of scope
+for this milestone and will be introduced by later Validation Engine
+milestones.

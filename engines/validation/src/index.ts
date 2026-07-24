@@ -1,14 +1,19 @@
 import { BaseEngine } from '../../../runtime/engine/base';
 import { ENGINE_API_CONTRACT_VERSION, type BaseEngineOptions } from '../../../runtime/engine/types';
-import { NotImplementedError } from './errors/validation-errors';
+import { ValidationBuilder } from './builders/validation-builder';
+import { NotImplementedError, ValidationRequestError } from './errors/validation-errors';
 import type {
   ValidationGovernanceRule,
+  ValidationPipelineResult,
   ValidationPolicyRule,
+  ValidationStructuralResult,
   ValidationSubject,
   ValidationVerdict,
 } from './models/types';
+import { ValidationValidator } from './validation/validation-validator';
 
-
+export { ValidationBuilder } from './builders/validation-builder';
+export { ValidationValidator } from './validation/validation-validator';
 export { NotImplementedError, ValidationRequestError } from './errors/validation-errors';
 
 export type {
@@ -35,20 +40,35 @@ export type {
  * Request/response shapes for the Validation Engine's planned public
  * API.
  *
- * Milestone 1 defined these interfaces solely to describe the
- * intended shape of future request and response payloads. No field
- * on any of these request types is read by any public API method in
- * Milestone 1 or Milestone 2 — every method remains an unconditional
- * `NotImplementedError` stub, matching the pattern established by the
- * Planner, Orchestrator, and Execution engines' own early milestones.
+ * Milestone 3 changed `ValidationValidateRequest` and `validate()`'s
+ * return type:
  *
- * Milestone 2 changes `ValidationValidateRequest` to also carry the
- * optional `policyRules` and `governanceRules` fields introduced by
- * the expanded domain model (mirroring the new
- * `ValidationPipelineRequest` shape), for future-shape consistency
- * only. This is a type-only, additive change: `validate()` still
- * unconditionally throws `NotImplementedError` and reads none of its
- * request fields.
+ * - `ValidationValidateRequest` still carries `subject` (a
+ *   `ValidationSubject`) plus the optional `policyRules`/
+ *   `governanceRules` fields introduced in Milestone 2, but
+ *   `validate()` now delegates entirely to `ValidationBuilder.build`,
+ *   which reads only `subject` — `policyRules` and `governanceRules`
+ *   remain unread, reserved for a future milestone.
+ * - `validate()` returns a `ValidationPipelineResult` (previously
+ *   `ValidationVerdict` in Milestones 1–2).
+ *
+ * Milestone 4 changed `getValidationStatus()`'s request and return
+ * shape:
+ *
+ * - `ValidationGetValidationStatusRequest` carries the full
+ *   `ValidationVerdict` to validate (`verdict`), rather than only a
+ *   `validationId`, since `getValidationStatus()` delegates entirely
+ *   to `ValidationValidator.validate`, which validates the structure
+ *   of an already-constructed `ValidationVerdict` rather than looking
+ *   one up by id (no validation store or lookup mechanism exists
+ *   anywhere in this package).
+ * - `getValidationStatus()` returns a `ValidationStructuralResult`
+ *   (previously `ValidationVerdict`, which was never implemented).
+ *
+ * `ValidationApproveValidationRequest` and
+ * `ValidationRejectValidationRequest` are unchanged from Milestone 1;
+ * `approveValidation` and `rejectValidation` remain the Validation
+ * Engine's only unimplemented `NotImplementedError` stubs.
  */
 export interface ValidationValidateRequest {
   readonly subject: ValidationSubject;
@@ -56,9 +76,8 @@ export interface ValidationValidateRequest {
   readonly governanceRules?: readonly ValidationGovernanceRule[];
 }
 
-
 export interface ValidationGetValidationStatusRequest {
-  readonly validationId: string;
+  readonly verdict: ValidationVerdict;
 }
 
 export interface ValidationApproveValidationRequest {
@@ -78,30 +97,42 @@ export interface ValidationEngineOptions extends Omit<BaseEngineOptions, 'id' | 
 }
 
 /**
- * Validation Engine — Milestone 2 (Domain Model Completion).
+ * Validation Engine — Milestone 4 (Structural Validation Validator).
  *
  * Implements only the shared Titan runtime engine contract, via
  * `BaseEngine`: `initialize`, `start`, `stop`, `health`, `metadata`,
- * `version`, `contractVersion`, and `getState`. No lifecycle behavior
- * is overridden; the full runtime contract is inherited unchanged
- * from Milestone 1.
+ * `version`, `contractVersion`, and `getState`. This runtime contract
+ * is unchanged from Milestone 1.
  *
- * Every public API method (`validate`, `getValidationStatus`,
- * `approveValidation`, `rejectValidation`) remains a typed async stub
- * that unconditionally throws `NotImplementedError`, unchanged in
- * behavior from Milestone 1. No request field is read, no validation
- * occurs, and no business logic exists anywhere in this class.
+ * Milestone 3 implemented `validate()`: it validates the incoming
+ * `ValidationValidateRequest` and delegates entirely to
+ * `ValidationBuilder.build` to deterministically, structurally
+ * translate the supplied `ValidationSubject` (an Execution Engine
+ * `ExecutionRecord`/`ExecutionSummary`) into a
+ * `ValidationPipelineResult`, which it returns unchanged.
  *
- * Milestone 2 expands only the domain model
- * (`src/models/types.ts`) with the complete planned set of pure,
- * immutable data types covering the validation verdict pipeline,
- * evidence reporting, testing/quality/policy/security/governance
- * checks, escalation triggers, and the planned handoff to the
- * Learning Engine. No algorithm, approval logic, rejection logic,
- * learning integration, persistence, networking, AI logic, or
- * heuristic behavior is introduced anywhere in this package.
+ * Milestone 4 implements `getValidationStatus()`: it validates the
+ * incoming `ValidationGetValidationStatusRequest` and delegates
+ * entirely to `ValidationValidator.validate` to deterministically,
+ * structurally validate the supplied `ValidationVerdict`, returning
+ * the resulting `ValidationStructuralResult` unchanged.
+ *
+ * Neither `validate()` nor `getValidationStatus()` performs any
+ * approval, rejection, policy evaluation, governance enforcement,
+ * learning integration, execution, orchestration, persistence,
+ * networking, AI logic, or heuristic behavior — no scheduling, no
+ * retries, no filesystem access, and no call to any other Titan
+ * engine's runtime beyond the type-only Execution Engine import used
+ * to describe `ValidationSubject`.
+ *
+ * `approveValidation` and `rejectValidation` remain typed async stubs
+ * that unconditionally throw `NotImplementedError`, unchanged from
+ * Milestone 1.
  */
 export class ValidationEngine extends BaseEngine {
+  private readonly validationBuilder: ValidationBuilder;
+  private readonly validationValidator: ValidationValidator;
+
   constructor(options: ValidationEngineOptions = {}) {
     super({
       id: options.id ?? 'validation-engine',
@@ -110,7 +141,7 @@ export class ValidationEngine extends BaseEngine {
       contractVersion: options.contractVersion ?? ENGINE_API_CONTRACT_VERSION,
       description:
         options.description ??
-        'Independent verification engine for Titan AI. Milestone 2 implements the shared runtime lifecycle contract (unchanged from Milestone 1) and the complete planned domain model. validate, getValidationStatus, approveValidation, and rejectValidation remain unimplemented NotImplementedError stubs.',
+        'Independent verification engine for Titan AI. Milestone 4 implements the shared runtime lifecycle contract, a deterministic structural validation builder, and a deterministic structural validation validator; validate() delegates entirely to ValidationBuilder and getValidationStatus() delegates entirely to ValidationValidator. approveValidation and rejectValidation remain unimplemented NotImplementedError stubs.',
       capabilities: options.capabilities ?? [
         'validation.validate',
         'validation.get-validation-status',
@@ -129,51 +160,84 @@ export class ValidationEngine extends BaseEngine {
       permissionChecker: options.permissionChecker,
       secretProvider: options.secretProvider,
     });
+
+    this.validationBuilder = new ValidationBuilder();
+    this.validationValidator = new ValidationValidator();
   }
 
   /**
-   * Planned: independently verify a given Execution Engine output
-   * (`ValidationSubject`) and produce a `ValidationVerdict`. Milestone
-   * 2 stub: always throws `NotImplementedError`, unchanged from
-   * Milestone 1. No request field is read.
+   * Validate the given request shape and delegate entirely to
+   * `ValidationBuilder.build` to deterministically, structurally
+   * translate the supplied `ValidationSubject` into a
+   * `ValidationPipelineResult`.
+   *
+   * Throws `ValidationRequestError` if `request` is missing or
+   * malformed (including if `request.subject` is missing, `null`, or
+   * not an inspectable object). `request.policyRules` and
+   * `request.governanceRules`, if present, are never read. Performs
+   * no approval, rejection, policy evaluation, governance
+   * enforcement, learning integration, execution, orchestration,
+   * persistence, networking, AI logic, or heuristic behavior, and
+   * calls no other Titan engine's runtime.
    */
-  async validate(_request: ValidationValidateRequest): Promise<ValidationVerdict> {
-    throw new NotImplementedError(
-      'ValidationEngine.validate is not implemented yet (Milestone 2: domain model only, no validation logic).',
-    );
+  async validate(request: ValidationValidateRequest): Promise<ValidationPipelineResult> {
+    if (request === null || request === undefined || typeof request !== 'object' || Array.isArray(request)) {
+      throw new ValidationRequestError('ValidationValidateRequest must be a non-null object.', [
+        {
+          field: 'request',
+          code: 'missing-request',
+          message: 'ValidationValidateRequest must be a non-null object.',
+        },
+      ]);
+    }
+
+    return this.validationBuilder.build(request.subject);
   }
 
   /**
-   * Planned: retrieve the current verdict/status for a previously
-   * requested validation. Milestone 2 stub: always throws
-   * `NotImplementedError`, unchanged from Milestone 1. No request
-   * field is read.
+   * Validate the given request shape and delegate entirely to
+   * `ValidationValidator.validate` to deterministically, structurally
+   * validate the supplied `ValidationVerdict`.
+   *
+   * Throws `ValidationRequestError` if `request` is missing or
+   * malformed (including if `request.verdict` is missing, `null`, or
+   * not an inspectable object). Performs no approval, rejection,
+   * policy evaluation, governance enforcement, or learning
+   * integration, and calls no other Titan engine's runtime.
    */
-  async getValidationStatus(_request: ValidationGetValidationStatusRequest): Promise<ValidationVerdict> {
-    throw new NotImplementedError(
-      'ValidationEngine.getValidationStatus is not implemented yet (Milestone 2: domain model only, no validation logic).',
-    );
+  async getValidationStatus(request: ValidationGetValidationStatusRequest): Promise<ValidationStructuralResult> {
+    if (request === null || request === undefined || typeof request !== 'object' || Array.isArray(request)) {
+      throw new ValidationRequestError('ValidationGetValidationStatusRequest must be a non-null object.', [
+        {
+          field: 'request',
+          code: 'missing-request',
+          message: 'ValidationGetValidationStatusRequest must be a non-null object.',
+        },
+      ]);
+    }
+
+    return this.validationValidator.validate(request.verdict);
   }
 
   /**
    * Planned: record explicit approval of a validation verdict.
-   * Milestone 2 stub: always throws `NotImplementedError`, unchanged
+   * Milestone 4 stub: always throws `NotImplementedError`, unchanged
    * from Milestone 1. No request field is read.
    */
   async approveValidation(_request: ValidationApproveValidationRequest): Promise<ValidationVerdict> {
     throw new NotImplementedError(
-      'ValidationEngine.approveValidation is not implemented yet (Milestone 2: domain model only, no validation logic).',
+      'ValidationEngine.approveValidation is not implemented yet (Milestone 4: structural validation builder and validator only).',
     );
   }
 
   /**
    * Planned: record explicit rejection of a validation verdict.
-   * Milestone 2 stub: always throws `NotImplementedError`, unchanged
+   * Milestone 4 stub: always throws `NotImplementedError`, unchanged
    * from Milestone 1. No request field is read.
    */
   async rejectValidation(_request: ValidationRejectValidationRequest): Promise<ValidationVerdict> {
     throw new NotImplementedError(
-      'ValidationEngine.rejectValidation is not implemented yet (Milestone 2: domain model only, no validation logic).',
+      'ValidationEngine.rejectValidation is not implemented yet (Milestone 4: structural validation builder and validator only).',
     );
   }
 }
@@ -181,5 +245,5 @@ export class ValidationEngine extends BaseEngine {
 export const validationEngine = {
   name: 'validation' as const,
   description:
-    'Validation Engine Milestone 2: complete planned domain model only; runtime behavior unchanged from Milestone 1. ValidationEngine extends BaseEngine and inherits the full Titan runtime lifecycle contract unchanged. validate, getValidationStatus, approveValidation, and rejectValidation remain unimplemented NotImplementedError stubs; no validation logic, evidence collection, escalation logic, or cross-engine runtime calls exist anywhere in this package.',
+    'Validation Engine Milestone 4: structural validation builder and structural validation validator only. ValidationEngine extends BaseEngine and inherits the full Titan runtime lifecycle contract, unchanged from Milestone 1. validate() validates its request and delegates entirely to ValidationBuilder, which deterministically, structurally translates an Execution Engine ExecutionSummary/ExecutionRecord into a ValidationPipelineResult. getValidationStatus() validates its request and delegates entirely to ValidationValidator, which deterministically, structurally validates a ValidationVerdict. approveValidation and rejectValidation remain unimplemented NotImplementedError stubs; no approval logic, rejection logic, policy enforcement, governance enforcement, learning integration, or cross-engine runtime calls exist anywhere in this package.',
 };
