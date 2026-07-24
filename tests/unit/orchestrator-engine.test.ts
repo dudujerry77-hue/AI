@@ -179,6 +179,7 @@ describe('Orchestrator Engine Milestone 1', () => {
       'orchestrator.resume-workflow',
       'orchestrator.cancel-workflow',
       'orchestrator.get-workflow-status',
+      'orchestrator.dispatch-workflow',
     ]);
   });
 

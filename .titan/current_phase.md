@@ -7,41 +7,42 @@
 
 ## Active Phase
 
-- **Phase ID:** 009
-- **Name:** Orchestrator Engine Implementation
+- **Phase ID:** 010
+- **Name:** Execution Engine Implementation
 - **Status:** in-progress
-- **Started:** 2026-07-23
+- **Started:** 2026-07-24
 - **Completed:** 
 
 ## What This Phase Is
 
-Implementing the Orchestrator Engine as the central coordinator for task sequencing, dispatch, escalation, and policy-compliant flow control, consuming Planner Engine outputs as authoritative plans.
+Implementing the Execution Engine as the action-taking layer dispatched to by the Orchestrator Engine, consuming Orchestrator dispatch outputs without embedding coordination or planning behavior.
 
 ## Prior Phase Completed
 
-- **Phase ID:** 008
-- **Name:** Planner Engine Implementation
+- **Phase ID:** 009
+- **Name:** Orchestrator Engine Implementation
 - **Status:** complete
-- **Completed:** 2026-07-23
+- **Completed:** 2026-07-24
 
 ## Exit Criteria (current phase)
 
-- [ ] Orchestrator Engine passes build/test quality gates.
-- [ ] Dispatch and escalation flows are validated end to end in phase scope.
-- [ ] Handoff artifacts support Execution Engine implementation.
+- [ ] Execution Engine passes build/test quality gates.
+- [ ] Execution Engine consumes Orchestrator dispatch outputs without independent coordination or planning logic.
+- [ ] Handoff artifacts support Validation Engine implementation.
 
 ## Next Phase
 
-- **Phase ID:** 010
-- **Name:** Execution Engine Implementation
+- **Phase ID:** 011
+- **Name:** Validation Engine Implementation
 - **Status:** not-started
-- **Entry Criteria:** Orchestrator Engine is implemented and verified.
-- **What the next agent should do first:** Consume Orchestrator dispatch outputs and implement the action-taking layer without embedding coordination or planning behavior.
+- **Entry Criteria:** Execution Engine is implemented and verified.
+- **What the next agent should do first:** Consume Execution Engine outputs and implement independent verification without embedding execution or coordination behavior.
 
 ## Notes
 
-- Phase 008 (Planner Engine) was verified with lint, test, and build all passing (97/97 tests, including 71 Planner Engine tests across Milestones 1–6) before activating Phase 009.
-- Planner Milestones 3–6 (Goal Analysis & Decomposition, Plan Validation, Plan Optimization, Plan Estimation & Explanation) are complete. `PlannerEngine.cancelPlan()` remains an unimplemented `NotImplementedError` stub; no Phase 008 exit criterion required its implementation, so this did not block Phase 008 closure.
+- Phase 009 (Orchestrator Engine) was verified with lint, test, and build all passing (261/261 tests, including 123 Orchestrator Engine tests and 41 dedicated dispatch/escalation tests) before activating Phase 010.
+- Orchestrator Milestones 1–7 (Runtime Foundation, Domain Model, WorkflowBuilder/orchestrate, WorkflowValidator/executeWorkflow, WorkflowStatusTracker/getWorkflowStatus, WorkflowLifecycleManager/pauseWorkflow/resumeWorkflow/cancelWorkflow, WorkflowDispatcher/dispatchWorkflow) are complete. All seven Orchestrator public API methods are implemented with no remaining `NotImplementedError` stubs.
+- `OrchestratorEngine.dispatchWorkflow()` provides structural dispatch-readiness and escalation decisions as the authoritative input for the Execution Engine; the Orchestrator Engine performs no execution, scheduling, or retries itself — this responsibility now belongs to Phase 010.
 
 ## Instructions for Whoever Reads This Next
 

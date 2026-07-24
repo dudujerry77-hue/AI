@@ -9,6 +9,7 @@
 ## [Unreleased]
 
 ### Added
+- Orchestrator Engine Milestone 7: `WorkflowDispatcher` (deterministic structural dispatch-readiness evaluation and escalation determination for `Workflow` steps and tasks based on status and dependency preconditions), plus a working `OrchestratorEngine.dispatchWorkflow()` implementation. Adds `WorkflowDispatchItemType`, `WorkflowDispatchReason`, `WorkflowDispatchDecision`, `WorkflowEscalationReason`, `WorkflowEscalationDecision`, and `WorkflowDispatchResult` to the Orchestrator domain model. All seven Orchestrator public API methods are now implemented with no remaining `NotImplementedError` stubs.
 - Planner Engine Milestone 3: `GoalAnalyzer` (deterministic structural goal validation) and `GoalDecomposer` (deterministic fixed-pipeline goal-to-plan decomposition), plus a working `PlannerEngine.createPlan()` implementation.
 - Planner Engine Milestone 4: `PlanValidator` (deterministic structural plan validation covering required fields, enums, metadata, steps, tasks, dependencies, duplicate and self-dependency detection), plus a working `PlannerEngine.validatePlan()` implementation.
 - Planner Engine Milestone 5: `PlanOptimizer` (deterministic structural plan normalization: dependency de-duplication, dependency/step/task ordering, taskId/dependsOnStepIds de-duplication and sorting, redundant empty-collection removal, revision increment), plus a working `PlannerEngine.optimizePlan()` implementation.
@@ -16,6 +17,7 @@
 - `specification/knowledge_engine.md`, defining the approved architecture blueprint for the Knowledge Engine, including responsibility boundaries, knowledge model, retrieval strategy, storage strategy, security model, extension points, and scalability guidance.
 
 ### Changed
+- Governance phase tracking now marks Phase 009 (Orchestrator Engine) as complete and Phase 010 (Execution Engine) as active across `roadmap.md`, `current_phase.md`, `project_state.json`, and `phases/phase-009-orchestrator-engine-implementation.md`. Phase 009's Exit Criteria are now checked, its Status/Started/Completed/Agent(s) fields are filled in, and a Milestone History (Milestones 1–7) plus a Verification section (lint/test/build results) have been added to the phase document.
 - Governance phase tracking now marks Phase 008 (Planner Engine) as complete and Phase 009 (Orchestrator Engine) as active across `roadmap.md`, `current_phase.md`, `project_state.json`, and `phases/phase-008-planner-engine-implementation.md`. `PlannerEngine.cancelPlan()` remains an unimplemented `NotImplementedError` stub; this is recorded as known remaining Planner API surface and was confirmed not to be required by any Phase 008 exit criterion.
 - `architecture.md` now explicitly points the Knowledge Engine definition to `specification/knowledge_engine.md` for detailed design.
 - `current_phase.md` and `phases/phase-007-knowledge-engine-implementation.md` now direct future implementation work to the approved Knowledge Engine blueprint.
@@ -23,6 +25,7 @@
 
 ### Milestones
 
+- 2026-07-24: Orchestrator Engine Milestones 1–7 - completed runtime foundation, domain model, WorkflowBuilder/orchestrate, WorkflowValidator/executeWorkflow, WorkflowStatusTracker/getWorkflowStatus, WorkflowLifecycleManager/pauseWorkflow/resumeWorkflow/cancelWorkflow, and WorkflowDispatcher/dispatchWorkflow (structural dispatch-readiness and structural escalation determination); verified lint/test/build all passing (261/261 tests, including 123 Orchestrator Engine tests and 41 dedicated dispatch/escalation tests) and transitioned governance state to active Execution Engine phase (010).
 - 2026-07-23: Planner Engine Milestones 3–6 - completed goal analysis/decomposition, plan validation, plan optimization, and plan estimation/explanation; verified lint/test/build all passing (97/97 tests, 71 Planner Engine tests) and transitioned governance state to active Orchestrator Engine phase (009).
 - 2026-07-08: Governance Initialization - established the `.titan/` governance layer, constitutional rules, roadmap, and supporting templates.
 - 2026-07-08: Project Scaffold - created the TypeScript monorepo scaffold, workspace tooling, and repository structure for implementation phases.

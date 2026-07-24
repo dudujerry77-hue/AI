@@ -179,4 +179,82 @@ export interface WorkflowSummary {
   readonly dependencyCount: number;
 }
 
+/**
+ * Kind of workflow item a dispatch or escalation decision refers to,
+ * introduced in Milestone 7.
+ */
+export type WorkflowDispatchItemType = 'step' | 'task';
 
+/**
+ * Deterministic, structural reason code explaining a dispatch
+ * decision for one workflow item, introduced in Milestone 7 for
+ * `WorkflowDispatcher`.
+ *
+ * These reason codes describe only the structural condition that was
+ * evaluated (the item's own status value, and whether dependency
+ * preconditions already recorded on the `Workflow` are satisfied);
+ * they never represent an inferred, scheduled, or executed outcome.
+ */
+export type WorkflowDispatchReason =
+  | 'status-ready'
+  | 'status-not-ready'
+  | 'dependencies-satisfied'
+  | 'dependencies-unsatisfied';
+
+/**
+ * A single deterministic dispatch-readiness decision for one workflow
+ * step or task, produced by `WorkflowDispatcher` (Milestone 7).
+ *
+ * `ready` is derived exclusively from the item's own status value
+ * (`pending` or `ready` are the only statuses considered eligible)
+ * and from whether every dependency precondition already recorded on
+ * the `Workflow` (via `WorkflowDependency` edges of type `blocks`,
+ * `requires`, or `sequential` targeting this item) is satisfied by
+ * the current status of the referenced source item. No scheduling,
+ * ordering, or execution decision is made — `ready` reflects
+ * structural eligibility only.
+ */
+export interface WorkflowDispatchDecision {
+  readonly itemId: string;
+  readonly itemType: WorkflowDispatchItemType;
+  readonly ready: boolean;
+  readonly reasons: readonly WorkflowDispatchReason[];
+}
+
+/**
+ * Deterministic, structural reason code explaining why a workflow
+ * item was classified for escalation, introduced in Milestone 7 for
+ * `WorkflowDispatcher`.
+ *
+ * Escalation reason codes describe only a fixed, explicit structural
+ * condition already present on the `Workflow`; they never represent
+ * an inferred, notified, or externally-acted-upon outcome.
+ */
+export type WorkflowEscalationReason = 'blocked-status' | 'critical-priority-not-progressing';
+
+/**
+ * A single deterministic escalation decision for one workflow step or
+ * task, produced by `WorkflowDispatcher` (Milestone 7).
+ *
+ * An escalation decision is a pure data record: it never executes,
+ * notifies, dispatches externally, or invokes another engine. It
+ * only reports that a fixed structural condition was met.
+ */
+export interface WorkflowEscalationDecision {
+  readonly itemId: string;
+  readonly itemType: WorkflowDispatchItemType;
+  readonly reason: WorkflowEscalationReason;
+}
+
+/**
+ * Deterministic result of a `WorkflowDispatcher.dispatch` call
+ * (Milestone 7): the full set of dispatch-readiness decisions and
+ * escalation decisions computed for a `Workflow`, plus the ordered
+ * list of item IDs found to be dispatch-ready.
+ */
+export interface WorkflowDispatchResult {
+  readonly workflowId: string;
+  readonly dispatchable: readonly string[];
+  readonly decisions: readonly WorkflowDispatchDecision[];
+  readonly escalations: readonly WorkflowEscalationDecision[];
+}

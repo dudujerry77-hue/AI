@@ -6,13 +6,15 @@ import { WorkflowBuilder } from './builders/workflow-builder';
 import { WorkflowValidator, type WorkflowValidationResult } from './validation/workflow-validator';
 import { WorkflowStatusTracker } from './status/workflow-status-tracker';
 import { WorkflowLifecycleManager } from './lifecycle/workflow-lifecycle-manager';
-import type { Workflow, WorkflowContext, WorkflowSummary } from './models/types';
+import { WorkflowDispatcher } from './dispatch/workflow-dispatcher';
+import type { Workflow, WorkflowContext, WorkflowDispatchResult, WorkflowSummary } from './models/types';
 
 export { NotImplementedError, OrchestratorValidationError } from './errors/orchestrator-errors';
 export { WorkflowBuilder } from './builders/workflow-builder';
 export { WorkflowValidator, type WorkflowValidationResult } from './validation/workflow-validator';
 export { WorkflowStatusTracker } from './status/workflow-status-tracker';
 export { WorkflowLifecycleManager } from './lifecycle/workflow-lifecycle-manager';
+export { WorkflowDispatcher } from './dispatch/workflow-dispatcher';
 
 export type { Plan } from '../../planner/src/models/types';
 
@@ -21,6 +23,12 @@ export type {
   WorkflowContext,
   WorkflowDependency,
   WorkflowDependencyType,
+  WorkflowDispatchDecision,
+  WorkflowDispatchItemType,
+  WorkflowDispatchReason,
+  WorkflowDispatchResult,
+  WorkflowEscalationDecision,
+  WorkflowEscalationReason,
   WorkflowExecutionMode,
   WorkflowMetadata,
   WorkflowPriority,
@@ -58,6 +66,11 @@ export type {
  * Milestone 6 so that `pauseWorkflow`, `resumeWorkflow`, and
  * `cancelWorkflow` can perform deterministic workflow lifecycle state
  * transitions via `WorkflowLifecycleManager`.
+ *
+ * `OrchestratorDispatchWorkflowRequest.workflow` was introduced in
+ * Milestone 7 so that `dispatchWorkflow` can perform deterministic
+ * structural dispatch-readiness and escalation determination via
+ * `WorkflowDispatcher`.
  */
 export interface OrchestratorOrchestrateRequest {
   readonly plan: Plan;
@@ -87,6 +100,10 @@ export interface OrchestratorGetWorkflowStatusRequest {
   readonly workflow: Workflow;
 }
 
+export interface OrchestratorDispatchWorkflowRequest {
+  readonly workflow: Workflow;
+}
+
 export interface OrchestratorEngineOptions extends Omit<BaseEngineOptions, 'id' | 'name' | 'version'> {
   readonly id?: string;
   readonly name?: string;
@@ -94,7 +111,8 @@ export interface OrchestratorEngineOptions extends Omit<BaseEngineOptions, 'id' 
 }
 
 /**
- * Orchestrator Engine — Milestone 6 (Workflow Lifecycle Transitions).
+ * Orchestrator Engine — Milestone 7 (Structural Dispatch & Escalation
+ * Determination).
  *
  * Implements the shared Titan runtime engine contract (via
  * `BaseEngine`, unchanged since Milestone 1) and the Orchestrator
@@ -115,18 +133,28 @@ export interface OrchestratorEngineOptions extends Omit<BaseEngineOptions, 'id' 
  * `Workflow`, and returns it.
  *
  * `pauseWorkflow`, `resumeWorkflow`, `cancelWorkflow` (Milestone 6,
- * new): each validates the request, then delegates entirely to
+ * unchanged): each validates the request, then delegates entirely to
  * `WorkflowLifecycleManager` to deterministically compute a new
  * `Workflow` reflecting the requested lifecycle transition, and
  * returns it. None of these methods execute, schedule, retry, or run
  * anything concurrently; none persist or transmit anything; none
  * call any other engine; and none mutate the supplied `Workflow`.
+ *
+ * `dispatchWorkflow` (Milestone 7, new): validates the request, then
+ * delegates entirely to `WorkflowDispatcher` to deterministically
+ * compute a `WorkflowDispatchResult` — structural dispatch-readiness
+ * decisions and structural escalation decisions for every step and
+ * task on the request's `Workflow` — and returns it. This method does
+ * not execute, schedule, retry, or run anything concurrently; it does
+ * not notify, dispatch externally, or call any other engine; and it
+ * never mutates the supplied `Workflow`.
  */
 export class OrchestratorEngine extends BaseEngine {
   private readonly workflowBuilder: WorkflowBuilder;
   private readonly workflowValidator: WorkflowValidator;
   private readonly workflowStatusTracker: WorkflowStatusTracker;
   private readonly workflowLifecycleManager: WorkflowLifecycleManager;
+  private readonly workflowDispatcher: WorkflowDispatcher;
 
   constructor(options: OrchestratorEngineOptions = {}) {
     super({
@@ -136,7 +164,7 @@ export class OrchestratorEngine extends BaseEngine {
       contractVersion: options.contractVersion ?? ENGINE_API_CONTRACT_VERSION,
       description:
         options.description ??
-        'Central coordination engine for Titan AI. Milestone 3 implements deterministic structural translation of a Planner Plan into a Workflow for orchestrate(), via WorkflowBuilder. Milestone 4 implements deterministic structural validation of a Workflow for executeWorkflow(), via WorkflowValidator. Milestone 5 implements deterministic structural status reporting for getWorkflowStatus(), via WorkflowStatusTracker. Milestone 6 implements deterministic workflow lifecycle state transitions for pauseWorkflow(), resumeWorkflow(), and cancelWorkflow(), via WorkflowLifecycleManager.',
+        'Central coordination engine for Titan AI. Milestone 3 implements deterministic structural translation of a Planner Plan into a Workflow for orchestrate(), via WorkflowBuilder. Milestone 4 implements deterministic structural validation of a Workflow for executeWorkflow(), via WorkflowValidator. Milestone 5 implements deterministic structural status reporting for getWorkflowStatus(), via WorkflowStatusTracker. Milestone 6 implements deterministic workflow lifecycle state transitions for pauseWorkflow(), resumeWorkflow(), and cancelWorkflow(), via WorkflowLifecycleManager. Milestone 7 implements deterministic structural dispatch-readiness and escalation determination for dispatchWorkflow(), via WorkflowDispatcher.',
       capabilities: options.capabilities ?? [
         'orchestrator.orchestrate',
         'orchestrator.execute-workflow',
@@ -144,6 +172,7 @@ export class OrchestratorEngine extends BaseEngine {
         'orchestrator.resume-workflow',
         'orchestrator.cancel-workflow',
         'orchestrator.get-workflow-status',
+        'orchestrator.dispatch-workflow',
       ],
       lifecycleManager: options.lifecycleManager,
       eventBus: options.eventBus,
@@ -162,6 +191,7 @@ export class OrchestratorEngine extends BaseEngine {
     this.workflowValidator = new WorkflowValidator();
     this.workflowStatusTracker = new WorkflowStatusTracker();
     this.workflowLifecycleManager = new WorkflowLifecycleManager();
+    this.workflowDispatcher = new WorkflowDispatcher();
   }
 
   /**
@@ -169,7 +199,7 @@ export class OrchestratorEngine extends BaseEngine {
    * request's Planner `Plan` into a `Workflow` using
    * `WorkflowBuilder` and return it.
    *
-   * Milestone 3 scope only (unchanged in Milestones 4-6): pure
+   * Milestone 3 scope only (unchanged in Milestones 4-7): pure
    * structural translation. No execution, no scheduling, no retries,
    * no concurrency, no calls to `PlannerEngine.createPlan` or any
    * other engine.
@@ -185,7 +215,7 @@ export class OrchestratorEngine extends BaseEngine {
    * request's `Workflow` using `WorkflowValidator` and return the
    * resulting `WorkflowValidationResult`.
    *
-   * Milestone 4 scope only (unchanged in Milestones 5-6): pure
+   * Milestone 4 scope only (unchanged in Milestones 5-7): pure
    * structural validation. No execution, no scheduling, no retries,
    * no concurrency, and no calls to any other engine.
    */
@@ -200,7 +230,7 @@ export class OrchestratorEngine extends BaseEngine {
    * `WorkflowSummary` for the request's `Workflow` using
    * `WorkflowStatusTracker` and return it.
    *
-   * Milestone 5 scope only (unchanged in Milestone 6): pure
+   * Milestone 5 scope only (unchanged in Milestones 6-7): pure
    * structural status reporting. No execution, no scheduling, no
    * retries, no concurrency, no persistence, no networking, and no
    * calls to any other engine. The supplied `Workflow` is never
@@ -217,10 +247,10 @@ export class OrchestratorEngine extends BaseEngine {
    * `Workflow` reflecting a pause transition using
    * `WorkflowLifecycleManager.pause` and return it.
    *
-   * Milestone 6 scope only: pure lifecycle state transition. No
-   * execution, no scheduling, no task or dependency state changes, no
-   * calls to any other engine. The supplied `Workflow` is never
-   * mutated.
+   * Milestone 6 scope only (unchanged in Milestone 7): pure lifecycle
+   * state transition. No execution, no scheduling, no task or
+   * dependency state changes, no calls to any other engine. The
+   * supplied `Workflow` is never mutated.
    */
   async pauseWorkflow(request: OrchestratorPauseWorkflowRequest): Promise<Workflow> {
     this.validatePauseWorkflowRequest(request);
@@ -233,10 +263,10 @@ export class OrchestratorEngine extends BaseEngine {
    * `Workflow` reflecting a resume transition using
    * `WorkflowLifecycleManager.resume` and return it.
    *
-   * Milestone 6 scope only: pure lifecycle state transition. No
-   * execution, no scheduling, no task or dependency state changes, no
-   * calls to any other engine. The supplied `Workflow` is never
-   * mutated.
+   * Milestone 6 scope only (unchanged in Milestone 7): pure lifecycle
+   * state transition. No execution, no scheduling, no task or
+   * dependency state changes, no calls to any other engine. The
+   * supplied `Workflow` is never mutated.
    */
   async resumeWorkflow(request: OrchestratorResumeWorkflowRequest): Promise<Workflow> {
     this.validateResumeWorkflowRequest(request);
@@ -249,15 +279,32 @@ export class OrchestratorEngine extends BaseEngine {
    * `Workflow` reflecting a cancel transition using
    * `WorkflowLifecycleManager.cancel` and return it.
    *
-   * Milestone 6 scope only: pure lifecycle state transition. No
-   * execution, no scheduling, no task or dependency state changes, no
-   * calls to any other engine. The supplied `Workflow` is never
-   * mutated.
+   * Milestone 6 scope only (unchanged in Milestone 7): pure lifecycle
+   * state transition. No execution, no scheduling, no task or
+   * dependency state changes, no calls to any other engine. The
+   * supplied `Workflow` is never mutated.
    */
   async cancelWorkflow(request: OrchestratorCancelWorkflowRequest): Promise<Workflow> {
     this.validateCancelWorkflowRequest(request);
 
     return this.workflowLifecycleManager.cancel(request.workflow);
+  }
+
+  /**
+   * Validate the request, then deterministically compute a
+   * `WorkflowDispatchResult` for the request's `Workflow` using
+   * `WorkflowDispatcher` and return it.
+   *
+   * Milestone 7 scope only: pure structural dispatch-readiness and
+   * escalation determination. No execution, no scheduling, no
+   * retries, no concurrency, no persistence, no networking, no
+   * notification, no external dispatch, and no calls to any other
+   * engine. The supplied `Workflow` is never mutated.
+   */
+  async dispatchWorkflow(request: OrchestratorDispatchWorkflowRequest): Promise<WorkflowDispatchResult> {
+    this.validateDispatchWorkflowRequest(request);
+
+    return this.workflowDispatcher.dispatch(request.workflow);
   }
 
   private validateOrchestrateRequest(request: OrchestratorOrchestrateRequest): void {
@@ -371,10 +418,28 @@ export class OrchestratorEngine extends BaseEngine {
       ]);
     }
   }
+
+  private validateDispatchWorkflowRequest(request: OrchestratorDispatchWorkflowRequest): void {
+    if (request === null || request === undefined) {
+      throw new OrchestratorValidationError('OrchestratorDispatchWorkflowRequest is required.', [
+        { field: 'request', code: 'missing-request', message: 'OrchestratorDispatchWorkflowRequest is required.' },
+      ]);
+    }
+
+    if (request.workflow === null || request.workflow === undefined) {
+      throw new OrchestratorValidationError('OrchestratorDispatchWorkflowRequest.workflow is required.', [
+        {
+          field: 'request.workflow',
+          code: 'missing-workflow',
+          message: 'OrchestratorDispatchWorkflowRequest.workflow is required.',
+        },
+      ]);
+    }
+  }
 }
 
 export const orchestratorEngine = {
   name: 'orchestrator' as const,
   description:
-    'Orchestrator Engine Milestone 6: orchestrate() deterministically translates a Planner Plan into a Workflow via WorkflowBuilder; executeWorkflow() deterministically validates a Workflow via WorkflowValidator; getWorkflowStatus() deterministically computes a WorkflowSummary via WorkflowStatusTracker; pauseWorkflow(), resumeWorkflow(), and cancelWorkflow() deterministically compute lifecycle-transitioned Workflows via WorkflowLifecycleManager.',
+    'Orchestrator Engine Milestone 7: orchestrate() deterministically translates a Planner Plan into a Workflow via WorkflowBuilder; executeWorkflow() deterministically validates a Workflow via WorkflowValidator; getWorkflowStatus() deterministically computes a WorkflowSummary via WorkflowStatusTracker; pauseWorkflow(), resumeWorkflow(), and cancelWorkflow() deterministically compute lifecycle-transitioned Workflows via WorkflowLifecycleManager; dispatchWorkflow() deterministically computes structural dispatch-readiness and escalation decisions via WorkflowDispatcher.',
 };
