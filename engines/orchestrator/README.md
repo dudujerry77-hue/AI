@@ -1,55 +1,71 @@
 # Orchestrator Engine
 
-Milestone 2 domain model package for the Titan Core Orchestrator Engine.
+Milestone 4 package for the Titan Core Orchestrator Engine: deterministic
+Plan → Workflow structural translation, plus deterministic Workflow
+structural validation.
 
-## Scope (Milestone 2)
+## Scope (Milestone 4)
 
-This milestone builds on Milestone 1 by introducing the Orchestrator's
-**domain model and typed public API signatures**. It does **not**
-implement any orchestration behavior.
+This milestone builds on Milestones 1–3 by implementing the second real
+orchestration capability: **deterministic structural validation of a
+`Workflow`**, wired into `executeWorkflow()`.
 
-- Retains the Milestone 1 runtime foundation and public API surface
-  unchanged (lifecycle, health, metadata, version, and state methods,
-  inherited from `BaseEngine`).
-- Adds a dedicated domain model module (`src/models/types.ts`)
-  defining the Orchestrator's core workflow concepts.
-- Updates the six Orchestrator public API method signatures to use
-  the new domain model types for their request/response shapes.
-- Exposes Orchestrator API method signatures:
-	- `orchestrate()`
-	- `executeWorkflow()`
-	- `pauseWorkflow()`
-	- `resumeWorkflow()`
-	- `cancelWorkflow()`
-	- `getWorkflowStatus()`
+- Retains the Milestone 1 runtime foundation unchanged (lifecycle,
+  health, metadata, version, and state methods, inherited from
+  `BaseEngine`).
+- Retains the Milestone 2 domain model unchanged (`src/models/types.ts`).
+- Retains `WorkflowBuilder` and `orchestrate()` unchanged from
+  Milestone 3.
+- Adds `WorkflowValidator` (`src/validation/workflow-validator.ts`), a
+  deterministic, synchronous, offline structural validator for a
+  `Workflow`.
+- Implements `OrchestratorEngine.executeWorkflow()`: validates the
+  request, then delegates entirely to `WorkflowValidator` to validate
+  the request's `Workflow`, and returns the resulting
+  `WorkflowValidationResult`. **Despite its name (kept for API
+  stability), `executeWorkflow()` does not execute anything in
+  Milestone 4** — it only validates.
+- `pauseWorkflow()`, `resumeWorkflow()`, `cancelWorkflow()`, and
+  `getWorkflowStatus()` remain unimplemented stubs that throw
+  `NotImplementedError`, exactly as in Milestone 3.
 
-## Domain Model
+## WorkflowValidator
 
-`src/models/types.ts` defines the following immutable domain model
-types:
+`WorkflowValidator.validate(workflow: Workflow): WorkflowValidationResult`
+performs **pure structural validation only**:
 
-- `Workflow` — the top-level workflow aggregate.
-- `WorkflowStatus` — runtime status of a workflow.
-- `WorkflowStep` — a single step within a workflow.
-- `WorkflowStepStatus` — runtime status of a workflow step.
-- `WorkflowTask` — an atomic dispatch unit within a step.
-- `WorkflowTaskStatus` — runtime status of a workflow task.
-- `WorkflowDependency` — a dependency edge between steps or tasks.
-- `WorkflowDependencyType` — the relationship type of a dependency.
-- `WorkflowContext` — the context envelope passed to API operations.
-- `WorkflowMetadata` — workflow-level metadata for traceability.
-- `WorkflowExecutionMode` — how a workflow's steps are intended to run.
-- `WorkflowPriority` — relative priority of a workflow.
-- `WorkflowResult` — outcome payload for a completed/terminated workflow.
-- `WorkflowSummary` — deterministic summary of a workflow's shape and progress.
+- Throws `OrchestratorValidationError` only for malformed input:
+  `null`, `undefined`, or a non-object value.
+- For an object-shaped `Workflow`, all structural issues are collected
+  and returned in `WorkflowValidationResult.issues` — **never
+  thrown**.
 
-All of these types are exported from the package entry point
-(`src/index.ts`) alongside the existing runtime and error exports.
+Rules checked:
 
-These types are **pure data definitions only**. Nothing in this
-package constructs, validates, persists, or transforms values of
-these types yet — they exist solely as typed shapes for later
-milestones to implement behavior against.
+- **Workflow**: `workflowId` required; `planId` required; `status`
+  must be a valid `WorkflowStatus`; `priority` must be a valid
+  `WorkflowPriority`; `executionMode` must be a valid
+  `WorkflowExecutionMode`.
+- **Metadata**: `createdAt`/`updatedAt` must be required, valid
+  ISO-8601 timestamps (with `updatedAt` not earlier than `createdAt`);
+  `createdBy` must be a non-empty string; `revision` must be a finite
+  number.
+- **Steps**: `stepId` required and unique across `steps`; `title`
+  required; `status` must be a valid `WorkflowStepStatus`.
+- **Tasks**: `taskId` required and unique across `tasks`; `title`
+  required; `status` must be a valid `WorkflowTaskStatus`.
+- **Dependencies**: `dependencyId` required and unique;
+  `sourceId`/`targetId` required and must reference an existing
+  step or task ID; self-dependencies (`sourceId === targetId`) are
+  rejected; duplicate dependencies (same `type`, `sourceId`, and
+  `targetId`) are rejected; `type` must be a valid
+  `WorkflowDependencyType`.
+
+`WorkflowValidator` produces deterministic output for identical input
+and never mutates the input `Workflow`. It performs no graph traversal
+beyond simple reference-existence checks, no cycle detection, no
+scheduling, no execution, no retries, no concurrency, and calls no
+other Titan engine.
 
 ## Runtime Contract
 
@@ -77,15 +93,10 @@ full Titan runtime engine contract, unmodified since Milestone 1:
 
 ## Public API
 
-All six public API methods are now typed against the Orchestrator
-domain model (via `WorkflowContext` in their request shapes), but
-**every method remains an unimplemented stub**, exactly as in
-Milestone 1:
-
-| Method | Behavior |
+| Method | Behavior (Milestone 4) |
 |---|---|
-| `orchestrate(request)` | throws `NotImplementedError` |
-| `executeWorkflow(request)` | throws `NotImplementedError` |
+| `orchestrate(request)` | Unchanged from Milestone 3: validates the request, then returns `WorkflowBuilder.build(request.plan)`. |
+| `executeWorkflow(request)` | Validates the request, then returns `WorkflowValidator.validate(request.workflow)`. Throws `OrchestratorValidationError` if the request or its `workflow` is missing/malformed; otherwise always returns a `WorkflowValidationResult` (never throws for ordinary validation failures). |
 | `pauseWorkflow(request)` | throws `NotImplementedError` |
 | `resumeWorkflow(request)` | throws `NotImplementedError` |
 | `cancelWorkflow(request)` | throws `NotImplementedError` |
@@ -93,33 +104,46 @@ Milestone 1:
 
 ## Explicit Statement of Current Behavior
 
-**No orchestration functionality exists in this package.**
-Specifically, Milestone 2 does **not** implement:
+**This package performs structural translation and structural
+validation only. No orchestration execution behavior exists.**
+Specifically, Milestone 4 does **not** implement:
 
-- Orchestration logic of any kind.
-- Workflow routing, sequencing, dispatch, or scheduling.
-- Task execution or coordination.
-- Escalation handling.
+- Workflow execution, dispatch, or running of any kind.
+- Scheduling algorithms of any kind.
+- Retries.
+- Concurrency or parallel execution.
+- Background workers.
+- Any call to the Execution Engine.
+- Any call to `PlannerEngine.createPlan()` or any other Planner,
+  Knowledge, or Context Engine method.
+- Any network call, filesystem access, or database access.
 - Any AI-driven or heuristic behavior.
-- Any call to the Planner Engine, Knowledge Engine, Context Engine,
-  Execution Engine, or any other Titan engine.
+- Graph cycle detection (only direct reference-existence and
+  self-dependency checks are performed).
 
-Every public API method throws `NotImplementedError` unconditionally,
-exactly as in Milestone 1. This package currently provides only:
+Both `orchestrate()` and `executeWorkflow()` are fully deterministic:
+for identical input, they always produce deep-equal output. This
+package currently provides:
 
 1. A working Titan runtime lifecycle (`initialize` → `start` → `stop`)
    via `BaseEngine`, unchanged from Milestone 1.
 2. Working health, metadata, version, and contract-version reporting,
    unchanged from Milestone 1.
-3. The Orchestrator domain model (`src/models/types.ts`): `Workflow`,
-   `WorkflowStatus`, `WorkflowStep`, `WorkflowStepStatus`,
-   `WorkflowTask`, `WorkflowTaskStatus`, `WorkflowDependency`,
-   `WorkflowDependencyType`, `WorkflowContext`, `WorkflowMetadata`,
-   `WorkflowExecutionMode`, `WorkflowPriority`, `WorkflowResult`, and
-   `WorkflowSummary`.
-4. Typed method signatures for the six Orchestrator public API
-   methods, now referencing the domain model, with no behavior behind
-   them.
+3. The Orchestrator domain model (`src/models/types.ts`), unchanged
+   from Milestone 2.
+4. `WorkflowBuilder` and a working `orchestrate()` implementation,
+   unchanged from Milestone 3.
+5. `WorkflowValidator`, a deterministic, pure structural validator for
+   a `Workflow`.
+6. A working `executeWorkflow()` implementation built entirely on
+   `WorkflowValidator` — this method validates only, it does not
+   execute.
+7. `OrchestratorValidationError` for malformed `orchestrate()` and
+   `executeWorkflow()` requests, and for malformed `Plan`/`Workflow`
+   inputs to `WorkflowBuilder`/`WorkflowValidator`.
+8. `pauseWorkflow()`, `resumeWorkflow()`, `cancelWorkflow()`, and
+   `getWorkflowStatus()` remaining unimplemented stubs, exactly as in
+   Milestone 3.
 
-Real orchestration behavior will be introduced in later Orchestrator
-milestones.
+Real workflow execution, scheduling, and coordination behavior will be
+introduced in later Orchestrator milestones.

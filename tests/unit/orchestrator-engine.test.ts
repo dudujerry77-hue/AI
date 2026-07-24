@@ -3,6 +3,10 @@ import { describe, expect, it } from 'vitest';
 import {
   OrchestratorEngine,
   NotImplementedError,
+  OrchestratorValidationError,
+  WorkflowBuilder,
+  WorkflowValidator,
+  type Plan,
   type Workflow,
   type WorkflowContext,
   type WorkflowDependency,
@@ -19,6 +23,96 @@ import {
   type WorkflowTaskStatus,
 } from '../../engines/orchestrator/src';
 import { ENGINE_API_CONTRACT_VERSION } from '../../runtime/engine/types';
+
+/**
+ * Builds a deterministic, structurally rich `Plan` fixture for
+ * Milestone 3 translation tests. Every field is fixed so that
+ * repeated calls produce deep-equal `Plan` values.
+ */
+function buildPlanFixture(): Plan {
+  return {
+    planId: 'plan-1',
+    goalId: 'goal-1',
+    status: 'approved',
+    metadata: {
+      createdAt: '2026-07-24T00:00:00.000Z',
+      updatedAt: '2026-07-24T00:00:00.000Z',
+      createdBy: 'actor-1',
+      revision: 3,
+      labels: ['milestone-3', 'fixture'],
+    },
+    steps: [
+      {
+        stepId: 'step-1',
+        title: 'Analyze requirements',
+        description: 'Gather and analyze requirements',
+        type: 'analysis',
+        status: 'completed',
+        taskIds: ['task-1', 'task-2'],
+      },
+      {
+        stepId: 'step-2',
+        title: 'Implement feature',
+        description: 'Implement the requested feature',
+        type: 'implementation',
+        status: 'in-progress',
+        taskIds: ['task-3'],
+        dependsOnStepIds: ['step-1'],
+      },
+    ],
+    tasks: [
+      {
+        taskId: 'task-1',
+        stepId: 'step-1',
+        title: 'Interview stakeholders',
+        description: 'Collect requirements from stakeholders',
+        status: 'completed',
+        assignee: 'analyst-1',
+      },
+      {
+        taskId: 'task-2',
+        stepId: 'step-1',
+        title: 'Document findings',
+        description: 'Write up the requirements document',
+        status: 'completed',
+      },
+      {
+        taskId: 'task-3',
+        stepId: 'step-2',
+        title: 'Write implementation',
+        description: 'Implement the feature code',
+        status: 'in-progress',
+        assignee: 'engineer-1',
+      },
+    ],
+    dependencies: [
+      {
+        dependencyId: 'dep-1',
+        type: 'sequential',
+        sourceId: 'step-1',
+        targetId: 'step-2',
+        reason: 'Implementation requires completed analysis',
+      },
+      {
+        dependencyId: 'dep-2',
+        type: 'requires',
+        sourceId: 'task-3',
+        targetId: 'task-1',
+      },
+    ],
+    constraints: [],
+  };
+}
+
+/**
+ * Builds a deterministic, structurally valid `Workflow` fixture for
+ * Milestone 4 validation tests, derived from `buildPlanFixture()` via
+ * `WorkflowBuilder` (Milestone 3), so it always reflects a real,
+ * structurally correct translation output.
+ */
+function buildWorkflowFixture(): Workflow {
+  return new WorkflowBuilder().build(buildPlanFixture());
+}
 
 describe('Orchestrator Engine Milestone 1', () => {
   it('supports the runtime lifecycle contract', async () => {
@@ -88,20 +182,6 @@ describe('Orchestrator Engine Milestone 1', () => {
     expect(typeof engine.resumeWorkflow).toBe('function');
     expect(typeof engine.cancelWorkflow).toBe('function');
     expect(typeof engine.getWorkflowStatus).toBe('function');
-  });
-
-  it('throws NotImplementedError for orchestrate', async () => {
-    const engine = new OrchestratorEngine();
-
-    await expect(engine.orchestrate({ planId: 'plan-1' })).rejects.toBeInstanceOf(NotImplementedError);
-  });
-
-  it('throws NotImplementedError for executeWorkflow', async () => {
-    const engine = new OrchestratorEngine();
-
-    await expect(engine.executeWorkflow({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(
-      NotImplementedError,
-    );
   });
 
   it('throws NotImplementedError for pauseWorkflow', async () => {
@@ -285,28 +365,422 @@ describe('Orchestrator Engine Milestone 2 — domain model', () => {
   });
 });
 
-describe('Orchestrator Engine Milestone 2 — public API signatures', () => {
-  it('accepts an orchestrate request with a typed WorkflowContext', async () => {
-    const engine = new OrchestratorEngine();
-    const context: WorkflowContext = { actorId: 'actor-1', planId: 'plan-1' };
+describe('Orchestrator Engine Milestone 3 — WorkflowBuilder', () => {
+  it('translates a valid Plan into a Workflow', () => {
+    const builder = new WorkflowBuilder();
+    const plan = buildPlanFixture();
 
-    await expect(engine.orchestrate({ planId: 'plan-1', context })).rejects.toBeInstanceOf(NotImplementedError);
+    const workflow = builder.build(plan);
+
+    expect(workflow.workflowId).toBe('workflow-plan-1');
+    expect(workflow.planId).toBe('plan-1');
+    expect(workflow.status).toBe('pending');
+    expect(workflow.steps).toHaveLength(2);
+    expect(workflow.tasks).toHaveLength(3);
+    expect(workflow.dependencies).toHaveLength(2);
   });
 
-  it('accepts an executeWorkflow request with a typed WorkflowContext', async () => {
+  it('preserves all step, task, and dependency IDs', () => {
+    const builder = new WorkflowBuilder();
+    const plan = buildPlanFixture();
+
+    const workflow = builder.build(plan);
+
+    expect(workflow.steps.map((step) => step.stepId)).toEqual(['step-1', 'step-2']);
+    expect(workflow.tasks.map((task) => task.taskId)).toEqual(['task-1', 'task-2', 'task-3']);
+    expect(workflow.dependencies.map((dependency) => dependency.dependencyId)).toEqual(['dep-1', 'dep-2']);
+  });
+
+  it('preserves step, task, and dependency ordering exactly as in the input Plan', () => {
+    const builder = new WorkflowBuilder();
+    const plan = buildPlanFixture();
+
+    const workflow = builder.build(plan);
+
+    expect(workflow.steps.map((step) => step.stepId)).toEqual(plan.steps.map((step) => step.stepId));
+    expect(workflow.tasks.map((task) => task.taskId)).toEqual(plan.tasks.map((task) => task.taskId));
+    expect(workflow.dependencies.map((dependency) => dependency.dependencyId)).toEqual(
+      plan.dependencies.map((dependency) => dependency.dependencyId),
+    );
+  });
+
+  it('preserves step dependsOnStepIds and dependency source/target relationships', () => {
+    const builder = new WorkflowBuilder();
+    const plan = buildPlanFixture();
+
+    const workflow = builder.build(plan);
+
+    const step2 = workflow.steps.find((step) => step.stepId === 'step-2');
+    expect(step2?.dependsOnStepIds).toEqual(['step-1']);
+
+    const dep1 = workflow.dependencies.find((dependency) => dependency.dependencyId === 'dep-1');
+    expect(dep1?.sourceId).toBe('step-1');
+    expect(dep1?.targetId).toBe('step-2');
+    expect(dep1?.type).toBe('sequential');
+
+    const dep2 = workflow.dependencies.find((dependency) => dependency.dependencyId === 'dep-2');
+    expect(dep2?.sourceId).toBe('task-3');
+    expect(dep2?.targetId).toBe('task-1');
+    expect(dep2?.type).toBe('requires');
+  });
+
+  it('translates every Planner DependencyType into the identical WorkflowDependencyType', () => {
+    const builder = new WorkflowBuilder();
+    const types: readonly WorkflowDependencyType[] = ['blocks', 'requires', 'related', 'sequential', 'parallel'];
+
+    const plan: Plan = {
+      ...buildPlanFixture(),
+      dependencies: types.map((type, index) => ({
+        dependencyId: `dep-${index}`,
+        type,
+        sourceId: 'step-1',
+        targetId: 'step-2',
+      })),
+    };
+
+    const workflow = builder.build(plan);
+
+    expect(workflow.dependencies.map((dependency) => dependency.type)).toEqual(types);
+  });
+
+  it('produces deterministic output for identical input', () => {
+    const builder = new WorkflowBuilder();
+    const plan = buildPlanFixture();
+
+    const first = builder.build(plan);
+    const second = builder.build(buildPlanFixture());
+
+    expect(first).toEqual(second);
+  });
+
+  it('never mutates the input Plan', () => {
+    const builder = new WorkflowBuilder();
+    const plan = buildPlanFixture();
+    const snapshot = JSON.parse(JSON.stringify(plan));
+
+    builder.build(plan);
+
+    expect(plan).toEqual(snapshot);
+  });
+
+  it('rejects a null or undefined Plan with OrchestratorValidationError', () => {
+    const builder = new WorkflowBuilder();
+
+    expect(() => builder.build(null as unknown as Plan)).toThrow(OrchestratorValidationError);
+    expect(() => builder.build(undefined as unknown as Plan)).toThrow(OrchestratorValidationError);
+  });
+
+  it('rejects a Plan missing planId with OrchestratorValidationError', () => {
+    const builder = new WorkflowBuilder();
+    const plan = { ...buildPlanFixture(), planId: '' };
+
+    expect(() => builder.build(plan)).toThrow(OrchestratorValidationError);
+  });
+
+  it('rejects a Plan missing metadata with OrchestratorValidationError', () => {
+    const builder = new WorkflowBuilder();
+    const plan = { ...buildPlanFixture(), metadata: undefined as unknown as Plan['metadata'] };
+
+    expect(() => builder.build(plan)).toThrow(OrchestratorValidationError);
+  });
+
+  it('rejects a Plan with a non-array steps field with OrchestratorValidationError', () => {
+    const builder = new WorkflowBuilder();
+    const plan = { ...buildPlanFixture(), steps: undefined as unknown as Plan['steps'] };
+
+    expect(() => builder.build(plan)).toThrow(OrchestratorValidationError);
+  });
+
+  it('rejects a Plan with a non-array tasks field with OrchestratorValidationError', () => {
+    const builder = new WorkflowBuilder();
+    const plan = { ...buildPlanFixture(), tasks: undefined as unknown as Plan['tasks'] };
+
+    expect(() => builder.build(plan)).toThrow(OrchestratorValidationError);
+  });
+
+  it('rejects a Plan with a non-array dependencies field with OrchestratorValidationError', () => {
+    const builder = new WorkflowBuilder();
+    const plan = { ...buildPlanFixture(), dependencies: undefined as unknown as Plan['dependencies'] };
+
+    expect(() => builder.build(plan)).toThrow(OrchestratorValidationError);
+  });
+});
+
+describe('Orchestrator Engine Milestone 3 — orchestrate()', () => {
+  it('returns a Workflow for a valid request', async () => {
     const engine = new OrchestratorEngine();
-    const context: WorkflowContext = { actorId: 'actor-1' };
+    const plan = buildPlanFixture();
+
+    const workflow = await engine.orchestrate({ plan });
+
+    expect(workflow.workflowId).toBe('workflow-plan-1');
+    expect(workflow.planId).toBe('plan-1');
+    expect(workflow.steps).toHaveLength(2);
+    expect(workflow.tasks).toHaveLength(3);
+    expect(workflow.dependencies).toHaveLength(2);
+  });
+
+  it('produces deterministic output for identical input', async () => {
+    const engine = new OrchestratorEngine();
+
+    const first = await engine.orchestrate({ plan: buildPlanFixture() });
+    const second = await engine.orchestrate({ plan: buildPlanFixture() });
+
+    expect(first).toEqual(second);
+  });
+
+  it('rejects a request missing a plan with OrchestratorValidationError', async () => {
+    const engine = new OrchestratorEngine();
 
     await expect(
-      engine.executeWorkflow({ workflowId: 'workflow-1', context }),
-    ).rejects.toBeInstanceOf(NotImplementedError);
+      engine.orchestrate({ plan: undefined as unknown as Plan }),
+    ).rejects.toBeInstanceOf(OrchestratorValidationError);
   });
 
-  it('still throws NotImplementedError for every Orchestrator public API method in Milestone 2', async () => {
+  it('rejects a null request with OrchestratorValidationError', async () => {
     const engine = new OrchestratorEngine();
 
-    await expect(engine.orchestrate({ planId: 'plan-1' })).rejects.toBeInstanceOf(NotImplementedError);
-    await expect(engine.executeWorkflow({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(NotImplementedError);
+    await expect(
+      engine.orchestrate(null as unknown as Parameters<typeof engine.orchestrate>[0]),
+    ).rejects.toBeInstanceOf(OrchestratorValidationError);
+  });
+
+  it('leaves the runtime lifecycle contract unchanged in Milestone 3', async () => {
+    const engine = new OrchestratorEngine();
+
+    expect(engine.getState()).toBe('created');
+    await engine.initialize();
+    expect(engine.getState()).toBe('initialized');
+    await engine.start();
+    expect(engine.getState()).toBe('running');
+    await engine.stop();
+    expect(engine.getState()).toBe('stopped');
+  });
+});
+
+describe('Orchestrator Engine Milestone 4 — WorkflowValidator', () => {
+  it('accepts a valid Workflow', () => {
+    const validator = new WorkflowValidator();
+    const workflow = buildWorkflowFixture();
+
+    const result = validator.validate(workflow);
+
+    expect(result.valid).toBe(true);
+    expect(result.issues).toEqual([]);
+    expect(result.workflowId).toBe(workflow.workflowId);
+  });
+
+  it('detects duplicate stepId values', () => {
+    const validator = new WorkflowValidator();
+    const workflow = buildWorkflowFixture();
+    const duplicated: Workflow = {
+      ...workflow,
+      steps: [workflow.steps[0], { ...workflow.steps[1], stepId: workflow.steps[0].stepId }],
+    };
+
+    const result = validator.validate(duplicated);
+
+    expect(result.valid).toBe(false);
+    expect(result.issues.some((issue) => issue.code === 'DUPLICATE_ID' && issue.field.includes('stepId'))).toBe(
+      true,
+    );
+  });
+
+  it('detects duplicate taskId values', () => {
+    const validator = new WorkflowValidator();
+    const workflow = buildWorkflowFixture();
+    const duplicated: Workflow = {
+      ...workflow,
+      tasks: workflow.tasks.map((task, index) =>
+        index === 1 ? { ...task, taskId: workflow.tasks[0].taskId } : task,
+      ),
+    };
+
+    const result = validator.validate(duplicated);
+
+    expect(result.valid).toBe(false);
+    expect(result.issues.some((issue) => issue.code === 'DUPLICATE_ID' && issue.field.includes('taskId'))).toBe(
+      true,
+    );
+  });
+
+  it('detects invalid metadata (missing createdBy, non-numeric revision, bad timestamp)', () => {
+    const validator = new WorkflowValidator();
+    const workflow = buildWorkflowFixture();
+    const invalid: Workflow = {
+      ...workflow,
+      metadata: {
+        ...workflow.metadata,
+        createdBy: '',
+        revision: Number.NaN,
+        createdAt: 'not-a-timestamp',
+      },
+    };
+
+    const result = validator.validate(invalid);
+
+    expect(result.valid).toBe(false);
+    expect(result.issues.some((issue) => issue.field === 'metadata.createdBy')).toBe(true);
+    expect(result.issues.some((issue) => issue.field === 'metadata.revision')).toBe(true);
+    expect(result.issues.some((issue) => issue.field === 'metadata.createdAt')).toBe(true);
+  });
+
+  it('detects invalid WorkflowStatus, WorkflowPriority, and WorkflowExecutionMode enum values', () => {
+    const validator = new WorkflowValidator();
+    const workflow = buildWorkflowFixture();
+    const invalid = {
+      ...workflow,
+      status: 'not-a-status',
+      priority: 'not-a-priority',
+      executionMode: 'not-a-mode',
+    } as unknown as Workflow;
+
+    const result = validator.validate(invalid);
+
+    expect(result.valid).toBe(false);
+    expect(result.issues.some((issue) => issue.field === 'status' && issue.code === 'INVALID_ENUM_VALUE')).toBe(
+      true,
+    );
+    expect(result.issues.some((issue) => issue.field === 'priority' && issue.code === 'INVALID_ENUM_VALUE')).toBe(
+      true,
+    );
+    expect(
+      result.issues.some((issue) => issue.field === 'executionMode' && issue.code === 'INVALID_ENUM_VALUE'),
+    ).toBe(true);
+  });
+
+  it('detects invalid step and task status enum values', () => {
+    const validator = new WorkflowValidator();
+    const workflow = buildWorkflowFixture();
+    const invalid: Workflow = {
+      ...workflow,
+      steps: [{ ...workflow.steps[0], status: 'not-a-status' as unknown as WorkflowStepStatus }, workflow.steps[1]],
+      tasks: [
+        { ...workflow.tasks[0], status: 'not-a-status' as unknown as WorkflowTaskStatus },
+        ...workflow.tasks.slice(1),
+      ],
+    };
+
+    const result = validator.validate(invalid);
+
+    expect(result.valid).toBe(false);
+    expect(result.issues.some((issue) => issue.field === 'steps[0].status')).toBe(true);
+    expect(result.issues.some((issue) => issue.field === 'tasks[0].status')).toBe(true);
+  });
+
+  it('detects duplicate dependencies (same type, sourceId, and targetId)', () => {
+    const validator = new WorkflowValidator();
+    const workflow = buildWorkflowFixture();
+    const duplicated: Workflow = {
+      ...workflow,
+      dependencies: [...workflow.dependencies, { ...workflow.dependencies[0], dependencyId: 'dep-duplicate' }],
+    };
+
+    const result = validator.validate(duplicated);
+
+    expect(result.valid).toBe(false);
+    expect(result.issues.some((issue) => issue.code === 'DUPLICATE_DEPENDENCY')).toBe(true);
+  });
+
+  it('detects self-dependencies', () => {
+    const validator = new WorkflowValidator();
+    const workflow = buildWorkflowFixture();
+    const selfDependency: Workflow = {
+      ...workflow,
+      dependencies: [
+        ...workflow.dependencies,
+        { dependencyId: 'dep-self', type: 'related', sourceId: 'step-1', targetId: 'step-1' },
+      ],
+    };
+
+    const result = validator.validate(selfDependency);
+
+    expect(result.valid).toBe(false);
+    expect(result.issues.some((issue) => issue.code === 'SELF_DEPENDENCY')).toBe(true);
+  });
+
+  it('detects dependencies referencing unknown step/task IDs', () => {
+    const validator = new WorkflowValidator();
+    const workflow = buildWorkflowFixture();
+    const invalid: Workflow = {
+      ...workflow,
+      dependencies: [
+        ...workflow.dependencies,
+        { dependencyId: 'dep-missing', type: 'related', sourceId: 'step-missing', targetId: 'task-missing' },
+      ],
+    };
+
+    const result = validator.validate(invalid);
+
+    expect(result.valid).toBe(false);
+    expect(result.issues.some((issue) => issue.code === 'UNKNOWN_REFERENCE' && issue.field.includes('sourceId'))).toBe(
+      true,
+    );
+    expect(result.issues.some((issue) => issue.code === 'UNKNOWN_REFERENCE' && issue.field.includes('targetId'))).toBe(
+      true,
+    );
+  });
+
+  it('throws OrchestratorValidationError for malformed input (null, undefined, non-object)', () => {
+    const validator = new WorkflowValidator();
+
+    expect(() => validator.validate(null as unknown as Workflow)).toThrow(OrchestratorValidationError);
+    expect(() => validator.validate(undefined as unknown as Workflow)).toThrow(OrchestratorValidationError);
+    expect(() => validator.validate('not-an-object' as unknown as Workflow)).toThrow(OrchestratorValidationError);
+  });
+
+  it('produces deterministic output for identical input', () => {
+    const validator = new WorkflowValidator();
+
+    const first = validator.validate(buildWorkflowFixture());
+    const second = validator.validate(buildWorkflowFixture());
+
+    expect(first).toEqual(second);
+  });
+});
+
+describe('Orchestrator Engine Milestone 4 — executeWorkflow()', () => {
+  it('returns a valid WorkflowValidationResult for a valid Workflow', async () => {
+    const engine = new OrchestratorEngine();
+    const workflow = buildWorkflowFixture();
+
+    const result = await engine.executeWorkflow({ workflow });
+
+    expect(result.valid).toBe(true);
+    expect(result.issues).toEqual([]);
+    expect(result.workflowId).toBe(workflow.workflowId);
+  });
+
+  it('returns an invalid WorkflowValidationResult for a structurally invalid Workflow', async () => {
+    const engine = new OrchestratorEngine();
+    const workflow = buildWorkflowFixture();
+    const invalid: Workflow = { ...workflow, workflowId: '' };
+
+    const result = await engine.executeWorkflow({ workflow: invalid });
+
+    expect(result.valid).toBe(false);
+    expect(result.issues.length).toBeGreaterThan(0);
+  });
+
+  it('rejects a malformed request (missing workflow) with OrchestratorValidationError', async () => {
+    const engine = new OrchestratorEngine();
+
+    await expect(
+      engine.executeWorkflow({ workflow: undefined as unknown as Workflow }),
+    ).rejects.toBeInstanceOf(OrchestratorValidationError);
+  });
+
+  it('rejects a null request with OrchestratorValidationError', async () => {
+    const engine = new OrchestratorEngine();
+
+    await expect(
+      engine.executeWorkflow(null as unknown as Parameters<typeof engine.executeWorkflow>[0]),
+    ).rejects.toBeInstanceOf(OrchestratorValidationError);
+  });
+
+  it('still throws NotImplementedError for the other four Orchestrator public API methods', async () => {
+    const engine = new OrchestratorEngine();
+
     await expect(engine.pauseWorkflow({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(NotImplementedError);
     await expect(engine.resumeWorkflow({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(NotImplementedError);
     await expect(engine.cancelWorkflow({ workflowId: 'workflow-1' })).rejects.toBeInstanceOf(NotImplementedError);
@@ -315,7 +789,17 @@ describe('Orchestrator Engine Milestone 2 — public API signatures', () => {
     );
   });
 
-  it('leaves the runtime lifecycle contract unchanged in Milestone 2', async () => {
+  it('leaves orchestrate() unchanged in Milestone 4', async () => {
+    const engine = new OrchestratorEngine();
+    const plan = buildPlanFixture();
+
+    const workflow = await engine.orchestrate({ plan });
+
+    expect(workflow.workflowId).toBe('workflow-plan-1');
+    expect(workflow.planId).toBe('plan-1');
+  });
+
+  it('leaves the runtime lifecycle contract unchanged in Milestone 4', async () => {
     const engine = new OrchestratorEngine();
 
     expect(engine.getState()).toBe('created');
