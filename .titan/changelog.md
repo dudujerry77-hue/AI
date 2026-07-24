@@ -9,6 +9,10 @@
 ## [Unreleased]
 
 ### Added
+- Execution Engine Milestone 5: `ExecutionStatusTracker` (deterministic, synchronous, offline structural status tracker for `ExecutionRecord` values, computing identifiers, recorded `status`, recorded timestamps, a duration derived only when both timestamps are well-formed ISO-8601 strings, and a terminal/cancelled classification derived purely from the recorded `status`), plus a working `ExecutionEngine.reportResult()` implementation that validates its request and delegates entirely to `ExecutionStatusTracker`. Adds `isTerminal`, `isCancelled`, and optional `durationMs` fields to the `ExecutionSummary` domain type. `reportResult()`'s request shape changes to carry a full `ExecutionRecord` (`{ record }`) plus the pre-existing optional `handoff` field, rather than only an `executionId` plus `handoff`, and its return type changes from the never-implemented `ExecutionResult` to `ExecutionSummary`. Despite its name, `reportResult()` performs no real result reporting in Milestone 5 — no `ExecutionReport` is ever created, populated, or transmitted, and `request.handoff` is accepted for shape compatibility only and never read. `cancelExecution` remains the only unimplemented `NotImplementedError` stub.
+- Execution Engine Milestone 4: `ExecutionValidator` (deterministic, synchronous, offline structural validator for `ExecutionRecord` values, checking required identifiers, `itemType`/`status` enumeration membership, ISO-8601 timestamp well-formedness, and `updatedAt` not preceding `createdAt`), plus a working `ExecutionEngine.getExecutionStatus()` implementation that validates its request and delegates entirely to `ExecutionValidator`. Adds `ExecutionValidationIssueCode`, `ExecutionValidationResultIssue`, and `ExecutionValidationResult` to the Execution domain model. `getExecutionStatus()`'s request shape changes to carry a full `ExecutionRecord` (`{ record }`) rather than only an `executionId`, and its return type changes from `ExecutionSummary` to `ExecutionValidationResult`; `cancelExecution` and `reportResult` remain unimplemented `NotImplementedError` stubs.
+- Execution Engine Milestone 3: `ExecutionBuilder` (deterministic, synchronous, offline structural translator from an Orchestrator `WorkflowDispatchResult` into an `ExecutionRecord`), plus a working `ExecutionEngine.execute()` implementation that validates its request and delegates entirely to `ExecutionBuilder`. Adds `ExecutionBuildRequest` to the Execution domain model and activates the previously-unused `ExecutionValidationError`. `execute()`'s return type changes from `ExecutionResult` to `ExecutionRecord`; `getExecutionStatus`, `cancelExecution`, and `reportResult` remain unimplemented `NotImplementedError` stubs.
+- Execution Engine Milestone 2: complete planned domain model covering action execution contracts, result reporting, policy-aware execution constraints, observability hooks, context updates, and validation handoff, added as pure, immutable data type definitions with no behavior change.
 - Orchestrator Engine Milestone 7: `WorkflowDispatcher` (deterministic structural dispatch-readiness evaluation and escalation determination for `Workflow` steps and tasks based on status and dependency preconditions), plus a working `OrchestratorEngine.dispatchWorkflow()` implementation. Adds `WorkflowDispatchItemType`, `WorkflowDispatchReason`, `WorkflowDispatchDecision`, `WorkflowEscalationReason`, `WorkflowEscalationDecision`, and `WorkflowDispatchResult` to the Orchestrator domain model. All seven Orchestrator public API methods are now implemented with no remaining `NotImplementedError` stubs.
 - Planner Engine Milestone 3: `GoalAnalyzer` (deterministic structural goal validation) and `GoalDecomposer` (deterministic fixed-pipeline goal-to-plan decomposition), plus a working `PlannerEngine.createPlan()` implementation.
 - Planner Engine Milestone 4: `PlanValidator` (deterministic structural plan validation covering required fields, enums, metadata, steps, tasks, dependencies, duplicate and self-dependency detection), plus a working `PlannerEngine.validatePlan()` implementation.
@@ -17,6 +21,7 @@
 - `specification/knowledge_engine.md`, defining the approved architecture blueprint for the Knowledge Engine, including responsibility boundaries, knowledge model, retrieval strategy, storage strategy, security model, extension points, and scalability guidance.
 
 ### Changed
+- Governance phase tracking now reflects Execution Engine Milestone 5 (`ExecutionStatusTracker`/`reportResult()`) as complete across `current_phase.md` and `project_state.json`. Phase 010 remains in-progress; `cancelExecution` remains the only unimplemented `NotImplementedError` stub.
 - Governance phase tracking now marks Phase 009 (Orchestrator Engine) as complete and Phase 010 (Execution Engine) as active across `roadmap.md`, `current_phase.md`, `project_state.json`, and `phases/phase-009-orchestrator-engine-implementation.md`. Phase 009's Exit Criteria are now checked, its Status/Started/Completed/Agent(s) fields are filled in, and a Milestone History (Milestones 1–7) plus a Verification section (lint/test/build results) have been added to the phase document.
 - Governance phase tracking now marks Phase 008 (Planner Engine) as complete and Phase 009 (Orchestrator Engine) as active across `roadmap.md`, `current_phase.md`, `project_state.json`, and `phases/phase-008-planner-engine-implementation.md`. `PlannerEngine.cancelPlan()` remains an unimplemented `NotImplementedError` stub; this is recorded as known remaining Planner API surface and was confirmed not to be required by any Phase 008 exit criterion.
 - `architecture.md` now explicitly points the Knowledge Engine definition to `specification/knowledge_engine.md` for detailed design.
@@ -25,6 +30,8 @@
 
 ### Milestones
 
+- 2026-07-24: Execution Engine Milestone 5 - completed `ExecutionStatusTracker`/`ExecutionEngine.reportResult()` (deterministic structural summarization of an `ExecutionRecord`; despite its name, performs no real result reporting); verified lint/test/build all passing (322/322 tests, including 61 Execution Engine tests). Phase 010 remains in-progress; `cancelExecution` remains the only unimplemented stub.
+- 2026-07-24: Execution Engine Milestones 2–4 - completed the complete planned domain model (Milestone 2), `ExecutionBuilder`/`ExecutionEngine.execute()` (Milestone 3: deterministic structural translation of an Orchestrator `WorkflowDispatchResult` into an `ExecutionRecord`), and `ExecutionValidator`/`ExecutionEngine.getExecutionStatus()` (Milestone 4: deterministic structural validation of an `ExecutionRecord`); verified lint/test/build all passing (345/345 tests, including 84 Execution Engine tests). Phase 010 remains in-progress; `cancelExecution` and `reportResult` remain unimplemented.
 - 2026-07-24: Orchestrator Engine Milestones 1–7 - completed runtime foundation, domain model, WorkflowBuilder/orchestrate, WorkflowValidator/executeWorkflow, WorkflowStatusTracker/getWorkflowStatus, WorkflowLifecycleManager/pauseWorkflow/resumeWorkflow/cancelWorkflow, and WorkflowDispatcher/dispatchWorkflow (structural dispatch-readiness and structural escalation determination); verified lint/test/build all passing (261/261 tests, including 123 Orchestrator Engine tests and 41 dedicated dispatch/escalation tests) and transitioned governance state to active Execution Engine phase (010).
 - 2026-07-23: Planner Engine Milestones 3–6 - completed goal analysis/decomposition, plan validation, plan optimization, and plan estimation/explanation; verified lint/test/build all passing (97/97 tests, 71 Planner Engine tests) and transitioned governance state to active Orchestrator Engine phase (009).
 - 2026-07-08: Governance Initialization - established the `.titan/` governance layer, constitutional rules, roadmap, and supporting templates.
@@ -34,71 +41,3 @@
 - 2026-07-08: Security Governance - established the security governance package covering threat model, authentication, authorization, secrets, secure execution, audit logging, incident response, and checklist controls.
 - 2026-07-08: Engine Framework - completed the framework governance contract and runtime implementation prerequisite for later engines.
 - 2026-07-10: Documentation Improvements - completed START_HERE, VISION, security governance expansions, and phase-specification backfill.
-- 2026-07-10: Governance Synchronization - aligned roadmap, current phase, project state, phase specs, and security/runtime governance docs.
-- 2026-07-10: Knowledge Engine Architecture & Design - approved the Knowledge Engine architectural blueprint without starting production implementation.
-- 2026-07-10: Knowledge Engine Final Verification - completed independent Phase 4 verification with lint/test/build passing and transitioned governance state to active Planner Engine phase.
-
-
-### Added
-- A governance update introducing a shared Engine Framework as a required architecture prerequisite before additional Titan engine implementation begins.
-- A new `.titan/security/` governance package covering security architecture, threat modeling, authentication, authorization, secret management, secure execution, audit logging, incident response, and deployment checklist.
-- A new shared Titan Runtime package under `runtime/` implementing the Engine Framework's reusable infrastructure: lifecycle management, engine registration, event-driven communication, configuration, structured logging, health monitoring, metrics collection, and a runtime error hierarchy.
-- A new governance specification, `specification/engine_api.md`, defining the mandatory public contract for every Titan engine, including lifecycle, event, health, configuration, logging, error handling, capability discovery, and compatibility expectations.
-- Initial Titan AI repository scaffold with production-style folders for `apps/`, `engines/`, `packages/`, `services/`, `shared/`, `tests/`, `scripts/`, and `docs/`.
-- TypeScript monorepo workspace configuration, including TypeScript, ESLint, Prettier, Vitest, environment example config, `.gitignore`, and `.editorconfig`.
-- Placeholder engine packages for Context, Knowledge, Planner, Orchestrator, Execution, Validation, and Learning, each containing only documentation, manifest, and entrypoint stubs.
-- A minimal application shell package that imports the engine placeholders without performing real work.
-- Governance updates recording the Phase 004 scaffold and the selected TypeScript stack in `tech_stack.md`, `project_state.json`, `current_phase.md`, and `decisions.md`.
-- A completed Context Engine package implementing typed runtime context interfaces, a `ContextManager`, immutable snapshots, versioning, serialization/deserialization, and load/save support.
-
-### Changed
-- Synchronized governance state across `current_phase.md`, `project_state.json`, and `roadmap.md` so current phase, completed phases, and next phase are internally consistent.
-- Updated roadmap phase status ordering to reflect completed phases through Security Architecture Governance (006a) and Knowledge Engine (007) as the next not-started phase.
-- Updated stale architecture section references in governance state files after the security architecture insertion.
-- Updated `project_state.json` counters to match repository history: session logs, accepted ADR count, and completed phase count.
-
----
-
-## [0.1.0] — 2026-07-08 — Titan Core Architecture Approved
-
-### Added
-- `architecture.md`: new Section 6, "Titan Core Architecture (Approved)," defining the seven Titan Core engines — Planner, Orchestrator, Context, Knowledge, Execution, Validation, Learning — with responsibilities, boundaries, a Mermaid data-flow diagram, cross-cutting rules, and a package-layout mapping. Sections renumbered (former Section 6 "Extension Protocol" → 7, former Section 7 "Anti-Patterns" → 8) with new Titan-Core-specific anti-patterns appended.
-- `decisions.md`: ADR-0002 recording the Titan Core architecture decision, including alternatives considered and trade-offs.
-- `roadmap.md`: seven new phases (005–011) inserted to implement each Titan Core engine in dependency order; subsequent phases renumbered (former 004–012 → 004, 012–016).
-- `project_state.json`: new `titan_core` block tracking per-engine implementation status and phase assignment.
-
-### Changed
-- `architecture.md` Section 1 status updated from "principles-only" to reflect that Phase 003 (Architecture Design) is complete.
-- `master_plan.md` Section 4 updated: the product scope is no longer open-ended — it is now Titan AI, realized as Titan Core. New Section 4a added mapping each engine to the vision and guiding philosophy in Sections 1–2.
-- `tech_stack.md`: status header, stack-selection process (Section 2), and criteria (new Section 3a, "Titan-Core-Specific Criterion") updated so Phase 002 evaluates stacks against the now-approved architecture.
-- `roadmap.md`: dependency between Phase 002 (Tech Stack) and Phase 003 (Architecture) intentionally reversed — Architecture Design now precedes Technical Discovery, so the stack is chosen to fit the approved engine boundaries rather than the reverse. Phase 001 (Requirements & Product Definition) marked complete, since the product is now defined as Titan AI/Titan Core.
-- `current_phase.md`: active phase updated to 003 (complete), next phase updated to 002 (not-started), with explicit sequencing notes.
-- `project_state.json`: `current_phase`, `next_phase`, `architecture.status` (→ `approved`), `project.name`/`description`, and counters (`adrs_recorded`, `phases_completed`, `sessions_logged`) all updated to reflect this session's changes.
-
-### Notes
-- No application or engine code was implemented in this update, per explicit instruction — this release is a documentation/architecture update only.
-
----
-
-## [0.0.1] — 2026-07-08 — Governance Initialization
-
-### Added
-- Created `.titan/` governance directory at repository root.
-- Added `constitution.md` defining supreme governance rules, prime directives, roles, and amendment process.
-- Added `master_plan.md` defining long-term vision and strategic objectives.
-- Added `roadmap.md` defining the 13-phase (000–012) execution sequence.
-- Added `architecture.md` defining binding architectural principles pending concrete Phase 003 design.
-- Added `current_phase.md` establishing Phase 000 as complete and Phase 001 as next.
-- Added `project_state.json` as the machine-readable project state snapshot.
-- Added `decisions.md` with ADR-0001 (adoption of the Titan AI governance model).
-- Added `tech_stack.md` with the stack-selection decision framework.
-- Added `coding_standards.md`, `naming_conventions.md` defining universal engineering conventions.
-- Added `security_policy.md` defining baseline security requirements.
-- Added `testing_strategy.md` defining the testing pyramid and quality gates.
-- Added `deployment_strategy.md` defining environment and release strategy.
-- Added folders `prompts/`, `phases/`, `sessions/`, `reviews/`, `rules/`, `templates/`, `knowledge/`, each populated with a README and reusable templates.
-- Added `phases/phase-000-governance-initialization.md` recording this phase in full.
-- Added first session log in `sessions/`.
-
-### Notes
-- No application code exists yet. This release is governance-only, by design (per the instruction that established this system).
