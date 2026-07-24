@@ -4,11 +4,18 @@ import {
   NotImplementedError,
   ValidationEngine,
   type ValidationCheckResult,
+  type ValidationEscalation,
   type ValidationEvidence,
+  type ValidationGovernanceRule,
+  type ValidationPipelineRequest,
+  type ValidationPipelineResult,
+  type ValidationPolicyRule,
+  type ValidationStructuralResult,
   type ValidationSubject,
   type ValidationTarget,
   type ValidationVerdict,
 } from '../../engines/validation/src';
+
 import type { ExecutionRecord } from '../../engines/execution/src/models/types';
 import { ENGINE_API_CONTRACT_VERSION } from '../../runtime/engine/types';
 
@@ -30,7 +37,8 @@ function buildExecutionRecord(overrides: Partial<ExecutionRecord> = {}): Executi
   };
 }
 
-describe('ValidationEngine — Milestone 1 (Runtime Foundation)', () => {
+describe('ValidationEngine — Milestone 2 (Domain Model Completion)', () => {
+
   describe('runtime lifecycle', () => {
     it('starts in the created state and transitions through the full lifecycle', async () => {
       const engine = new ValidationEngine();
@@ -279,5 +287,116 @@ describe('ValidationEngine — Milestone 1 (Runtime Foundation)', () => {
 
       expect(evidence.source).toBe('test-suite');
     });
+
+    it('accepts a well-formed ValidationStructuralResult shape (new in Milestone 2)', () => {
+      const result: ValidationStructuralResult = {
+        validationId: 'validation-1',
+        valid: true,
+        issues: [],
+        validatedAt: '2026-07-24T00:00:00.000Z',
+      };
+
+      expect(result.valid).toBe(true);
+      expect(result.issues).toEqual([]);
+    });
+
+    it('accepts a well-formed ValidationEscalation shape (new in Milestone 2)', () => {
+      const escalation: ValidationEscalation = {
+        validationId: 'validation-1',
+        target: {
+          executionId: 'execution-1',
+          workflowId: 'workflow-1',
+          itemId: 'step-1',
+          itemType: 'step',
+        },
+        reasons: ['repeated-failure', 'insufficient-evidence'],
+        triggeredAt: '2026-07-24T00:00:00.000Z',
+      };
+
+      expect(escalation.reasons).toContain('repeated-failure');
+    });
+
+    it('accepts a well-formed ValidationPolicyRule shape (new in Milestone 2)', () => {
+      const rule: ValidationPolicyRule = {
+        ruleId: 'policy-1',
+        description: 'No destructive operations without approval.',
+        checkType: 'policy',
+        severity: 'blocking',
+      };
+
+      expect(rule.severity).toBe('blocking');
+    });
+
+    it('accepts a well-formed ValidationGovernanceRule shape (new in Milestone 2)', () => {
+      const rule: ValidationGovernanceRule = {
+        ruleId: 'governance-1',
+        description: 'Must comply with governance charter section 4.',
+        referenceDocument: '.titan/roadmap.md',
+        severity: 'warning',
+      };
+
+      expect(rule.severity).toBe('warning');
+    });
+
+    it('accepts a well-formed ValidationPipelineRequest shape (new in Milestone 2)', () => {
+      const request: ValidationPipelineRequest = {
+        subject: { record: buildExecutionRecord() },
+        policyRules: [
+          { ruleId: 'policy-1', description: 'desc', checkType: 'policy', severity: 'info' },
+        ],
+        governanceRules: [
+          { ruleId: 'governance-1', description: 'desc', severity: 'info' },
+        ],
+        requestedAt: '2026-07-24T00:00:00.000Z',
+      };
+
+      expect(request.policyRules).toHaveLength(1);
+      expect(request.governanceRules).toHaveLength(1);
+    });
+
+    it('accepts a well-formed ValidationPipelineResult shape (new in Milestone 2)', () => {
+      const result: ValidationPipelineResult = {
+        verdict: {
+          validationId: 'validation-1',
+          target: {
+            executionId: 'execution-1',
+            workflowId: 'workflow-1',
+            itemId: 'step-1',
+            itemType: 'step',
+          },
+          status: 'pass',
+          checks: [],
+          createdAt: '2026-07-24T00:00:00.000Z',
+          updatedAt: '2026-07-24T00:00:00.000Z',
+        },
+        evidence: [],
+        escalations: [],
+      };
+
+      expect(result.verdict.status).toBe('pass');
+      expect(result.evidence).toEqual([]);
+      expect(result.escalations).toEqual([]);
+    });
+  });
+
+  describe('validate() accepts the expanded request shape without reading it (Milestone 2)', () => {
+    it('throws NotImplementedError even when policyRules and governanceRules are provided', async () => {
+      const engine = new ValidationEngine();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+
+      await expect(
+        engine.validate({
+          subject,
+          policyRules: [
+            { ruleId: 'policy-1', description: 'desc', checkType: 'policy', severity: 'blocking' },
+          ],
+          governanceRules: [
+            { ruleId: 'governance-1', description: 'desc', severity: 'blocking' },
+          ],
+        }),
+      ).rejects.toBeInstanceOf(NotImplementedError);
+    });
   });
 });
+
+
