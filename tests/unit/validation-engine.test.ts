@@ -4,6 +4,8 @@ import {
   NotImplementedError,
   ValidationBuilder,
   ValidationEngine,
+  ValidationEvidenceCollector,
+  ValidationPipelineRunner,
   ValidationRequestError,
   ValidationValidator,
   type ValidationSubject,
@@ -60,7 +62,7 @@ function buildValidVerdict(overrides: Partial<ValidationVerdict> = {}): Validati
   };
 }
 
-describe('ValidationEngine — Milestone 4 (Structural Validation Validator)', () => {
+describe('ValidationEngine — Milestone 5 (Structural Evidence Collection)', () => {
   describe('runtime lifecycle (unchanged from Milestone 1)', () => {
     it('starts in the created state and transitions through the full lifecycle', async () => {
       const engine = new ValidationEngine();
@@ -178,7 +180,7 @@ describe('ValidationEngine — Milestone 4 (Structural Validation Validator)', (
     });
   });
 
-  describe('ValidationEngine.validate() — delegation to ValidationBuilder (new in Milestone 3)', () => {
+  describe('ValidationEngine.validate() — delegation to ValidationPipelineRunner (ValidationBuilder unchanged since Milestone 3; evidence new in Milestone 5)', () => {
     it('returns a ValidationPipelineResult for a well-formed subject with only a record', async () => {
       const engine = new ValidationEngine();
       const subject: ValidationSubject = { record: buildExecutionRecord() };
@@ -199,7 +201,15 @@ describe('ValidationEngine — Milestone 4 (Structural Validation Validator)', (
           createdAt: result.verdict.createdAt,
           updatedAt: result.verdict.createdAt,
         },
-        evidence: [],
+        evidence: [
+          {
+            validationId: 'validation-workflow-1-step-1',
+            source: 'execution-record',
+            description:
+              'Validation verdict validation-workflow-1-step-1 was structurally derived from Execution Engine ExecutionRecord execution-workflow-1-step-1.',
+            capturedAt: result.verdict.createdAt,
+          },
+        ],
         escalations: [],
       });
     });
@@ -272,6 +282,56 @@ describe('ValidationEngine — Milestone 4 (Structural Validation Validator)', (
       await engine.validate({ subject });
 
       expect(subject).toEqual(snapshot);
+    });
+  });
+
+  describe('ValidationEngine.validate() — structural evidence collection (new in Milestone 5)', () => {
+    it('populates evidence with source "execution-record" when subject has no summary', async () => {
+      const engine = new ValidationEngine();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+
+      const result = await engine.validate({ subject });
+
+      expect(result.evidence).toHaveLength(1);
+      expect(result.evidence[0].source).toBe('execution-record');
+    });
+
+    it('populates evidence with source "execution-summary" when subject has a summary', async () => {
+      const engine = new ValidationEngine();
+      const subject: ValidationSubject = { record: buildExecutionRecord(), summary: buildExecutionSummary() };
+
+      const result = await engine.validate({ subject });
+
+      expect(result.evidence).toHaveLength(1);
+      expect(result.evidence[0].source).toBe('execution-summary');
+    });
+
+    it("evidence's capturedAt matches the verdict's createdAt/updatedAt on a freshly built result", async () => {
+      const engine = new ValidationEngine();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+
+      const result = await engine.validate({ subject });
+
+      expect(result.evidence[0].capturedAt).toBe(result.verdict.createdAt);
+      expect(result.evidence[0].capturedAt).toBe(result.verdict.updatedAt);
+    });
+
+    it("evidence's validationId matches the verdict's validationId", async () => {
+      const engine = new ValidationEngine();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+
+      const result = await engine.validate({ subject });
+
+      expect(result.evidence[0].validationId).toBe(result.verdict.validationId);
+    });
+
+    it('escalations remain always empty', async () => {
+      const engine = new ValidationEngine();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+
+      const result = await engine.validate({ subject });
+
+      expect(result.escalations).toEqual([]);
     });
   });
 
@@ -370,7 +430,7 @@ describe('ValidationEngine — Milestone 4 (Structural Validation Validator)', (
   });
 });
 
-describe('ValidationBuilder — Milestone 3', () => {
+describe('ValidationBuilder — Milestone 3 (unchanged in Milestone 5)', () => {
   describe('successful translation', () => {
     it('translates a subject with only a record into a ValidationPipelineResult', () => {
       const builder = new ValidationBuilder();
@@ -576,7 +636,7 @@ describe('ValidationBuilder — Milestone 3', () => {
   });
 });
 
-describe('ValidationValidator — Milestone 4', () => {
+describe('ValidationValidator — Milestone 4 (unchanged in Milestone 5)', () => {
   describe('valid verdicts', () => {
     it('reports valid: true with no issues for a well-formed verdict', () => {
       const validator = new ValidationValidator();
@@ -796,6 +856,319 @@ describe('ValidationValidator — Milestone 4', () => {
       const result = validator.validate(verdict);
 
       expect(Object.keys(result).sort()).toEqual(['issues', 'valid', 'validatedAt', 'validationId'].sort());
+    });
+  });
+});
+
+describe('ValidationEvidenceCollector — Milestone 5', () => {
+  describe('successful collection', () => {
+    it('returns exactly one evidence entry', () => {
+      const collector = new ValidationEvidenceCollector();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+      const builder = new ValidationBuilder();
+      const built = builder.build(subject, '2026-07-24T00:00:00.000Z');
+
+      const evidence = collector.collect(subject, built.verdict, '2026-07-24T00:00:00.000Z');
+
+      expect(evidence).toHaveLength(1);
+    });
+
+    it('reports source "execution-record" when subject has no summary', () => {
+      const collector = new ValidationEvidenceCollector();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+      const verdict = new ValidationBuilder().build(subject).verdict;
+
+      const evidence = collector.collect(subject, verdict);
+
+      expect(evidence[0].source).toBe('execution-record');
+    });
+
+    it('reports source "execution-summary" when subject has a summary', () => {
+      const collector = new ValidationEvidenceCollector();
+      const subject: ValidationSubject = { record: buildExecutionRecord(), summary: buildExecutionSummary() };
+      const verdict = new ValidationBuilder().build(subject).verdict;
+
+      const evidence = collector.collect(subject, verdict);
+
+      expect(evidence[0].source).toBe('execution-summary');
+    });
+
+    it('carries the verdict.validationId verbatim', () => {
+      const collector = new ValidationEvidenceCollector();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+      const verdict = new ValidationBuilder().build(subject).verdict;
+
+      const evidence = collector.collect(subject, verdict);
+
+      expect(evidence[0].validationId).toBe(verdict.validationId);
+    });
+
+    it('description references the target executionId', () => {
+      const collector = new ValidationEvidenceCollector();
+      const subject: ValidationSubject = {
+        record: buildExecutionRecord({ executionId: 'execution-42' }),
+      };
+      const verdict = new ValidationBuilder().build(subject).verdict;
+
+      const evidence = collector.collect(subject, verdict);
+
+      expect(evidence[0].description).toContain('execution-42');
+    });
+
+    it('uses the supplied timestamp verbatim for capturedAt when provided', () => {
+      const collector = new ValidationEvidenceCollector();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+      const verdict = new ValidationBuilder().build(subject, '2026-07-24T00:00:00.000Z').verdict;
+
+      const evidence = collector.collect(subject, verdict, '2026-07-25T00:00:00.000Z');
+
+      expect(evidence[0].capturedAt).toBe('2026-07-25T00:00:00.000Z');
+    });
+
+    it('does not populate attachments', () => {
+      const collector = new ValidationEvidenceCollector();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+      const verdict = new ValidationBuilder().build(subject).verdict;
+
+      const evidence = collector.collect(subject, verdict);
+
+      expect(evidence[0].attachments).toBeUndefined();
+    });
+  });
+
+  describe('deterministic output', () => {
+    it('produces identical output for identical input and timestamp', () => {
+      const collector = new ValidationEvidenceCollector();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+      const verdict = new ValidationBuilder().build(subject, '2026-07-24T00:00:00.000Z').verdict;
+
+      const first = collector.collect(subject, verdict, '2026-07-24T00:00:00.000Z');
+      const second = collector.collect(subject, verdict, '2026-07-24T00:00:00.000Z');
+
+      expect(first).toEqual(second);
+    });
+
+    it('produces identical output across separate ValidationEvidenceCollector instances', () => {
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+      const verdict = new ValidationBuilder().build(subject, '2026-07-24T00:00:00.000Z').verdict;
+
+      const first = new ValidationEvidenceCollector().collect(subject, verdict, '2026-07-24T00:00:00.000Z');
+      const second = new ValidationEvidenceCollector().collect(subject, verdict, '2026-07-24T00:00:00.000Z');
+
+      expect(first).toEqual(second);
+    });
+
+    it('collect() is synchronous (does not return a Promise)', () => {
+      const collector = new ValidationEvidenceCollector();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+      const verdict = new ValidationBuilder().build(subject).verdict;
+
+      const result = collector.collect(subject, verdict);
+
+      expect(result).not.toBeInstanceOf(Promise);
+    });
+  });
+
+  describe('malformed input rejection', () => {
+    it('rejects a null/undefined subject', () => {
+      const collector = new ValidationEvidenceCollector();
+      const verdict = buildValidVerdict();
+
+      // @ts-expect-error — intentionally malformed for the test
+      expect(() => collector.collect(null, verdict)).toThrow(ValidationRequestError);
+      // @ts-expect-error — intentionally malformed for the test
+      expect(() => collector.collect(undefined, verdict)).toThrow(ValidationRequestError);
+    });
+
+    it('rejects a non-object subject', () => {
+      const collector = new ValidationEvidenceCollector();
+      const verdict = buildValidVerdict();
+
+      // @ts-expect-error — intentionally malformed for the test
+      expect(() => collector.collect('not-an-object', verdict)).toThrow(ValidationRequestError);
+      // @ts-expect-error — intentionally malformed for the test
+      expect(() => collector.collect(['array'], verdict)).toThrow(ValidationRequestError);
+    });
+
+    it('rejects a null/undefined verdict', () => {
+      const collector = new ValidationEvidenceCollector();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+
+      // @ts-expect-error — intentionally malformed for the test
+      expect(() => collector.collect(subject, null)).toThrow(ValidationRequestError);
+      // @ts-expect-error — intentionally malformed for the test
+      expect(() => collector.collect(subject, undefined)).toThrow(ValidationRequestError);
+    });
+
+    it('rejects a verdict missing target entirely', () => {
+      const collector = new ValidationEvidenceCollector();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+
+      expect(() =>
+        // @ts-expect-error — intentionally malformed for the test
+        collector.collect(subject, { validationId: 'x', status: 'partial', checks: [] }),
+      ).toThrow(ValidationRequestError);
+    });
+
+    it('validation errors carry structured issues', () => {
+      const collector = new ValidationEvidenceCollector();
+      const verdict = buildValidVerdict();
+
+      try {
+        // @ts-expect-error — intentionally malformed for the test
+        collector.collect(null, verdict);
+        expect.unreachable('collect() must throw');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationRequestError);
+        const requestError = error as ValidationRequestError;
+        expect(requestError.issues.length).toBeGreaterThan(0);
+      }
+    });
+  });
+
+  describe('immutability', () => {
+    it('never mutates the input subject', () => {
+      const collector = new ValidationEvidenceCollector();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+      const verdict = new ValidationBuilder().build(subject).verdict;
+      const subjectSnapshot = JSON.parse(JSON.stringify(subject));
+
+      collector.collect(subject, verdict);
+
+      expect(subject).toEqual(subjectSnapshot);
+    });
+
+    it('never mutates the input verdict', () => {
+      const collector = new ValidationEvidenceCollector();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+      const verdict = new ValidationBuilder().build(subject).verdict;
+      const verdictSnapshot = JSON.parse(JSON.stringify(verdict));
+
+      collector.collect(subject, verdict);
+
+      expect(verdict).toEqual(verdictSnapshot);
+    });
+  });
+});
+
+describe('ValidationPipelineRunner — Milestone 5', () => {
+  describe('successful composition', () => {
+    it('composes ValidationBuilder and ValidationEvidenceCollector output into one ValidationPipelineResult', () => {
+      const runner = new ValidationPipelineRunner();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+
+      const result = runner.run(subject, '2026-07-24T00:00:00.000Z');
+
+      const expectedVerdict = new ValidationBuilder().build(subject, '2026-07-24T00:00:00.000Z').verdict;
+      const expectedEvidence = new ValidationEvidenceCollector().collect(
+        subject,
+        expectedVerdict,
+        '2026-07-24T00:00:00.000Z',
+      );
+
+      expect(result.verdict).toEqual(expectedVerdict);
+      expect(result.evidence).toEqual(expectedEvidence);
+      expect(result.escalations).toEqual([]);
+    });
+
+    it('resolves a single timestamp shared by the verdict and its evidence when omitted', () => {
+      const runner = new ValidationPipelineRunner();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+
+      const result = runner.run(subject);
+
+      expect(result.evidence[0].capturedAt).toBe(result.verdict.createdAt);
+      expect(result.evidence[0].capturedAt).toBe(result.verdict.updatedAt);
+    });
+
+    it('accepts injected ValidationBuilder and ValidationEvidenceCollector instances', () => {
+      const builder = new ValidationBuilder();
+      const collector = new ValidationEvidenceCollector();
+      const runner = new ValidationPipelineRunner(builder, collector);
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+
+      const result = runner.run(subject, '2026-07-24T00:00:00.000Z');
+
+      expect(result.verdict.validationId).toBe('validation-workflow-1-step-1');
+      expect(result.evidence).toHaveLength(1);
+    });
+  });
+
+  describe('deterministic output', () => {
+    it('produces identical output for identical input and timestamp', () => {
+      const runner = new ValidationPipelineRunner();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+
+      const first = runner.run(subject, '2026-07-24T00:00:00.000Z');
+      const second = runner.run(subject, '2026-07-24T00:00:00.000Z');
+
+      expect(first).toEqual(second);
+    });
+
+    it('produces identical output across separate ValidationPipelineRunner instances', () => {
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+
+      const first = new ValidationPipelineRunner().run(subject, '2026-07-24T00:00:00.000Z');
+      const second = new ValidationPipelineRunner().run(subject, '2026-07-24T00:00:00.000Z');
+
+      expect(first).toEqual(second);
+    });
+
+    it('run() is synchronous (does not return a Promise)', () => {
+      const runner = new ValidationPipelineRunner();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+
+      const result = runner.run(subject);
+
+      expect(result).not.toBeInstanceOf(Promise);
+    });
+  });
+
+  describe('malformed input propagation', () => {
+    it('propagates ValidationRequestError from ValidationBuilder for a malformed subject', () => {
+      const runner = new ValidationPipelineRunner();
+
+      // @ts-expect-error — intentionally malformed for the test
+      expect(() => runner.run(null)).toThrow(ValidationRequestError);
+    });
+
+    it('propagates ValidationRequestError for a subject missing record entirely', () => {
+      const runner = new ValidationPipelineRunner();
+
+      // @ts-expect-error — intentionally malformed for the test
+      expect(() => runner.run({})).toThrow(ValidationRequestError);
+    });
+  });
+
+  describe('immutability', () => {
+    it('never mutates the input subject', () => {
+      const runner = new ValidationPipelineRunner();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+      const snapshot = JSON.parse(JSON.stringify(subject));
+
+      runner.run(subject);
+
+      expect(subject).toEqual(snapshot);
+    });
+  });
+
+  describe('boundary conditions', () => {
+    it('escalations is always an empty array, matching ValidationBuilder Milestone 3 behavior', () => {
+      const runner = new ValidationPipelineRunner();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+
+      const result = runner.run(subject, '2026-07-24T00:00:00.000Z');
+
+      expect(result.escalations).toEqual([]);
+    });
+
+    it('evidence array is always exactly length 1 for a well-formed subject', () => {
+      const runner = new ValidationPipelineRunner();
+      const subject: ValidationSubject = { record: buildExecutionRecord() };
+
+      const result = runner.run(subject, '2026-07-24T00:00:00.000Z');
+
+      expect(result.evidence).toHaveLength(1);
     });
   });
 });
