@@ -1,17 +1,42 @@
 # Learning Engine
 
-Milestone 1 package for the Titan Core Learning Engine: the shared
-runtime lifecycle contract only. No business methods exist yet.
+Milestone 4 package for the Titan Core Learning Engine: a
+deterministic structural observation builder (Milestone 3) and a
+deterministic structural proposal builder (Milestone 4).
 
-## Scope (Milestone 1)
+## Scope (Milestones 3–4)
 
-- `LearningEngine` extends the shared `BaseEngine`, inheriting the
-  full Titan runtime engine contract (lifecycle, health, metadata,
-  version, contract version, and state) unmodified.
-- No business methods, request/response types, or domain model exist
-  in this package yet.
+- Retains the Milestone 1 runtime foundation unchanged (lifecycle,
+  health, metadata, version, and state methods, inherited from
+  `BaseEngine`) and the Milestone 2 domain model unchanged
+  (`src/models/types.ts`).
+- **Milestone 3** introduces `LearningObservationBuilder`
+  (`src/builders/learning-observation-builder.ts`): a pure,
+  synchronous, deterministic translator that consumes a
+  `LearningSubject` (an Orchestrator Engine `WorkflowResult` and a
+  Validation Engine `ValidationVerdict`, both imported by type only)
+  and produces a `LearningObservation`. `LearningEngine.observeCycle()`
+  validates only the shape of its request and delegates entirely to
+  `LearningObservationBuilder.build`, returning its output unchanged.
+- **Milestone 4** introduces `LearningProposalBuilder`
+  (`src/builders/learning-proposal-builder.ts`): a pure, synchronous,
+  deterministic composer that consumes one or more already-built
+  `LearningObservation` records and produces a single
+  `LearningKnowledgeUpdateProposal`.
+  `LearningEngine.generateProposal()` validates only the shape of its
+  request and delegates entirely to `LearningProposalBuilder.build`,
+  returning its output unchanged.
 
-## Runtime Contract (inherited from `BaseEngine`)
+**Neither `LearningObservationBuilder` nor `LearningProposalBuilder`
+performs any lesson distillation, knowledge write, approval,
+rejection, scoring, ranking, AI reasoning, execution, orchestration,
+validation, persistence, networking, or heuristic behavior.** No
+scheduling, no retries, and no call to any other Titan engine's
+runtime exist anywhere in this package — the Orchestrator Engine's
+`WorkflowResult` and the Validation Engine's `ValidationVerdict` are
+used only as read-only, type-only input shapes.
+
+## Runtime Contract (inherited from `BaseEngine`, unchanged since Milestone 1)
 
 `LearningEngine` extends the shared `BaseEngine` and inherits the full
 Titan runtime engine contract without any override:
@@ -31,43 +56,105 @@ Titan runtime engine contract without any override:
 - `name`: `Learning Engine`
 - `version`: `1.0.0`
 - `contractVersion`: the shared `ENGINE_API_CONTRACT_VERSION`
-- `capabilities`: `[]` (empty — no business capability is advertised
-  until it is implemented)
+- `capabilities`: `learning.observe-cycle`, `learning.generate-proposal`
 
-## Why No Business Methods Exist Yet
+## Public API (Milestone 4)
 
-Every other Titan Core engine declared its complete planned public API
-as `NotImplementedError` stubs from its own Milestone 1 (e.g.
-`ValidationEngine.validate`/`getValidationStatus`/`approveValidation`/
-`rejectValidation`). The Learning Engine deliberately does not follow
-that precedent for Milestone 1.
+| Method | Behavior (Milestone 4) |
+|---|---|
+| `observeCycle(request)` | Validates that `request` is a non-null object, then delegates entirely to `LearningObservationBuilder.build(request.subject)`. Returns a `LearningObservation`. Throws `LearningRequestError` for a malformed request or subject. |
+| `generateProposal(request)` | Validates that `request` is a non-null object, then delegates entirely to `LearningProposalBuilder.build(request.observations)`. Returns a `LearningKnowledgeUpdateProposal`. Throws `LearningRequestError` for a malformed request or observation list. |
 
-`phases/phase-012-learning-engine-implementation.md` describes the
-Learning Engine's Scope, Deliverables, and Acceptance Criteria in
-prose (observing plan-execute-validate cycles, generating reusable
-heuristics and improvement proposals, and feeding approved learning
-artifacts into governance-aware memory) but — unlike `validate`,
-`execute`, or `orchestrate` for prior engines — does not name a single
-concrete method. Declaring specific method names now would mean
-inventing a business API surface rather than deriving it from
-governance text, which Phase 012 governance has explicitly ruled out.
+No other public method exists. Capabilities beyond these two —
+lesson distillation, proposed-ADR drafting, risk flagging, and
+feeding approved artifacts into the Knowledge Engine — are named in
+`architecture.md`'s Learning Engine entry but are not implemented
+here; they remain out of scope until a future milestone.
 
-A specification-grounding review — reading
-`phases/phase-012-learning-engine-implementation.md`, `architecture.md`,
-and any Learning Engine specification document they reference — must
-be performed before Milestone 3 to derive the Learning Engine's real
-public API and remaining milestones directly from repository
-requirements. Milestone 2 (domain model) and any business method
-stubs will follow from that review's findings.
+## `LearningObservationBuilder` (Milestone 3)
 
-## Explicit Non-Goals (Milestone 1)
+`LearningObservationBuilder.build(subject, timestamp?)` performs pure
+structural translation only:
 
-- No signal extraction from plan-execute-validate cycles.
-- No heuristic or improvement-proposal generation.
+- `LearningObservation.subject` is a freshly constructed wrapper
+  around the same `outcome`/`verdict` values supplied on `subject`,
+  copied verbatim.
+- `LearningObservation.observationId` is deterministically derived as
+  `observation-<workflowId>-<validationId>`.
+- `LearningObservation.stage` is always `'outcome'` — not a
+  placeholder, but a structural fact: a `WorkflowResult` is, by the
+  Orchestrator Engine's own definition, "Outcome payload for a
+  completed or terminated workflow," so every subject this builder
+  can receive represents the `'outcome'` stage.
+- `LearningObservation.observedAt` is the caller-supplied (or freshly
+  read) ISO-8601 timestamp.
+
+Throws `LearningRequestError` only when `subject`, `subject.outcome`,
+or `subject.verdict` is missing or malformed.
+
+## `LearningProposalBuilder` (Milestone 4)
+
+`LearningProposalBuilder.build(observations, timestamp?)` performs
+pure structural composition only:
+
+- `.proposalId` is deterministically derived as
+  `proposal-<observationId>`, from the first entry of `observations`.
+- `.lessonIds` is always `[]`. No `LearningLesson` is distilled by
+  this class — `LearningLessonCategory` has no field on
+  `LearningObservation`, `WorkflowResult`, or `ValidationVerdict` it
+  could be deterministically derived from without inventing a
+  classification rule no repository document states. Lesson
+  distillation is left for a future milestone.
+- `.updateType` is always `'new-precedent'` — distinguishing a new
+  precedent from a refinement of an existing one would require
+  comparing against the Knowledge Engine's stored history, which
+  requires a cross-engine runtime call this class must not make.
+- `.status` is always `'proposed'` — the only status architecture.md
+  permits the Learning Engine to assign to its own output.
+- `.description` is a structural composition listing the number of
+  source observations and their ids — no summarization or judgment.
+- `.proposedAt` is the caller-supplied (or freshly read) ISO-8601
+  timestamp.
+
+Throws `LearningRequestError` only when `observations` is not a
+non-empty array of well-formed `LearningObservation`-shaped values.
+
+## Explicit Non-Goals (Milestones 3–4)
+
+- No lesson distillation of any kind (`LearningLesson` is never
+  produced).
+- No proposed-ADR drafting (`LearningProposedAdr` is never produced).
+- No risk flagging (`LearningFlaggedRisk` is never produced).
 - No knowledge writes or feedback to the Knowledge Engine.
-- No scoring, no rule engines, no AI reasoning, no heuristics.
+- No approval or rejection of proposals — every proposal this package
+  produces is `status: 'proposed'` and stays that way.
+- No scoring, no rule engines, no AI reasoning, no heuristics, no
+  ranking.
 - No persistence, no networking, no filesystem access.
 - No scheduling, no retries.
 - No orchestration, no execution, no validation logic.
-- No cross-engine runtime calls — this package does not import,
-  instantiate, or call the runtime of any other Titan engine.
+- No cross-engine runtime calls — this package never imports,
+  instantiates, or calls the runtime of the Planner, Orchestrator,
+  Context, Knowledge, Execution, or Validation engines. `WorkflowResult`
+  and `ValidationVerdict` are referenced by type only.
+
+## Explicit Statement of Current Behavior
+
+This package currently provides only:
+
+1. A working Titan runtime lifecycle (`initialize` → `start` →
+   `stop`) via `BaseEngine`, unmodified since Milestone 1.
+2. Working health, metadata, version, and contract-version reporting,
+   inherited unchanged from `BaseEngine`.
+3. The Learning Engine's domain model (`src/models/types.ts`),
+   unchanged since Milestone 2.
+4. A deterministic structural `LearningObservationBuilder`
+   (Milestone 3), wired into `observeCycle()`.
+5. A deterministic structural `LearningProposalBuilder` (Milestone 4),
+   wired into `generateProposal()`.
+
+No lesson distillation, no proposed-ADR drafting, no risk flagging,
+no knowledge write, no approval/rejection, and no cross-engine
+runtime behavior of any kind exists anywhere in this package. Those
+remain out of scope pending a future milestone grounded in explicit
+repository requirements.
