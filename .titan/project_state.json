@@ -4,23 +4,23 @@
   "governance_version": "1.0.0",
   "runtime_version": "0.1.0",
   "documentation_version": "1.2.0",
-  "last_updated": "2026-07-24",
-  "last_updated_by": "GitHub Copilot (Phase 010 closure / Phase 011 activation)",
+  "last_updated": "2026-07-29",
+  "last_updated_by": "GitHub Copilot (Phase 011 closure / Phase 012 activation)",
   "project": {
     "name": "Titan AI",
     "description": "Autonomous software engineering operating system, implemented as Titan Core: seven cooperating engines (Planner, Orchestrator, Context, Knowledge, Execution, Validation, Learning). See architecture.md Section 7 and decisions.md ADR-0002.",
     "repository_root": "."
   },
   "current_phase": {
-    "id": "011",
-    "name": "Validation Engine Implementation",
+    "id": "012",
+    "name": "Learning Engine Implementation",
     "status": "in-progress"
   },
   "next_phase": {
-    "id": "012",
-    "name": "Learning Engine Implementation",
+    "id": "013",
+    "name": "Titan Core Integration and Hardening",
     "status": "not-started",
-    "blocked_reason": "Awaiting Phase 011 completion."
+    "blocked_reason": "Awaiting Phase 012 completion."
   },
   "governance": {
     "constitution_version": "1.0.0",
@@ -63,7 +63,7 @@
     "notes": "architecture.md Section 7 defines the approved Titan Core engine architecture (7 engines), with security architecture governance established in Section 6."
   },
   "titan_core": {
-    "status": "execution-engine-complete-validation-in-progress",
+    "status": "validation-engine-complete-learning-in-progress",
     "engine_framework_required_before_future_engine_implementation": true,
     "engine_framework_phase": "006",
     "shared_framework": {
@@ -77,8 +77,8 @@
       { "name": "Context Engine", "status": "implemented", "implementation_phase": "005" },
       { "name": "Knowledge Engine", "status": "implemented", "implementation_phase": "007" },
       { "name": "Execution Engine", "status": "implemented", "implementation_phase": "010", "notes": "execute, getExecutionStatus, and reportResult are implemented (Milestones 1-5: runtime foundation, complete planned domain model, ExecutionBuilder/execute() - deterministic structural translation of an Orchestrator WorkflowDispatchResult into an ExecutionRecord, ExecutionValidator/getExecutionStatus() - deterministic structural validation of an ExecutionRecord, and ExecutionStatusTracker/reportResult() - deterministic structural summarization of an ExecutionRecord; despite its name, reportResult() performs no real result reporting). cancelExecution remains an unimplemented NotImplementedError stub; a dedicated governance review (see phases/phase-010-execution-engine-implementation.md) confirmed this is not required by any Phase 010 exit criterion, since the 'dispatch-to-result lifecycle' phrase used in the exit criteria is never defined anywhere in the repository." },
-      { "name": "Validation Engine", "status": "in-progress", "implementation_phase": "011" },
-      { "name": "Learning Engine", "status": "not-implemented", "implementation_phase": "012" }
+      { "name": "Validation Engine", "status": "implemented", "implementation_phase": "011", "notes": "validate and getValidationStatus are implemented (Milestones 1-5: runtime foundation, complete planned domain model, ValidationBuilder/validate() - deterministic structural translation of an Execution Engine ExecutionSummary/ExecutionRecord into a ValidationPipelineResult, ValidationValidator/getValidationStatus() - deterministic structural validation of a ValidationVerdict, and ValidationEvidenceCollector/ValidationPipelineRunner - deterministic structural evidence collection composed with verdict construction, wired into validate()). approveValidation and rejectValidation remain unimplemented NotImplementedError stubs; a dedicated specification audit and governance review (see phases/phase-011-validation-engine-implementation.md) confirmed neither is required by any Phase 011 exit criterion or specification/engine_api.md requirement, and that implementing them would require either persistence (a validation store/lookup mechanism) or business logic (approval authority/audit semantics), both out of scope for deterministic structural processing." },
+      { "name": "Learning Engine", "status": "in-progress", "implementation_phase": "012" }
     ],
     "notes": "Implementation order follows the Titan Core architecture data-flow dependency order: Context first, then the shared framework, then security governance, then Knowledge, Planner, Orchestrator, Execution, Validation, and Learning."
   },
@@ -90,7 +90,7 @@
   "counters": {
     "sessions_logged": 7,
     "adrs_recorded": 7,
-    "phases_completed": 12
+    "phases_completed": 13
   },
   "agents_involved_to_date": [
     "Claude",
