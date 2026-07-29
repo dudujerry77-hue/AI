@@ -25,8 +25,8 @@ One file per phase from `roadmap.md`, named `phase-XXX-<kebab-case-name>.md` (e.
 | `phase-009-orchestrator-engine-implementation.md` | 009 | complete |
 | `phase-010-execution-engine-implementation.md` | 010 | complete |
 | `phase-011-validation-engine-implementation.md` | 011 | complete |
-| `phase-012-learning-engine-implementation.md` | 012 | in-progress |
-| `phase-013-titan-core-integration-and-hardening.md` | 013 | not-started |
+| `phase-012-learning-engine-implementation.md` | 012 | complete |
+| `phase-013-titan-core-integration-and-hardening.md` | 013 | in-progress |
 | `phase-014-test-coverage-completion.md` | 014 | not-started |
 | `phase-015-deployment-readiness.md` | 015 | not-started |
 | `phase-016-production-release.md` | 016 | not-started |

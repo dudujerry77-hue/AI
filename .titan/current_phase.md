@@ -7,49 +7,49 @@
 
 ## Active Phase
 
-- **Phase ID:** 012
-- **Name:** Learning Engine Implementation
+- **Phase ID:** 013
+- **Name:** Titan Core Integration and Hardening
 - **Status:** in-progress
 - **Started:** 2026-07-29
 - **Completed:** 
 
 ## What This Phase Is
 
-Implementing the Learning Engine to consume validated outcomes from the Validation Engine and convert recurring patterns into durable learning signals via the Knowledge Engine feedback loop, without embedding execution, coordination, or validation behavior.
+Integrating all seven Titan Core engines end-to-end and hardening the system for security, reliability, and operational correctness: wiring all seven engines through approved framework contracts, validating cross-engine boundaries and failure modes, and performing security/performance hardening within governance constraints.
 
 ## Prior Phase Completed
 
-- **Phase ID:** 011
-- **Name:** Validation Engine Implementation
+- **Phase ID:** 012
+- **Name:** Learning Engine Implementation
 - **Status:** complete
 - **Completed:** 2026-07-29
 
 ## Exit Criteria (current phase)
 
-- [ ] Learning Engine passes build/test quality gates.
-- [ ] Learning Engine consumes Validation Engine outputs as plain, read-only input (via type only) without importing or instantiating the Validation Engine runtime.
-- [ ] Handoff artifacts support the Knowledge Engine feedback loop.
+- [ ] Integrated system passes defined end-to-end quality gates.
+- [ ] Hardening findings are documented with mitigations or tracked follow-ups.
+- [ ] Platform is ready for dedicated coverage expansion phase.
 
 ## Next Phase
 
-- **Phase ID:** 013
-- **Name:** Titan Core Integration and Hardening
+- **Phase ID:** 014
+- **Name:** Test Coverage Completion
 - **Status:** not-started
-- **Entry Criteria:** Learning Engine is implemented and verified.
-- **What the next agent should do first:** Wire all seven engines together end-to-end and perform a security and performance review, per `roadmap.md`.
+- **Entry Criteria:** Phase 013 completion.
+- **What the next agent should do first:** Systematic coverage closure using integration results and known risk hotspots, per `phases/phase-013-titan-core-integration-and-hardening.md` Handoff Notes and `testing_strategy.md`.
 
 ## Notes
 
-- Phase 011 (Validation Engine) is complete. `ValidationEngine` implements Milestones 1–5: runtime foundation (lifecycle, health, metadata, version, contract version, state), the complete planned domain model (`src/models/types.ts`, covering the validation verdict pipeline, evidence reporting, testing/quality/policy/security/governance checks, structured pass/fail/partial outcomes, escalation triggers, and the Learning Engine handoff contract), `ValidationBuilder`/`ValidationEngine.validate()` (deterministic, synchronous, offline structural translation of an Execution Engine `ExecutionSummary`/`ExecutionRecord` into a `ValidationPipelineResult`), `ValidationValidator`/`ValidationEngine.getValidationStatus()` (deterministic, synchronous, offline structural validation of a `ValidationVerdict`), and `ValidationEvidenceCollector`/`ValidationPipelineRunner` (deterministic, synchronous, offline structural evidence collection composed with verdict construction, wired into `validate()`). `approveValidation` and `rejectValidation` remain unimplemented `NotImplementedError` stubs.
-- A dedicated specification audit and governance review (recorded in `phases/phase-011-validation-engine-implementation.md`) determined that `approveValidation()`/`rejectValidation()` are not required by any explicit Phase 011 exit criterion, Phase 011 phase-document wording, or `specification/engine_api.md` requirement, and that no approval/rejection lifecycle is defined anywhere in the repository. Implementing them would additionally require either a validation store/lookup mechanism (persistence, out of scope) or real approval-authority/audit semantics (business logic, out of scope). Phase 011 was therefore closed with both methods remaining intentionally unimplemented extension points, deferred until a future phase or ADR explicitly defines approval/rejection authority and persistence semantics — mirroring the `cancelExecution()` (Phase 010) and `cancelPlan()` (Phase 008) precedent.
-- Phase 011 was verified with lint, test, and build all passing (418/418 tests, including 96 Validation Engine tests) before activating Phase 012.
-- `ValidationBuilder`, `ValidationEvidenceCollector`, `ValidationPipelineRunner`, `ValidationValidator`, and `ValidationEngine.validate()`/`getValidationStatus()` consume an already-computed Execution Engine `ExecutionSummary` or a self-contained `ExecutionRecord` as plain, read-only input values (via type only) — no Execution Engine runtime is imported, instantiated, or called from the Validation Engine package. This preserves the boundary that the Validation Engine performs no independent execution or coordination logic.
-- The Learning Engine (Phase 012) should follow the same cross-engine boundary pattern established by Phases 007–011: consume upstream engine outputs (here, `ValidationPipelineResult`/`ValidationVerdict`/`ValidationEvidence` from the Validation Engine) as plain, read-only input via type only, without importing or instantiating the upstream engine's runtime.
-- Orchestrator Milestones 1–7 and Execution Milestones 1–5 remain complete, as recorded in their respective phase documents; no further changes were made to either package during Phase 011 closure.
+- Phase 012 (Learning Engine) is complete. `LearningEngine` implements Milestones 1–6: runtime foundation (lifecycle, health, metadata, version, contract version, state), the complete domain model (`src/models/types.ts`, covering observations, lessons, knowledge-update proposals, proposed ADRs, flagged risks, the Knowledge Engine handoff type, and the full pipeline result), `LearningObservationBuilder`/`observeCycle()`, `LearningProposalBuilder`/`generateProposal()` (extended in Milestone 6 with optional lesson/prior-proposal parameters), `LearningKnowledgeHandoffBuilder`/`prepareKnowledgeHandoff()`, and `LearningLessonBuilder`/`LearningFlaggedRiskBuilder`/`LearningProposedAdrBuilder`/`LearningPipelineBuilder`/`analyzeCycle()`. All four public methods are implemented; none remain `NotImplementedError` stubs.
+- A dedicated Governance Resolution (recorded in `phases/phase-012-learning-engine-implementation.md`) determined that the remaining apparent gap — actual Knowledge Engine-side consumption of Learning Engine handoff artifacts, and end-to-end validation of the resulting feedback loop — is not a Learning Engine implementation defect. `architecture.md` assigns "consumes updates from the Learning Engine" to the Knowledge Engine's own Boundary/Consumes text, and `roadmap.md` Section 3 assigns cross-engine boundary validation explicitly to Phase 013. Phase 012 was therefore closed on the basis that `LearningKnowledgeHandoff`/`LearningPipelineResult` are structurally complete, type-safe artifacts satisfying Phase 012's own scope; Knowledge Engine-side consumption remains unscoped and undecided, deferred to Phase 013 or a future ADR — mirroring the `cancelPlan()` (Phase 008), `cancelExecution()` (Phase 010), and `approveValidation()`/`rejectValidation()` (Phase 011) precedent.
+- Phase 012 was verified with lint, test, and build all passing (544/544 tests, including 126 Learning Engine tests) before activating Phase 013.
+- No Learning Engine code imports, instantiates, or calls the Knowledge Engine runtime; `LearningKnowledgeHandoff`/`LearningPipelineResult` are plain data values only.
+- Phase 013 (Titan Core Integration and Hardening) should explicitly scope, if it chooses to address it, how/whether the Knowledge Engine consumes `LearningKnowledgeHandoff`/`LearningPipelineResult` artifacts — this was left open by Phase 012's Governance Resolution and is not implicitly assigned to any existing engine code today.
+- Orchestrator Milestones 1–7, Execution Milestones 1–5, and Validation Milestones 1–5 remain complete, as recorded in their respective phase documents; no further changes were made to any prior engine package during Phase 012 closure.
 
 ## Instructions for Whoever Reads This Next
 
-1. Continue with the next phase in dependency order: Engine Framework (006) → Security Architecture Governance (006a) → Knowledge Engine (007) → Planner Engine (008) → Orchestrator Engine (009) → Execution Engine (010) → Validation Engine (011) → Learning Engine (012), per `roadmap.md`.
-2. Learning Engine (Phase 012) work: implement outcome observation and the Knowledge Engine feedback loop, consuming Validation Engine outputs. Do not embed execution, coordination, or validation behavior in the Learning Engine; consume `ValidationPipelineResult`/`ValidationVerdict`/`ValidationEvidence` values as plain, read-only input (via type only), matching the established cross-engine boundary pattern.
+1. Continue with the next phase in dependency order: Engine Framework (006) → Security Architecture Governance (006a) → Knowledge Engine (007) → Planner Engine (008) → Orchestrator Engine (009) → Execution Engine (010) → Validation Engine (011) → Learning Engine (012) → Titan Core Integration and Hardening (013), per `roadmap.md`.
+2. Titan Core Integration and Hardening (013) work: wire all seven engines through approved framework contracts, validate cross-engine boundaries and failure modes, and perform security/performance hardening within governance constraints, per `phases/phase-013-titan-core-integration-and-hardening.md`.
 3. When you complete work, update this file's Active Phase status, update `project_state.json`, and append to `changelog.md`.
 4. If you are picking this project back up after a long gap, also skim the last 2–3 files in `sessions/` for tacit context not yet promoted into these governance docs.
