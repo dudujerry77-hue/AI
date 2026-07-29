@@ -1,6 +1,20 @@
 import { BaseEngine } from '../../../runtime/engine/base';
 import { ENGINE_API_CONTRACT_VERSION, type BaseEngineOptions } from '../../../runtime/engine/types';
 
+export type {
+  LearningCycleStage,
+  LearningFlaggedRisk,
+  LearningKnowledgeUpdateProposal,
+  LearningKnowledgeUpdateType,
+  LearningLesson,
+  LearningLessonCategory,
+  LearningObservation,
+  LearningPipelineResult,
+  LearningProposalStatus,
+  LearningProposedAdr,
+  LearningSubject,
+} from './models/types';
+
 export interface LearningEngineOptions extends Omit<BaseEngineOptions, 'id' | 'name' | 'version'> {
   readonly id?: string;
   readonly name?: string;
