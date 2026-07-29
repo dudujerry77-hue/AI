@@ -1,5 +1,10 @@
 import { LearningRequestError } from '../errors/learning-errors';
-import type { LearningKnowledgeUpdateProposal, LearningObservation } from '../models/types';
+import type {
+  LearningKnowledgeUpdateProposal,
+  LearningKnowledgeUpdateType,
+  LearningLesson,
+  LearningObservation,
+} from '../models/types';
 
 /**
  * Returns true when `value` looks like a plain object (not an array,
@@ -18,9 +23,27 @@ function isNonEmptyString(value: unknown): value is string {
 }
 
 /**
+ * Returns true when any lesson id in `candidateLessonIds` also
+ * appears in any prior proposal's `lessonIds`. A pure, deterministic
+ * set-membership check — no scoring, weighting, or ranking.
+ */
+function hasLessonOverlap(
+  candidateLessonIds: readonly string[],
+  priorProposals: readonly LearningKnowledgeUpdateProposal[],
+): boolean {
+  if (candidateLessonIds.length === 0) {
+    return false;
+  }
+
+  const candidateSet = new Set(candidateLessonIds);
+  return priorProposals.some((prior) => prior.lessonIds.some((lessonId) => candidateSet.has(lessonId)));
+}
+
+/**
  * Deterministic, synchronous, offline structural composer from one or
  * more `LearningObservation` records into a single
- * `LearningKnowledgeUpdateProposal` — Milestone 4.
+ * `LearningKnowledgeUpdateProposal` — Milestone 4, extended in
+ * Milestone 6.
  *
  * `LearningProposalBuilder.build` performs pure structural
  * composition only, matching architecture.md's Learning Engine
@@ -31,25 +54,22 @@ function isNonEmptyString(value: unknown): value is string {
  * - `LearningKnowledgeUpdateProposal.proposalId` is deterministically
  *   derived as `proposal-<observationId>`, from the first entry of
  *   `observations`.
- * - `.lessonIds` is always `[]`. No `LearningLesson` is distilled by
- *   this class. `LearningLessonCategory` ('pattern-worked' | 'failure'
- *   | 'estimate-inaccuracy') has no field on `LearningObservation`,
- *   `WorkflowResult`, or `ValidationVerdict` it could be deterministically
- *   derived from without inventing a scoring or classification rule —
- *   `ValidationVerdict.status` ('pass' | 'fail' | 'partial') is a
- *   structural signal, but mapping it onto lesson categories would
- *   require assuming semantics ("partial means the estimate was
- *   wrong") that no repository document states. Lesson distillation
- *   is left for a future milestone once such a rule is explicitly
- *   grounded.
- * - `.updateType` is always `'new-precedent'` — a fixed, structural
- *   value. Distinguishing a genuinely new precedent from a refinement
- *   of an existing one would require comparing against the Knowledge
- *   Engine's stored history, which requires a cross-engine runtime
- *   call this class must not make. Absent that comparison, every
- *   proposal this class produces is structurally indistinguishable
- *   from a new precedent, so `'new-precedent'` is used rather than
- *   guessed.
+ * - `.lessonIds` is derived from the optional `lessons` parameter
+ *   (added in Milestone 6): `lessons.map(lesson => lesson.lessonId)`.
+ *   If `lessons` is omitted, `.lessonIds` is `[]`, unchanged from
+ *   Milestone 4 — this class still performs no lesson distillation
+ *   itself; lessons must be built separately (by
+ *   `LearningLessonBuilder`) and supplied.
+ * - `.updateType` is `'refined-heuristic'` when any id in the derived
+ *   `.lessonIds` also appears in any of the optional `priorProposals`
+ *   parameter's (added in Milestone 6) own `lessonIds` — a pure,
+ *   deterministic set-membership check, never a scored or weighted
+ *   judgment. Otherwise (including when `lessons`/`priorProposals`
+ *   are omitted, exactly matching Milestone 4 behavior) it is
+ *   `'new-precedent'`. This does not compare against the Knowledge
+ *   Engine's stored history — it only compares against
+ *   `LearningKnowledgeUpdateProposal` values the caller already has in
+ *   hand, so no cross-engine runtime call is made.
  * - `.status` is always `'proposed'` — the only status architecture.md
  *   permits the Learning Engine to assign to its own output ("It
  *   observes and proposes; it does not decide or execute").
@@ -73,20 +93,33 @@ export class LearningProposalBuilder {
    * Deterministically compose `observations` into a single
    * `LearningKnowledgeUpdateProposal`.
    *
+   * `lessons` and `priorProposals` are optional and additive (added in
+   * Milestone 6): omitting both reproduces Milestone 4 behavior
+   * exactly (`lessonIds: []`, `updateType: 'new-precedent'`).
+   *
    * Throws `LearningRequestError` if `observations` is not a
    * non-empty array, or if any entry is not a well-formed object with
    * a non-empty `observationId`.
    */
-  build(observations: readonly LearningObservation[], timestamp?: string): LearningKnowledgeUpdateProposal {
+  build(
+    observations: readonly LearningObservation[],
+    timestamp?: string,
+    lessons: readonly LearningLesson[] = [],
+    priorProposals: readonly LearningKnowledgeUpdateProposal[] = [],
+  ): LearningKnowledgeUpdateProposal {
     this.validateObservations(observations);
 
     const resolvedTimestamp = timestamp ?? new Date().toISOString();
     const observationIds = observations.map((observation) => observation.observationId);
+    const lessonIds = lessons.map((lesson) => lesson.lessonId);
+    const updateType: LearningKnowledgeUpdateType = hasLessonOverlap(lessonIds, priorProposals)
+      ? 'refined-heuristic'
+      : 'new-precedent';
 
     return {
       proposalId: `proposal-${observationIds[0]}`,
-      updateType: 'new-precedent',
-      lessonIds: [],
+      updateType,
+      lessonIds,
       description: `Structural knowledge-update proposal composed from ${observationIds.length} observation(s): ${observationIds.join(', ')}.`,
       status: 'proposed',
       proposedAt: resolvedTimestamp,

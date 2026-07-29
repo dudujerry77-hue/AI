@@ -1,40 +1,64 @@
 # Learning Engine
 
-Milestone 4 package for the Titan Core Learning Engine: a
-deterministic structural observation builder (Milestone 3) and a
-deterministic structural proposal builder (Milestone 4).
+Milestone 6 package for the Titan Core Learning Engine: deterministic
+structural builders for observations (Milestone 3), proposals
+(Milestone 4), Knowledge Engine handoffs (Milestone 5), and — new in
+Milestone 6 — lessons, flagged risks, proposed ADRs, and full pipeline
+assembly.
 
-## Scope (Milestones 3–4)
+## Scope (Milestones 3–6)
 
-- Retains the Milestone 1 runtime foundation unchanged (lifecycle,
-  health, metadata, version, and state methods, inherited from
-  `BaseEngine`) and the Milestone 2 domain model unchanged
-  (`src/models/types.ts`).
-- **Milestone 3** introduces `LearningObservationBuilder`
-  (`src/builders/learning-observation-builder.ts`): a pure,
-  synchronous, deterministic translator that consumes a
-  `LearningSubject` (an Orchestrator Engine `WorkflowResult` and a
-  Validation Engine `ValidationVerdict`, both imported by type only)
-  and produces a `LearningObservation`. `LearningEngine.observeCycle()`
-  validates only the shape of its request and delegates entirely to
-  `LearningObservationBuilder.build`, returning its output unchanged.
-- **Milestone 4** introduces `LearningProposalBuilder`
-  (`src/builders/learning-proposal-builder.ts`): a pure, synchronous,
-  deterministic composer that consumes one or more already-built
-  `LearningObservation` records and produces a single
-  `LearningKnowledgeUpdateProposal`.
-  `LearningEngine.generateProposal()` validates only the shape of its
-  request and delegates entirely to `LearningProposalBuilder.build`,
-  returning its output unchanged.
+- Retains the Milestone 1 runtime foundation and the Milestone 2
+  domain model unchanged in their existing shapes.
+- **Milestone 3** introduces `LearningObservationBuilder`: a pure,
+  synchronous, deterministic translator from a `LearningSubject` (an
+  Orchestrator Engine `WorkflowResult` and a Validation Engine
+  `ValidationVerdict`, both imported by type only) into a
+  `LearningObservation`. `LearningEngine.observeCycle()` delegates
+  entirely to it.
+- **Milestone 4** introduces `LearningProposalBuilder`: a pure,
+  synchronous, deterministic composer from one or more
+  `LearningObservation` records into a single
+  `LearningKnowledgeUpdateProposal`. `LearningEngine.generateProposal()`
+  delegates entirely to it.
+- **Milestone 5** introduces `LearningKnowledgeHandoffBuilder`: a
+  pure, synchronous, deterministic packager from an already-built
+  `LearningKnowledgeUpdateProposal` into a `LearningKnowledgeHandoff`.
+  `LearningEngine.prepareKnowledgeHandoff()` delegates entirely to it.
+- **Milestone 6** introduces four more pieces, implementing
+  architecture.md's Learning Engine "Produces" line in full ("new or
+  revised heuristics, proposed ADRs for recurring architectural
+  friction, flagged recurring risks"):
+  - `LearningLessonBuilder` (`src/builders/learning-lesson-builder.ts`):
+    distills `LearningObservation` records into `LearningLesson`
+    records, per architecture.md's "distills durable lessons: what
+    patterns worked, what failed and why, what estimates were wrong."
+  - `LearningFlaggedRiskBuilder` (`src/risk/learning-flagged-risk-builder.ts`):
+    filters/translates `LearningLesson` records into
+    `LearningFlaggedRisk` records.
+  - `LearningProposedAdrBuilder` (`src/adr/learning-proposed-adr-builder.ts`):
+    translates `LearningFlaggedRisk` records into `LearningProposedAdr`
+    records.
+  - `LearningPipelineBuilder` (`src/pipeline/learning-pipeline-builder.ts`):
+    composes all of the above (plus `LearningProposalBuilder`) into a
+    full `LearningPipelineResult`. `LearningEngine.analyzeCycle()`
+    delegates entirely to it.
+  - `LearningProposalBuilder.build()` gained two **optional, additive**
+    trailing parameters (`lessons`, `priorProposals`): omitting both
+    reproduces Milestone 4 behavior exactly. When supplied, `.lessonIds`
+    is populated from real lessons, and `.updateType` becomes
+    `'refined-heuristic'` when a supplied prior proposal shares a
+    lesson id with the new one (a deterministic set-membership check —
+    never a scored or ranked judgment).
 
-**Neither `LearningObservationBuilder` nor `LearningProposalBuilder`
-performs any lesson distillation, knowledge write, approval,
-rejection, scoring, ranking, AI reasoning, execution, orchestration,
-validation, persistence, networking, or heuristic behavior.** No
-scheduling, no retries, and no call to any other Titan engine's
-runtime exist anywhere in this package — the Orchestrator Engine's
-`WorkflowResult` and the Validation Engine's `ValidationVerdict` are
-used only as read-only, type-only input shapes.
+**None of the Milestone 6 builders perform any AI reasoning, heuristic
+scoring, ranking, approval, rejection, execution, orchestration,
+validation, persistence, networking, filesystem/database access, or
+knowledge write.** No call to any other Titan engine's runtime exists
+anywhere in this package — the Orchestrator Engine's `WorkflowResult`
+and the Validation Engine's `ValidationVerdict` are used only as
+read-only, type-only input shapes, and the Knowledge Engine's runtime
+is never imported, instantiated, or called.
 
 ## Runtime Contract (inherited from `BaseEngine`, unchanged since Milestone 1)
 
@@ -56,105 +80,131 @@ Titan runtime engine contract without any override:
 - `name`: `Learning Engine`
 - `version`: `1.0.0`
 - `contractVersion`: the shared `ENGINE_API_CONTRACT_VERSION`
-- `capabilities`: `learning.observe-cycle`, `learning.generate-proposal`
+- `capabilities`: `learning.observe-cycle`, `learning.generate-proposal`,
+  `learning.prepare-knowledge-handoff`, `learning.analyze-cycle`
 
-## Public API (Milestone 4)
+## Public API (Milestone 6)
 
-| Method | Behavior (Milestone 4) |
+| Method | Behavior |
 |---|---|
-| `observeCycle(request)` | Validates that `request` is a non-null object, then delegates entirely to `LearningObservationBuilder.build(request.subject)`. Returns a `LearningObservation`. Throws `LearningRequestError` for a malformed request or subject. |
-| `generateProposal(request)` | Validates that `request` is a non-null object, then delegates entirely to `LearningProposalBuilder.build(request.observations)`. Returns a `LearningKnowledgeUpdateProposal`. Throws `LearningRequestError` for a malformed request or observation list. |
+| `observeCycle(request)` | Delegates entirely to `LearningObservationBuilder.build(request.subject)`. Returns a `LearningObservation`. |
+| `generateProposal(request)` | Delegates entirely to `LearningProposalBuilder.build(request.observations)`. Returns a `LearningKnowledgeUpdateProposal` (`lessonIds: []`, `updateType: 'new-precedent'` — this direct entry point does not supply lessons/prior proposals). |
+| `prepareKnowledgeHandoff(request)` | Delegates entirely to `LearningKnowledgeHandoffBuilder.build(request.proposal)`. Returns a `LearningKnowledgeHandoff`. |
+| `analyzeCycle(request)` | Delegates entirely to `LearningPipelineBuilder.run(request.observations, request.priorProposals ?? [])`. Returns a full `LearningPipelineResult`: `lessons`, one aggregate `knowledgeUpdateProposal` (with real `lessonIds` and structurally detected `updateType`), `flaggedRisks`, and `proposedAdrs`. |
 
-No other public method exists. Capabilities beyond these two —
-lesson distillation, proposed-ADR drafting, risk flagging, and
-feeding approved artifacts into the Knowledge Engine — are named in
-`architecture.md`'s Learning Engine entry but are not implemented
-here; they remain out of scope until a future milestone.
+All four methods throw `LearningRequestError` for a malformed request
+or input. No other public method exists.
 
-## `LearningObservationBuilder` (Milestone 3)
+## `LearningLessonBuilder` (Milestone 6)
 
-`LearningObservationBuilder.build(subject, timestamp?)` performs pure
-structural translation only:
+`LearningLessonBuilder.build(observations, timestamp?)` produces
+exactly one `LearningLesson` per observation:
 
-- `LearningObservation.subject` is a freshly constructed wrapper
-  around the same `outcome`/`verdict` values supplied on `subject`,
-  copied verbatim.
-- `LearningObservation.observationId` is deterministically derived as
-  `observation-<workflowId>-<validationId>`.
-- `LearningObservation.stage` is always `'outcome'` — not a
-  placeholder, but a structural fact: a `WorkflowResult` is, by the
-  Orchestrator Engine's own definition, "Outcome payload for a
-  completed or terminated workflow," so every subject this builder
-  can receive represents the `'outcome'` stage.
-- `LearningObservation.observedAt` is the caller-supplied (or freshly
-  read) ISO-8601 timestamp.
+- `.category` is derived via a **fixed, total, deterministic lookup
+  table** keyed on `observation.subject.verdict.status`:
+  `pass → 'pattern-worked'`, `fail → 'failure'`,
+  `partial → 'estimate-inaccuracy'`. This is a structural
+  classification, not a heuristic judgment — `'pass'`/`'failure'` map
+  to their near-synonymous category, and `'partial'` maps to the one
+  remaining category by elimination. It mirrors
+  `ExecutionStatusTracker`'s established pattern of deriving a
+  classification from a fixed lookup on an existing status field.
+- `.lessonId` is deterministically derived as `lesson-<observationId>`.
+- `.description` is a structural composition referencing only the
+  observation id and verdict status already present on the input.
 
-Throws `LearningRequestError` only when `subject`, `subject.outcome`,
-or `subject.verdict` is missing or malformed.
+Throws `LearningRequestError` only when `observations` is malformed.
 
-## `LearningProposalBuilder` (Milestone 4)
+## `LearningFlaggedRiskBuilder` (Milestone 6)
 
-`LearningProposalBuilder.build(observations, timestamp?)` performs
-pure structural composition only:
+`LearningFlaggedRiskBuilder.build(lessons, timestamp?)` produces one
+`LearningFlaggedRisk` per lesson whose `category` is `'failure'` or
+`'estimate-inaccuracy'`; `'pattern-worked'` lessons produce no risk.
 
-- `.proposalId` is deterministically derived as
-  `proposal-<observationId>`, from the first entry of `observations`.
-- `.lessonIds` is always `[]`. No `LearningLesson` is distilled by
-  this class — `LearningLessonCategory` has no field on
-  `LearningObservation`, `WorkflowResult`, or `ValidationVerdict` it
-  could be deterministically derived from without inventing a
-  classification rule no repository document states. Lesson
-  distillation is left for a future milestone.
-- `.updateType` is always `'new-precedent'` — distinguishing a new
-  precedent from a refinement of an existing one would require
-  comparing against the Knowledge Engine's stored history, which
-  requires a cross-engine runtime call this class must not make.
-- `.status` is always `'proposed'` — the only status architecture.md
-  permits the Learning Engine to assign to its own output.
-- `.description` is a structural composition listing the number of
-  source observations and their ids — no summarization or judgment.
-- `.proposedAt` is the caller-supplied (or freshly read) ISO-8601
-  timestamp.
+The word "recurring" in architecture.md's "flagged recurring risks"
+is **deliberately not implemented** as a frequency or threshold rule:
+no repository document defines what count or time window makes a risk
+"recurring," and inventing one would cross into heuristic scoring or
+ranking. Every risk-eligible lesson is instead a structural risk
+candidate, one-to-one, with no counting or ranking.
 
-Throws `LearningRequestError` only when `observations` is not a
-non-empty array of well-formed `LearningObservation`-shaped values.
+Throws `LearningRequestError` only when `lessons` is malformed.
 
-## Explicit Non-Goals (Milestones 3–4)
+## `LearningProposedAdrBuilder` (Milestone 6)
 
-- No lesson distillation of any kind (`LearningLesson` is never
-  produced).
-- No proposed-ADR drafting (`LearningProposedAdr` is never produced).
-- No risk flagging (`LearningFlaggedRisk` is never produced).
-- No knowledge writes or feedback to the Knowledge Engine.
-- No approval or rejection of proposals — every proposal this package
-  produces is `status: 'proposed'` and stays that way.
-- No scoring, no rule engines, no AI reasoning, no heuristics, no
-  ranking.
-- No persistence, no networking, no filesystem access.
+`LearningProposedAdrBuilder.build(risks, timestamp?)` produces one
+`LearningProposedAdr` per risk (same "no recurrence threshold"
+reasoning as above):
+
+- `.context` is the source risk's `description`, copied verbatim.
+- `.decision` and `.consequences` are **fixed, documented structural
+  placeholder strings** — no repository document defines a rule for
+  deriving real decision/consequence content from a risk, so none is
+  invented.
+- `.alternativesConsidered` is always `[]` — no alternatives were
+  actually evaluated.
+- `.status` is always `'proposed'`, never `'accepted'`.
+
+Throws `LearningRequestError` only when `risks` is malformed.
+
+## `LearningPipelineBuilder` (Milestone 6)
+
+`LearningPipelineBuilder.run(observations, priorProposals?, timestamp?)`
+composes `LearningLessonBuilder`, `LearningProposalBuilder`,
+`LearningFlaggedRiskBuilder`, and `LearningProposedAdrBuilder` (in that
+order) into a `LearningPipelineResult`, resolving one timestamp shared
+by every produced artifact. `flaggedRisks`/`proposedAdrs` may
+legitimately be empty arrays when every lesson is `'pattern-worked'`.
+
+## `LearningProposalBuilder` — Milestone 6 additions
+
+See Milestone 4 for the base behavior. New in Milestone 6:
+`build(observations, timestamp?, lessons = [], priorProposals = [])`
+— both new parameters are optional and default to `[]`, so every
+Milestone 4 call site and test continues to behave identically.
+`.lessonIds = lessons.map(l => l.lessonId)`. `.updateType` is
+`'refined-heuristic'` when any resulting lesson id also appears in any
+`priorProposals` entry's own `lessonIds` (a pure set-membership check
+against proposals the caller already has in hand — never a Knowledge
+Engine lookup), otherwise `'new-precedent'`.
+
+## Explicit Non-Goals (Milestones 3–6)
+
+- No AI reasoning, no rule engines, no heuristics, no scoring, no
+  ranking anywhere — including no "recurring" frequency/threshold
+  logic for risks or ADRs.
+- No knowledge writes — nothing in this package ever reaches,
+  imports, instantiates, or calls the Knowledge Engine's runtime.
+- No approval or rejection of proposals or ADRs — every proposal and
+  ADR this package produces has `status: 'proposed'` and stays that
+  way.
+- No persistence, no networking, no filesystem/database access.
 - No scheduling, no retries.
 - No orchestration, no execution, no validation logic.
-- No cross-engine runtime calls — this package never imports,
-  instantiates, or calls the runtime of the Planner, Orchestrator,
-  Context, Knowledge, Execution, or Validation engines. `WorkflowResult`
-  and `ValidationVerdict` are referenced by type only.
+- No cross-engine runtime calls — `WorkflowResult` and
+  `ValidationVerdict` are referenced by type only; no Knowledge Engine
+  type is referenced at all.
 
 ## Explicit Statement of Current Behavior
 
 This package currently provides only:
 
-1. A working Titan runtime lifecycle (`initialize` → `start` →
-   `stop`) via `BaseEngine`, unmodified since Milestone 1.
-2. Working health, metadata, version, and contract-version reporting,
-   inherited unchanged from `BaseEngine`.
-3. The Learning Engine's domain model (`src/models/types.ts`),
-   unchanged since Milestone 2.
-4. A deterministic structural `LearningObservationBuilder`
-   (Milestone 3), wired into `observeCycle()`.
-5. A deterministic structural `LearningProposalBuilder` (Milestone 4),
-   wired into `generateProposal()`.
+1. A working Titan runtime lifecycle via `BaseEngine`, unmodified
+   since Milestone 1.
+2. The Learning Engine's domain model, unchanged since Milestone 2
+   except for the Milestone 5 addition of `LearningKnowledgeHandoff`
+   (no Milestone 6 type additions — every Milestone 6 type already
+   existed in the Milestone 2 model).
+3. `LearningObservationBuilder` (Milestone 3), wired into
+   `observeCycle()`.
+4. `LearningProposalBuilder` (Milestone 4, extended in Milestone 6),
+   wired into `generateProposal()` directly and into
+   `LearningPipelineBuilder` for the full-pipeline case.
+5. `LearningKnowledgeHandoffBuilder` (Milestone 5), wired into
+   `prepareKnowledgeHandoff()`.
+6. `LearningLessonBuilder`, `LearningFlaggedRiskBuilder`,
+   `LearningProposedAdrBuilder`, and `LearningPipelineBuilder`
+   (Milestone 6), wired into `analyzeCycle()`.
 
-No lesson distillation, no proposed-ADR drafting, no risk flagging,
-no knowledge write, no approval/rejection, and no cross-engine
-runtime behavior of any kind exists anywhere in this package. Those
-remain out of scope pending a future milestone grounded in explicit
-repository requirements.
+No actual knowledge write, no approval/rejection, and no cross-engine
+runtime behavior of any kind exists anywhere in this package.

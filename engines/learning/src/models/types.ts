@@ -188,3 +188,27 @@ export interface LearningPipelineResult {
   readonly proposedAdrs: readonly LearningProposedAdr[];
   readonly flaggedRisks: readonly LearningFlaggedRisk[];
 }
+
+/**
+ * Immutable, structural handoff artifact packaging an already-built
+ * `LearningKnowledgeUpdateProposal` for later consumption by the
+ * Knowledge Engine, per `current_phase.md`'s Phase 012 Exit
+ * Criterion: "Handoff artifacts support the Knowledge Engine feedback
+ * loop." A Learning-owned type is used here rather than the Knowledge
+ * Engine's own `KnowledgeCreateInput`/`KnowledgeRecord` types: mapping
+ * a proposal onto those shapes would require inventing values for
+ * fields no repository document grounds for a Learning Engine
+ * proposal (`author`, `securityClass`, `approvalStatus`), and
+ * assigning `approvalStatus` in particular would itself be exactly
+ * the kind of governance decision architecture.md's Learning Engine
+ * boundary statement prohibits ("It observes and proposes; it does
+ * not decide"). This type carries the proposal verbatim, plus a
+ * deterministic handoff identifier and timestamp, and nothing else.
+ * Pure data only; not produced anywhere in Milestone 2, and no
+ * Knowledge Engine type is referenced here, by type or otherwise.
+ */
+export interface LearningKnowledgeHandoff {
+  readonly handoffId: string;
+  readonly proposal: LearningKnowledgeUpdateProposal;
+  readonly preparedAt: string;
+}
