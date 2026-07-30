@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ContextEngine,
   createContextManager,
   createProjectContext,
   createSessionContext,
@@ -9,6 +10,130 @@ import {
   createEngineContext,
   createInMemoryContextStorage,
 } from '../../engines/context/src';
+import { ENGINE_API_CONTRACT_VERSION } from '../../runtime/engine/types';
+
+describe('ContextEngine — Milestone 1 (Framework Contract)', () => {
+  describe('runtime lifecycle', () => {
+    it('starts in the created state and transitions through the full lifecycle', async () => {
+      const engine = new ContextEngine();
+
+      expect(engine.getState()).toBe('created');
+
+      await engine.initialize();
+      expect(engine.getState()).toBe('initialized');
+
+      await engine.start();
+      expect(engine.getState()).toBe('running');
+
+      await engine.stop();
+      expect(engine.getState()).toBe('stopped');
+    });
+
+    it('allows re-initialization after stop', async () => {
+      const engine = new ContextEngine();
+
+      await engine.initialize();
+      await engine.start();
+      await engine.stop();
+
+      await engine.initialize();
+      expect(engine.getState()).toBe('initialized');
+
+      await engine.start();
+      expect(engine.getState()).toBe('running');
+
+      await engine.stop();
+      expect(engine.getState()).toBe('stopped');
+    });
+
+    it('is safe to call stop() more than once', async () => {
+      const engine = new ContextEngine();
+
+      await engine.initialize();
+      await engine.start();
+      await engine.stop();
+
+      await expect(engine.stop()).resolves.not.toThrow();
+      expect(engine.getState()).toBe('stopped');
+    });
+  });
+
+  describe('health', () => {
+    it('reports healthy status through every lifecycle stage', async () => {
+      const engine = new ContextEngine();
+
+      await engine.initialize();
+      expect((await engine.health()).status).toBe('healthy');
+
+      await engine.start();
+      expect((await engine.health()).status).toBe('healthy');
+
+      await engine.stop();
+      expect((await engine.health()).status).toBe('healthy');
+    });
+  });
+
+  describe('metadata', () => {
+    it('reports the expected identity fields', () => {
+      const engine = new ContextEngine();
+      const metadata = engine.metadata();
+
+      expect(metadata.id).toBe('context-engine');
+      expect(metadata.name).toBe('Context Engine');
+      expect(metadata.version).toBe('1.0.0');
+      expect(metadata.contractVersion).toBe(ENGINE_API_CONTRACT_VERSION);
+    });
+
+    it('advertises no capabilities in Milestone 1 (no repository text grounds any Context Engine business method)', () => {
+      const engine = new ContextEngine();
+      expect(engine.metadata().capabilities).toEqual([]);
+    });
+
+    it('allows overriding id, name, and version via options', () => {
+      const engine = new ContextEngine({ id: 'custom-id', name: 'Custom Name', version: '2.0.0' });
+      const metadata = engine.metadata();
+
+      expect(metadata.id).toBe('custom-id');
+      expect(metadata.name).toBe('Custom Name');
+      expect(metadata.version).toBe('2.0.0');
+    });
+  });
+
+  describe('version, contractVersion, getState', () => {
+    it('version() matches metadata().version', () => {
+      const engine = new ContextEngine();
+      expect(engine.version()).toBe(engine.metadata().version);
+    });
+
+    it('contractVersion() matches the shared contract constant', () => {
+      const engine = new ContextEngine();
+      expect(engine.contractVersion()).toBe(ENGINE_API_CONTRACT_VERSION);
+    });
+
+    it('getState() reflects the current lifecycle state', async () => {
+      const engine = new ContextEngine();
+      expect(engine.getState()).toBe('created');
+
+      await engine.initialize();
+      expect(engine.getState()).toBe('initialized');
+    });
+  });
+
+  describe('public API surface (Milestone 1 boundary)', () => {
+    it('exposes no business methods beyond the shared lifecycle contract', () => {
+      const engine = new ContextEngine();
+
+      // Any of these existing would indicate a business method was
+      // added without explicit grounding in architecture.md or the
+      // Phase 013 specification.
+      expect((engine as unknown as Record<string, unknown>).createSnapshot).toBeUndefined();
+      expect((engine as unknown as Record<string, unknown>).setProjectContext).toBeUndefined();
+      expect((engine as unknown as Record<string, unknown>).save).toBeUndefined();
+      expect((engine as unknown as Record<string, unknown>).load).toBeUndefined();
+      expect((engine as unknown as Record<string, unknown>).serialize).toBeUndefined();
+    });
+  });
+});
 
 describe('Context Engine', () => {
   it('creates immutable snapshots and tracks versioned state', () => {
