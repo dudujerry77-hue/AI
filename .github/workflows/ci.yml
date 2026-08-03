@@ -20,12 +20,17 @@ name: CI
 # invented number.
 #
 # deployment_strategy.md §2 step 5's "secrets-scanning of the diff" is
-# NOT implemented here: no secrets-scanning tool exists anywhere in this
-# repository today, and introducing one is a new core dependency under
-# tech_stack.md §2's mandatory stack-selection process (evaluation +
-# ADR + tech_stack.md update) — out of scope for a CI-workflow-only
-# change. This gap is intentionally left unfilled rather than papered
-# over with an ungrounded tool choice (see Phase 015 planning notes).
+# implemented below as a basic, dependency-free pattern scan (fixed
+# credential formats: AWS access key IDs, PEM private-key headers,
+# GitHub tokens, Slack tokens) — the same no-new-dependency technique
+# used for the "no skipped tests" step above, not a general-purpose
+# secrets-scanning tool (gitleaks/trufflehog/etc.), which would be a
+# new core dependency requiring tech_stack.md §2's mandatory
+# stack-selection process (evaluation + ADR + tech_stack.md update),
+# out of scope for a CI-workflow-only change. This scans the whole
+# tracked tree on every run rather than only the diff, since true
+# diff-scoped scanning would need to resolve a base ref — a reasonable,
+# more conservative simplification using the same tooling.
 
 on:
   push:
@@ -70,3 +75,6 @@ jobs:
 
       - name: Dependency vulnerability scan (security_policy.md §5)
         run: npm audit --audit-level=high
+
+      - name: Basic secrets pattern scan (deployment_strategy.md §2 step 5)
+        run: '! grep -rnEI "(AKIA[0-9A-Z]{16}|-----BEGIN[A-Z ]*PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{36,}|xox[baprs]-[A-Za-z0-9-]+)" --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=coverage --exclude-dir=.git .'
