@@ -4,23 +4,23 @@
   "governance_version": "1.0.0",
   "runtime_version": "0.1.0",
   "documentation_version": "1.2.0",
-  "last_updated": "2026-07-31",
-  "last_updated_by": "Claude (Phase 013 closure / Phase 014 activation)",
+  "last_updated": "2026-08-03",
+  "last_updated_by": "Claude (Phase 014 closure / Phase 015 activation)",
   "project": {
     "name": "Titan AI",
     "description": "Autonomous software engineering operating system, implemented as Titan Core: seven cooperating engines (Planner, Orchestrator, Context, Knowledge, Execution, Validation, Learning). See architecture.md Section 7 and decisions.md ADR-0002.",
     "repository_root": "."
   },
   "current_phase": {
-    "id": "014",
-    "name": "Test Coverage Completion",
+    "id": "015",
+    "name": "Deployment Readiness",
     "status": "in-progress"
   },
   "next_phase": {
-    "id": "015",
-    "name": "Deployment Readiness",
+    "id": "016",
+    "name": "Production Release",
     "status": "not-started",
-    "blocked_reason": "Awaiting Phase 014 completion."
+    "blocked_reason": "Awaiting Phase 015 completion."
   },
   "governance": {
     "constitution_version": "1.0.0",
@@ -63,7 +63,7 @@
     "notes": "architecture.md Section 7 defines the approved Titan Core engine architecture (7 engines), with security architecture governance established in Section 6."
   },
   "titan_core": {
-    "status": "titan-core-integrated-and-hardened-coverage-in-progress",
+    "status": "coverage-completion-closed-deployment-readiness-in-progress",
     "engine_framework_required_before_future_engine_implementation": true,
     "engine_framework_phase": "006",
     "shared_framework": {
@@ -80,17 +80,19 @@
       { "name": "Validation Engine", "status": "implemented", "implementation_phase": "011", "notes": "validate and getValidationStatus are implemented (Milestones 1-5: runtime foundation, complete planned domain model, ValidationBuilder/validate() - deterministic structural translation of an Execution Engine ExecutionSummary/ExecutionRecord into a ValidationPipelineResult, ValidationValidator/getValidationStatus() - deterministic structural validation of a ValidationVerdict, and ValidationEvidenceCollector/ValidationPipelineRunner - deterministic structural evidence collection composed with verdict construction, wired into validate()). approveValidation and rejectValidation remain unimplemented NotImplementedError stubs; a dedicated specification audit and governance review (see phases/phase-011-validation-engine-implementation.md) confirmed neither is required by any Phase 011 exit criterion or specification/engine_api.md requirement, and that implementing them would require either persistence (a validation store/lookup mechanism) or business logic (approval authority/audit semantics), both out of scope for deterministic structural processing." },
       { "name": "Learning Engine", "status": "implemented", "implementation_phase": "012", "notes": "observeCycle, generateProposal, prepareKnowledgeHandoff, and analyzeCycle are implemented (Milestones 1-6: runtime foundation, complete domain model, LearningObservationBuilder/observeCycle(), LearningProposalBuilder/generateProposal(), LearningKnowledgeHandoffBuilder/prepareKnowledgeHandoff(), and LearningLessonBuilder/LearningFlaggedRiskBuilder/LearningProposedAdrBuilder/LearningPipelineBuilder/analyzeCycle()). All four public API methods are implemented with no remaining NotImplementedError stubs. A dedicated Governance Resolution (see phases/phase-012-learning-engine-implementation.md) determined that actual Knowledge Engine-side consumption of Learning Engine handoff artifacts is architecturally assigned to the Knowledge Engine and to Phase 013's cross-engine validation scope, not to Phase 012; it remains unimplemented and unscoped pending Phase 013 or a future ADR." }
     ],
-    "notes": "Implementation order follows the Titan Core architecture data-flow dependency order: Context first, then the shared framework, then security governance, then Knowledge, Planner, Orchestrator, Execution, Validation, and Learning. Phase 013 (Titan Core Integration and Hardening) is complete: all seven engines are wired into apps/titan-shell via the shared EngineRegistry, end-to-end and cross-engine-boundary integration tests exist (tests/integration/), and a security/performance hardening review is recorded at .titan/reviews/2026-07-31-phase-013-security-performance-hardening.md. No engine's business logic changed during Phase 013."
+    "notes": "Implementation order follows the Titan Core architecture data-flow dependency order: Context first, then the shared framework, then security governance, then Knowledge, Planner, Orchestrator, Execution, Validation, and Learning. Phase 013 (Titan Core Integration and Hardening) is complete: all seven engines are wired into apps/titan-shell via the shared EngineRegistry, end-to-end and cross-engine-boundary integration tests exist (tests/integration/), and a security/performance hardening review is recorded at .titan/reviews/2026-07-31-phase-013-security-performance-hardening.md. Phase 014 (Test Coverage Completion) is complete: coverage reporting infrastructure (npm run coverage), Knowledge Engine/LifecycleManager/ContextManager coverage gap closures, and a CI quality-gate workflow (.github/workflows/ci.yml) were added, with three unresolved items carried forward (npm audit findings not yet remediated/risk-accepted, unenforced coverage thresholds pending a domain/application folder-mapping decision, and a confirmed reproducible flaky test in tests/unit/validation-engine.test.ts). No engine's business logic changed during Phase 013 or Phase 014."
   },
   "quality": {
-    "test_coverage_percent": null,
+    "test_coverage_percent": 84.33,
     "known_open_security_issues": 0,
-    "known_open_bugs": 0
+    "known_open_bugs": 0,
+    "known_open_test_issues": 1,
+    "notes": "test_coverage_percent is the overall statement/line coverage reported by npm run coverage (Vitest v8 provider) as of Phase 014 closure; no per-tier (domain/application) threshold is enforced (see phases/phase-014-test-coverage-completion.md Review/Findings). known_open_test_issues counts the confirmed, reproducible flaky test in tests/unit/validation-engine.test.ts ('never reads policyRules or governanceRules'), tracked as a Phase 014 follow-up, not resolved."
   },
   "counters": {
     "sessions_logged": 7,
     "adrs_recorded": 7,
-    "phases_completed": 15
+    "phases_completed": 16
   },
   "agents_involved_to_date": [
     "Claude",
