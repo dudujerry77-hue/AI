@@ -197,4 +197,48 @@ describe('Context Engine', () => {
     expect(snapshot.project?.name).toBe('Updated');
     expect(snapshot.session?.name).toBe('runtime');
   });
+
+  it('updates the task context and returns the latest snapshot', () => {
+    const manager = createContextManager();
+
+    manager.setTaskContext(createTaskContext({ id: 'task-5', name: 'implement-feature', status: 'in-progress' }));
+
+    const snapshot = manager.createSnapshot();
+    expect(snapshot.task?.id).toBe('task-5');
+    expect(snapshot.task?.name).toBe('implement-feature');
+    expect(snapshot.task?.status).toBe('in-progress');
+  });
+
+  it('updates the phase context and returns the latest snapshot', () => {
+    const manager = createContextManager();
+
+    manager.setPhaseContext(createPhaseContext({ id: 'phase-014', name: 'Test Coverage Completion', status: 'in-progress' }));
+
+    const snapshot = manager.createSnapshot();
+    expect(snapshot.phase?.id).toBe('phase-014');
+    expect(snapshot.phase?.name).toBe('Test Coverage Completion');
+    expect(snapshot.phase?.status).toBe('in-progress');
+  });
+
+  it('updates the user context and returns the latest snapshot', () => {
+    const manager = createContextManager();
+
+    manager.setUserContext(createUserContext({ id: 'user-9', name: 'Reviewer', role: 'reviewer' }));
+
+    const snapshot = manager.createSnapshot();
+    expect(snapshot.user?.id).toBe('user-9');
+    expect(snapshot.user?.name).toBe('Reviewer');
+    expect(snapshot.user?.role).toBe('reviewer');
+  });
+
+  it('updates the engine context and returns the latest snapshot', () => {
+    const manager = createContextManager();
+
+    manager.setEngineContext(createEngineContext({ id: 'engine-9', name: 'context', status: 'running' }));
+
+    const snapshot = manager.createSnapshot();
+    expect(snapshot.engine?.id).toBe('engine-9');
+    expect(snapshot.engine?.name).toBe('context');
+    expect(snapshot.engine?.status).toBe('running');
+  });
 });

@@ -8,7 +8,7 @@ import { HealthMonitor } from '../runtime/health/health-monitor';
 import { MetricsCollector } from '../runtime/metrics/metrics';
 import { EngineRegistry } from '../runtime/registry/engine-registry';
 import { LifecycleManager } from '../runtime/lifecycle/lifecycle-manager';
-import { ConfigurationError, InitializationError, RuntimeError } from '../runtime/errors/errors';
+import { ConfigurationError, InitializationError, RuntimeError, ShutdownError } from '../runtime/errors/errors';
 import type { LegacyTitanEngine } from '../runtime/engine/types';
 import { ENGINE_API_CONTRACT_VERSION } from '../runtime/engine/types';
 import type {
@@ -198,6 +198,143 @@ describe('Titan runtime infrastructure', () => {
     });
 
     await expect(engine.initialize()).rejects.toThrow(InitializationError);
+  });
+
+  describe('LifecycleManager state machine (Phase 014 Milestone 3)', () => {
+    it('exposes isTransitionAllowed() matching specification/engine_api.md §4.2 exactly', () => {
+      const lifecycleManager = new LifecycleManager();
+      const states = ['created', 'initialized', 'running', 'stopped', 'failed'] as const;
+
+      // Exactly the transitions listed in specification/engine_api.md §4.2:
+      // Created->Initialized, Initialized->Running, Initialized->Failed,
+      // Running->Stopped, Running->Failed, Stopped->Initialized,
+      // Failed->Initialized. Every other (from, to) pair must be rejected.
+      const expectedAllowed = new Set([
+        'created->initialized',
+        'initialized->running',
+        'initialized->failed',
+        'running->stopped',
+        'running->failed',
+        'stopped->initialized',
+        'failed->initialized',
+      ]);
+
+      for (const from of states) {
+        for (const to of states) {
+          expect(lifecycleManager.isTransitionAllowed(from, to)).toBe(
+            expectedAllowed.has(`${from}->${to}`),
+          );
+        }
+      }
+    });
+
+    it('rejects start() before initialize(), per §4.2\'s "must not transition directly from Created to Running"', async () => {
+      const lifecycleManager = new LifecycleManager();
+
+      await expect(lifecycleManager.start()).rejects.toThrow(InitializationError);
+      expect(lifecycleManager.getState()).toBe('created');
+    });
+
+    it('rejects start() directly from stopped, per §4.2\'s "must not transition directly from Stopped to Running"', async () => {
+      const lifecycleManager = new LifecycleManager();
+      await lifecycleManager.initialize();
+      await lifecycleManager.start();
+      await lifecycleManager.stop();
+
+      await expect(lifecycleManager.start()).rejects.toThrow(InitializationError);
+      expect(lifecycleManager.getState()).toBe('stopped');
+    });
+
+    it('rejects stop() while still in the created state, with a ShutdownError', async () => {
+      const lifecycleManager = new LifecycleManager();
+
+      await expect(lifecycleManager.stop()).rejects.toThrow(ShutdownError);
+      expect(lifecycleManager.getState()).toBe('created');
+    });
+
+    it('rejects initialize() while already running, since Running has no direct path back to Initialized', async () => {
+      const lifecycleManager = new LifecycleManager();
+      await lifecycleManager.initialize();
+      await lifecycleManager.start();
+
+      await expect(lifecycleManager.initialize()).rejects.toThrow(InitializationError);
+      expect(lifecycleManager.getState()).toBe('running');
+    });
+
+    it('treats a duplicate start() while already running as an idempotent no-op', async () => {
+      const lifecycleManager = new LifecycleManager();
+      await lifecycleManager.initialize();
+      await lifecycleManager.start();
+
+      await expect(lifecycleManager.start()).resolves.toBeUndefined();
+      expect(lifecycleManager.getState()).toBe('running');
+    });
+
+    it('supports reinitialization after stop(), per §4.2\'s "Stopped -> Initialized"', async () => {
+      const lifecycleManager = new LifecycleManager();
+      await lifecycleManager.initialize();
+      await lifecycleManager.start();
+      await lifecycleManager.stop();
+      expect(lifecycleManager.getState()).toBe('stopped');
+
+      await lifecycleManager.initialize();
+      expect(lifecycleManager.getState()).toBe('initialized');
+
+      await lifecycleManager.start();
+      expect(lifecycleManager.getState()).toBe('running');
+
+      await lifecycleManager.stop();
+      expect(lifecycleManager.getState()).toBe('stopped');
+    });
+
+    it('recovers from failed back to initialized, per §4.2\'s "Failed -> Initialized"', async () => {
+      const lifecycleManager = new LifecycleManager();
+      await lifecycleManager.initialize();
+
+      lifecycleManager.markFailed(new Error('boom'));
+      expect(lifecycleManager.getState()).toBe('failed');
+
+      await lifecycleManager.initialize();
+      expect(lifecycleManager.getState()).toBe('initialized');
+    });
+
+    describe('markFailed()', () => {
+      it('transitions from running to failed', async () => {
+        const lifecycleManager = new LifecycleManager();
+        await lifecycleManager.initialize();
+        await lifecycleManager.start();
+
+        lifecycleManager.markFailed(new Error('running failure'));
+        expect(lifecycleManager.getState()).toBe('failed');
+      });
+
+      it('is idempotent when already failed', async () => {
+        const lifecycleManager = new LifecycleManager();
+        await lifecycleManager.initialize();
+        lifecycleManager.markFailed(new Error('first failure'));
+        expect(lifecycleManager.getState()).toBe('failed');
+
+        expect(() => lifecycleManager.markFailed(new Error('second failure'))).not.toThrow();
+        expect(lifecycleManager.getState()).toBe('failed');
+      });
+
+      it('throws InitializationError when called from created, which has no path to failed', () => {
+        const lifecycleManager = new LifecycleManager();
+
+        expect(() => lifecycleManager.markFailed(new Error('too early'))).toThrow(InitializationError);
+        expect(lifecycleManager.getState()).toBe('created');
+      });
+
+      it('throws InitializationError when called from stopped, which has no path to failed', async () => {
+        const lifecycleManager = new LifecycleManager();
+        await lifecycleManager.initialize();
+        await lifecycleManager.start();
+        await lifecycleManager.stop();
+
+        expect(() => lifecycleManager.markFailed(new Error('too late'))).toThrow(InitializationError);
+        expect(lifecycleManager.getState()).toBe('stopped');
+      });
+    });
   });
 
   it('accepts runtime security interfaces as injectable dependencies', async () => {
