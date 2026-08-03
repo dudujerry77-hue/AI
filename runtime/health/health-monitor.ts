@@ -37,7 +37,8 @@ export class HealthMonitor {
     this.status = 'failed';
     this.ready = false;
     this.details = details;
-    this.lastError = error instanceof Error ? error.message : String(error ?? 'unknown error');
+    this.lastError =
+      error instanceof Error ? error.message : String(error ?? 'unknown error');
   }
 
   getSnapshot(): HealthSnapshot {

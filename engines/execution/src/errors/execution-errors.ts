@@ -39,7 +39,10 @@ export interface ExecutionValidationIssue {
 export class ExecutionValidationError extends Error {
   public readonly issues: readonly ExecutionValidationIssue[];
 
-  constructor(message: string, issues: readonly ExecutionValidationIssue[] = []) {
+  constructor(
+    message: string,
+    issues: readonly ExecutionValidationIssue[] = [],
+  ) {
     super(message);
     this.name = 'ExecutionValidationError';
     this.issues = issues;

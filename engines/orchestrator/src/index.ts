@@ -1,17 +1,34 @@
 import { BaseEngine } from '../../../runtime/engine/base';
-import { ENGINE_API_CONTRACT_VERSION, type BaseEngineOptions } from '../../../runtime/engine/types';
+import {
+  ENGINE_API_CONTRACT_VERSION,
+  type BaseEngineOptions,
+} from '../../../runtime/engine/types';
 import type { Plan } from '../../planner/src/models/types';
 import { OrchestratorValidationError } from './errors/orchestrator-errors';
 import { WorkflowBuilder } from './builders/workflow-builder';
-import { WorkflowValidator, type WorkflowValidationResult } from './validation/workflow-validator';
+import {
+  WorkflowValidator,
+  type WorkflowValidationResult,
+} from './validation/workflow-validator';
 import { WorkflowStatusTracker } from './status/workflow-status-tracker';
 import { WorkflowLifecycleManager } from './lifecycle/workflow-lifecycle-manager';
 import { WorkflowDispatcher } from './dispatch/workflow-dispatcher';
-import type { Workflow, WorkflowContext, WorkflowDispatchResult, WorkflowSummary } from './models/types';
+import type {
+  Workflow,
+  WorkflowContext,
+  WorkflowDispatchResult,
+  WorkflowSummary,
+} from './models/types';
 
-export { NotImplementedError, OrchestratorValidationError } from './errors/orchestrator-errors';
+export {
+  NotImplementedError,
+  OrchestratorValidationError,
+} from './errors/orchestrator-errors';
 export { WorkflowBuilder } from './builders/workflow-builder';
-export { WorkflowValidator, type WorkflowValidationResult } from './validation/workflow-validator';
+export {
+  WorkflowValidator,
+  type WorkflowValidationResult,
+} from './validation/workflow-validator';
 export { WorkflowStatusTracker } from './status/workflow-status-tracker';
 export { WorkflowLifecycleManager } from './lifecycle/workflow-lifecycle-manager';
 export { WorkflowDispatcher } from './dispatch/workflow-dispatcher';
@@ -104,7 +121,10 @@ export interface OrchestratorDispatchWorkflowRequest {
   readonly workflow: Workflow;
 }
 
-export interface OrchestratorEngineOptions extends Omit<BaseEngineOptions, 'id' | 'name' | 'version'> {
+export interface OrchestratorEngineOptions extends Omit<
+  BaseEngineOptions,
+  'id' | 'name' | 'version'
+> {
   readonly id?: string;
   readonly name?: string;
   readonly version?: string;
@@ -204,7 +224,9 @@ export class OrchestratorEngine extends BaseEngine {
    * no concurrency, no calls to `PlannerEngine.createPlan` or any
    * other engine.
    */
-  async orchestrate(request: OrchestratorOrchestrateRequest): Promise<Workflow> {
+  async orchestrate(
+    request: OrchestratorOrchestrateRequest,
+  ): Promise<Workflow> {
     this.validateOrchestrateRequest(request);
 
     return this.workflowBuilder.build(request.plan);
@@ -219,7 +241,9 @@ export class OrchestratorEngine extends BaseEngine {
    * structural validation. No execution, no scheduling, no retries,
    * no concurrency, and no calls to any other engine.
    */
-  async executeWorkflow(request: OrchestratorExecuteWorkflowRequest): Promise<WorkflowValidationResult> {
+  async executeWorkflow(
+    request: OrchestratorExecuteWorkflowRequest,
+  ): Promise<WorkflowValidationResult> {
     this.validateExecuteWorkflowRequest(request);
 
     return this.workflowValidator.validate(request.workflow);
@@ -236,7 +260,9 @@ export class OrchestratorEngine extends BaseEngine {
    * calls to any other engine. The supplied `Workflow` is never
    * mutated or modified.
    */
-  async getWorkflowStatus(request: OrchestratorGetWorkflowStatusRequest): Promise<WorkflowSummary> {
+  async getWorkflowStatus(
+    request: OrchestratorGetWorkflowStatusRequest,
+  ): Promise<WorkflowSummary> {
     this.validateGetWorkflowStatusRequest(request);
 
     return this.workflowStatusTracker.summarize(request.workflow);
@@ -252,7 +278,9 @@ export class OrchestratorEngine extends BaseEngine {
    * dependency state changes, no calls to any other engine. The
    * supplied `Workflow` is never mutated.
    */
-  async pauseWorkflow(request: OrchestratorPauseWorkflowRequest): Promise<Workflow> {
+  async pauseWorkflow(
+    request: OrchestratorPauseWorkflowRequest,
+  ): Promise<Workflow> {
     this.validatePauseWorkflowRequest(request);
 
     return this.workflowLifecycleManager.pause(request.workflow);
@@ -268,7 +296,9 @@ export class OrchestratorEngine extends BaseEngine {
    * dependency state changes, no calls to any other engine. The
    * supplied `Workflow` is never mutated.
    */
-  async resumeWorkflow(request: OrchestratorResumeWorkflowRequest): Promise<Workflow> {
+  async resumeWorkflow(
+    request: OrchestratorResumeWorkflowRequest,
+  ): Promise<Workflow> {
     this.validateResumeWorkflowRequest(request);
 
     return this.workflowLifecycleManager.resume(request.workflow);
@@ -284,7 +314,9 @@ export class OrchestratorEngine extends BaseEngine {
    * dependency state changes, no calls to any other engine. The
    * supplied `Workflow` is never mutated.
    */
-  async cancelWorkflow(request: OrchestratorCancelWorkflowRequest): Promise<Workflow> {
+  async cancelWorkflow(
+    request: OrchestratorCancelWorkflowRequest,
+  ): Promise<Workflow> {
     this.validateCancelWorkflowRequest(request);
 
     return this.workflowLifecycleManager.cancel(request.workflow);
@@ -301,139 +333,223 @@ export class OrchestratorEngine extends BaseEngine {
    * notification, no external dispatch, and no calls to any other
    * engine. The supplied `Workflow` is never mutated.
    */
-  async dispatchWorkflow(request: OrchestratorDispatchWorkflowRequest): Promise<WorkflowDispatchResult> {
+  async dispatchWorkflow(
+    request: OrchestratorDispatchWorkflowRequest,
+  ): Promise<WorkflowDispatchResult> {
     this.validateDispatchWorkflowRequest(request);
 
     return this.workflowDispatcher.dispatch(request.workflow);
   }
 
-  private validateOrchestrateRequest(request: OrchestratorOrchestrateRequest): void {
+  private validateOrchestrateRequest(
+    request: OrchestratorOrchestrateRequest,
+  ): void {
     if (request === null || request === undefined) {
-      throw new OrchestratorValidationError('OrchestratorOrchestrateRequest is required.', [
-        { field: 'request', code: 'missing-request', message: 'OrchestratorOrchestrateRequest is required.' },
-      ]);
+      throw new OrchestratorValidationError(
+        'OrchestratorOrchestrateRequest is required.',
+        [
+          {
+            field: 'request',
+            code: 'missing-request',
+            message: 'OrchestratorOrchestrateRequest is required.',
+          },
+        ],
+      );
     }
 
     if (request.plan === null || request.plan === undefined) {
-      throw new OrchestratorValidationError('OrchestratorOrchestrateRequest.plan is required.', [
-        { field: 'request.plan', code: 'missing-plan', message: 'OrchestratorOrchestrateRequest.plan is required.' },
-      ]);
+      throw new OrchestratorValidationError(
+        'OrchestratorOrchestrateRequest.plan is required.',
+        [
+          {
+            field: 'request.plan',
+            code: 'missing-plan',
+            message: 'OrchestratorOrchestrateRequest.plan is required.',
+          },
+        ],
+      );
     }
   }
 
-  private validateExecuteWorkflowRequest(request: OrchestratorExecuteWorkflowRequest): void {
+  private validateExecuteWorkflowRequest(
+    request: OrchestratorExecuteWorkflowRequest,
+  ): void {
     if (request === null || request === undefined) {
-      throw new OrchestratorValidationError('OrchestratorExecuteWorkflowRequest is required.', [
-        {
-          field: 'request',
-          code: 'missing-request',
-          message: 'OrchestratorExecuteWorkflowRequest is required.',
-        },
-      ]);
+      throw new OrchestratorValidationError(
+        'OrchestratorExecuteWorkflowRequest is required.',
+        [
+          {
+            field: 'request',
+            code: 'missing-request',
+            message: 'OrchestratorExecuteWorkflowRequest is required.',
+          },
+        ],
+      );
     }
 
     if (request.workflow === null || request.workflow === undefined) {
-      throw new OrchestratorValidationError('OrchestratorExecuteWorkflowRequest.workflow is required.', [
-        {
-          field: 'request.workflow',
-          code: 'missing-workflow',
-          message: 'OrchestratorExecuteWorkflowRequest.workflow is required.',
-        },
-      ]);
+      throw new OrchestratorValidationError(
+        'OrchestratorExecuteWorkflowRequest.workflow is required.',
+        [
+          {
+            field: 'request.workflow',
+            code: 'missing-workflow',
+            message: 'OrchestratorExecuteWorkflowRequest.workflow is required.',
+          },
+        ],
+      );
     }
   }
 
-  private validateGetWorkflowStatusRequest(request: OrchestratorGetWorkflowStatusRequest): void {
+  private validateGetWorkflowStatusRequest(
+    request: OrchestratorGetWorkflowStatusRequest,
+  ): void {
     if (request === null || request === undefined) {
-      throw new OrchestratorValidationError('OrchestratorGetWorkflowStatusRequest is required.', [
-        {
-          field: 'request',
-          code: 'missing-request',
-          message: 'OrchestratorGetWorkflowStatusRequest is required.',
-        },
-      ]);
+      throw new OrchestratorValidationError(
+        'OrchestratorGetWorkflowStatusRequest is required.',
+        [
+          {
+            field: 'request',
+            code: 'missing-request',
+            message: 'OrchestratorGetWorkflowStatusRequest is required.',
+          },
+        ],
+      );
     }
 
     if (request.workflow === null || request.workflow === undefined) {
-      throw new OrchestratorValidationError('OrchestratorGetWorkflowStatusRequest.workflow is required.', [
-        {
-          field: 'request.workflow',
-          code: 'missing-workflow',
-          message: 'OrchestratorGetWorkflowStatusRequest.workflow is required.',
-        },
-      ]);
+      throw new OrchestratorValidationError(
+        'OrchestratorGetWorkflowStatusRequest.workflow is required.',
+        [
+          {
+            field: 'request.workflow',
+            code: 'missing-workflow',
+            message:
+              'OrchestratorGetWorkflowStatusRequest.workflow is required.',
+          },
+        ],
+      );
     }
   }
 
-  private validatePauseWorkflowRequest(request: OrchestratorPauseWorkflowRequest): void {
+  private validatePauseWorkflowRequest(
+    request: OrchestratorPauseWorkflowRequest,
+  ): void {
     if (request === null || request === undefined) {
-      throw new OrchestratorValidationError('OrchestratorPauseWorkflowRequest is required.', [
-        { field: 'request', code: 'missing-request', message: 'OrchestratorPauseWorkflowRequest is required.' },
-      ]);
+      throw new OrchestratorValidationError(
+        'OrchestratorPauseWorkflowRequest is required.',
+        [
+          {
+            field: 'request',
+            code: 'missing-request',
+            message: 'OrchestratorPauseWorkflowRequest is required.',
+          },
+        ],
+      );
     }
 
     if (request.workflow === null || request.workflow === undefined) {
-      throw new OrchestratorValidationError('OrchestratorPauseWorkflowRequest.workflow is required.', [
-        {
-          field: 'request.workflow',
-          code: 'missing-workflow',
-          message: 'OrchestratorPauseWorkflowRequest.workflow is required.',
-        },
-      ]);
+      throw new OrchestratorValidationError(
+        'OrchestratorPauseWorkflowRequest.workflow is required.',
+        [
+          {
+            field: 'request.workflow',
+            code: 'missing-workflow',
+            message: 'OrchestratorPauseWorkflowRequest.workflow is required.',
+          },
+        ],
+      );
     }
   }
 
-  private validateResumeWorkflowRequest(request: OrchestratorResumeWorkflowRequest): void {
+  private validateResumeWorkflowRequest(
+    request: OrchestratorResumeWorkflowRequest,
+  ): void {
     if (request === null || request === undefined) {
-      throw new OrchestratorValidationError('OrchestratorResumeWorkflowRequest is required.', [
-        { field: 'request', code: 'missing-request', message: 'OrchestratorResumeWorkflowRequest is required.' },
-      ]);
+      throw new OrchestratorValidationError(
+        'OrchestratorResumeWorkflowRequest is required.',
+        [
+          {
+            field: 'request',
+            code: 'missing-request',
+            message: 'OrchestratorResumeWorkflowRequest is required.',
+          },
+        ],
+      );
     }
 
     if (request.workflow === null || request.workflow === undefined) {
-      throw new OrchestratorValidationError('OrchestratorResumeWorkflowRequest.workflow is required.', [
-        {
-          field: 'request.workflow',
-          code: 'missing-workflow',
-          message: 'OrchestratorResumeWorkflowRequest.workflow is required.',
-        },
-      ]);
+      throw new OrchestratorValidationError(
+        'OrchestratorResumeWorkflowRequest.workflow is required.',
+        [
+          {
+            field: 'request.workflow',
+            code: 'missing-workflow',
+            message: 'OrchestratorResumeWorkflowRequest.workflow is required.',
+          },
+        ],
+      );
     }
   }
 
-  private validateCancelWorkflowRequest(request: OrchestratorCancelWorkflowRequest): void {
+  private validateCancelWorkflowRequest(
+    request: OrchestratorCancelWorkflowRequest,
+  ): void {
     if (request === null || request === undefined) {
-      throw new OrchestratorValidationError('OrchestratorCancelWorkflowRequest is required.', [
-        { field: 'request', code: 'missing-request', message: 'OrchestratorCancelWorkflowRequest is required.' },
-      ]);
+      throw new OrchestratorValidationError(
+        'OrchestratorCancelWorkflowRequest is required.',
+        [
+          {
+            field: 'request',
+            code: 'missing-request',
+            message: 'OrchestratorCancelWorkflowRequest is required.',
+          },
+        ],
+      );
     }
 
     if (request.workflow === null || request.workflow === undefined) {
-      throw new OrchestratorValidationError('OrchestratorCancelWorkflowRequest.workflow is required.', [
-        {
-          field: 'request.workflow',
-          code: 'missing-workflow',
-          message: 'OrchestratorCancelWorkflowRequest.workflow is required.',
-        },
-      ]);
+      throw new OrchestratorValidationError(
+        'OrchestratorCancelWorkflowRequest.workflow is required.',
+        [
+          {
+            field: 'request.workflow',
+            code: 'missing-workflow',
+            message: 'OrchestratorCancelWorkflowRequest.workflow is required.',
+          },
+        ],
+      );
     }
   }
 
-  private validateDispatchWorkflowRequest(request: OrchestratorDispatchWorkflowRequest): void {
+  private validateDispatchWorkflowRequest(
+    request: OrchestratorDispatchWorkflowRequest,
+  ): void {
     if (request === null || request === undefined) {
-      throw new OrchestratorValidationError('OrchestratorDispatchWorkflowRequest is required.', [
-        { field: 'request', code: 'missing-request', message: 'OrchestratorDispatchWorkflowRequest is required.' },
-      ]);
+      throw new OrchestratorValidationError(
+        'OrchestratorDispatchWorkflowRequest is required.',
+        [
+          {
+            field: 'request',
+            code: 'missing-request',
+            message: 'OrchestratorDispatchWorkflowRequest is required.',
+          },
+        ],
+      );
     }
 
     if (request.workflow === null || request.workflow === undefined) {
-      throw new OrchestratorValidationError('OrchestratorDispatchWorkflowRequest.workflow is required.', [
-        {
-          field: 'request.workflow',
-          code: 'missing-workflow',
-          message: 'OrchestratorDispatchWorkflowRequest.workflow is required.',
-        },
-      ]);
+      throw new OrchestratorValidationError(
+        'OrchestratorDispatchWorkflowRequest.workflow is required.',
+        [
+          {
+            field: 'request.workflow',
+            code: 'missing-workflow',
+            message:
+              'OrchestratorDispatchWorkflowRequest.workflow is required.',
+          },
+        ],
+      );
     }
   }
 }

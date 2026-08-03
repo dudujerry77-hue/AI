@@ -4,7 +4,9 @@ export class ConfigurationService {
   private readonly values = new Map<string, unknown>();
 
   constructor(initialValues: Record<string, unknown> = {}) {
-    Object.entries(initialValues).forEach(([key, value]) => this.values.set(key, value));
+    Object.entries(initialValues).forEach(([key, value]) =>
+      this.values.set(key, value),
+    );
   }
 
   withValue(key: string, value: unknown): this {
@@ -23,7 +25,9 @@ export class ConfigurationService {
   getRequired<T>(key: string): T {
     const value = this.get<T>(key);
     if (value === undefined) {
-      throw new ConfigurationError(`Missing required configuration value: ${key}`);
+      throw new ConfigurationError(
+        `Missing required configuration value: ${key}`,
+      );
     }
 
     return value;

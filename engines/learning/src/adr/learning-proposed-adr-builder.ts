@@ -74,7 +74,10 @@ export class LearningProposedAdrBuilder {
    * array, or if any entry is not a well-formed
    * `LearningFlaggedRisk`-shaped object.
    */
-  build(risks: readonly LearningFlaggedRisk[], timestamp?: string): readonly LearningProposedAdr[] {
+  build(
+    risks: readonly LearningFlaggedRisk[],
+    timestamp?: string,
+  ): readonly LearningProposedAdr[] {
     this.validateRisks(risks);
 
     const resolvedTimestamp = timestamp ?? new Date().toISOString();
@@ -115,16 +118,21 @@ export class LearningProposedAdrBuilder {
 
     risks.forEach((risk, index) => {
       if (!isPlainObject(risk)) {
-        throw new LearningRequestError(`risks[${index}] must be a non-null object.`, [
-          {
-            field: `risks[${index}]`,
-            code: 'invalid-risk',
-            message: `risks[${index}] must be a non-null object.`,
-          },
-        ]);
+        throw new LearningRequestError(
+          `risks[${index}] must be a non-null object.`,
+          [
+            {
+              field: `risks[${index}]`,
+              code: 'invalid-risk',
+              message: `risks[${index}] must be a non-null object.`,
+            },
+          ],
+        );
       }
 
-      if (!isNonEmptyString((risk as unknown as Record<string, unknown>).riskId)) {
+      if (
+        !isNonEmptyString((risk as unknown as Record<string, unknown>).riskId)
+      ) {
         throw new LearningRequestError(`risks[${index}].riskId is required.`, [
           {
             field: `risks[${index}].riskId`,
@@ -134,24 +142,38 @@ export class LearningProposedAdrBuilder {
         ]);
       }
 
-      if (!isNonEmptyString((risk as unknown as Record<string, unknown>).description)) {
-        throw new LearningRequestError(`risks[${index}].description is required.`, [
-          {
-            field: `risks[${index}].description`,
-            code: 'missing-description',
-            message: `risks[${index}].description must be a non-empty string.`,
-          },
-        ]);
+      if (
+        !isNonEmptyString(
+          (risk as unknown as Record<string, unknown>).description,
+        )
+      ) {
+        throw new LearningRequestError(
+          `risks[${index}].description is required.`,
+          [
+            {
+              field: `risks[${index}].description`,
+              code: 'missing-description',
+              message: `risks[${index}].description must be a non-empty string.`,
+            },
+          ],
+        );
       }
 
-      if (!Array.isArray((risk as unknown as Record<string, unknown>).relatedLessonIds)) {
-        throw new LearningRequestError(`risks[${index}].relatedLessonIds must be an array.`, [
-          {
-            field: `risks[${index}].relatedLessonIds`,
-            code: 'invalid-related-lesson-ids',
-            message: `risks[${index}].relatedLessonIds must be an array.`,
-          },
-        ]);
+      if (
+        !Array.isArray(
+          (risk as unknown as Record<string, unknown>).relatedLessonIds,
+        )
+      ) {
+        throw new LearningRequestError(
+          `risks[${index}].relatedLessonIds must be an array.`,
+          [
+            {
+              field: `risks[${index}].relatedLessonIds`,
+              code: 'invalid-related-lesson-ids',
+              message: `risks[${index}].relatedLessonIds must be an array.`,
+            },
+          ],
+        );
       }
     });
   }

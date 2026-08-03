@@ -1,4 +1,10 @@
-import type { Dependency, Plan, PlanMetadata, PlanStep, Task } from '../models/types';
+import type {
+  Dependency,
+  Plan,
+  PlanMetadata,
+  PlanStep,
+  Task,
+} from '../models/types';
 
 /**
  * `PlanOptimizer` performs deterministic, offline structural
@@ -57,14 +63,17 @@ export class PlanOptimizer {
    *   deterministically sorted array.
    */
   private normalizeMetadata(metadata: PlanMetadata): PlanMetadata {
-    const hasLabels = Array.isArray(metadata.labels) && metadata.labels.length > 0;
+    const hasLabels =
+      Array.isArray(metadata.labels) && metadata.labels.length > 0;
 
     const normalized: PlanMetadata = {
       createdAt: metadata.createdAt,
       updatedAt: metadata.updatedAt,
       createdBy: metadata.createdBy,
       revision: metadata.revision + 1,
-      ...(hasLabels ? { labels: [...(metadata.labels as readonly string[])].sort() } : {}),
+      ...(hasLabels
+        ? { labels: [...(metadata.labels as readonly string[])].sort() }
+        : {}),
     };
 
     return normalized;
@@ -82,8 +91,11 @@ export class PlanOptimizer {
       .map((step) => {
         const taskIds = this.dedupeSorted(step.taskIds);
         const dependsOnStepIds =
-          step.dependsOnStepIds !== undefined ? this.dedupeSorted(step.dependsOnStepIds) : undefined;
-        const hasDependsOn = dependsOnStepIds !== undefined && dependsOnStepIds.length > 0;
+          step.dependsOnStepIds !== undefined
+            ? this.dedupeSorted(step.dependsOnStepIds)
+            : undefined;
+        const hasDependsOn =
+          dependsOnStepIds !== undefined && dependsOnStepIds.length > 0;
 
         return {
           ...step,
@@ -101,7 +113,10 @@ export class PlanOptimizer {
    * in the optimized output.
    */
   private stripUndefinedDependsOnStepIds(step: PlanStep): PlanStep {
-    if (step.dependsOnStepIds !== undefined && step.dependsOnStepIds.length > 0) {
+    if (
+      step.dependsOnStepIds !== undefined &&
+      step.dependsOnStepIds.length > 0
+    ) {
       return step;
     }
     const rest: Record<string, unknown> = { ...step };
@@ -114,7 +129,9 @@ export class PlanOptimizer {
    * `taskId`.
    */
   private normalizeTasks(tasks: readonly Task[]): readonly Task[] {
-    return [...tasks].map((task) => ({ ...task })).sort((a, b) => a.taskId.localeCompare(b.taskId));
+    return [...tasks]
+      .map((task) => ({ ...task }))
+      .sort((a, b) => a.taskId.localeCompare(b.taskId));
   }
 
   /**
@@ -122,7 +139,9 @@ export class PlanOptimizer {
    * (same `type` + `sourceId` + `targetId`), deterministically sorted
    * by `type`, then `sourceId`, then `targetId`, then `dependencyId`.
    */
-  private normalizeDependencies(dependencies: readonly Dependency[]): readonly Dependency[] {
+  private normalizeDependencies(
+    dependencies: readonly Dependency[],
+  ): readonly Dependency[] {
     const seenEdges = new Set<string>();
     const deduped: Dependency[] = [];
 

@@ -110,8 +110,10 @@ export class GoalDecomposer {
 
     const taskDescriptionByStepId: Record<string, string> = {
       'step-analysis': 'Perform structural analysis of the goal requirements.',
-      'step-design': 'Produce a design that fulfills the analyzed requirements.',
-      'step-implementation': 'Carry out the implementation defined by the design.',
+      'step-design':
+        'Produce a design that fulfills the analyzed requirements.',
+      'step-implementation':
+        'Carry out the implementation defined by the design.',
       'step-validation': 'Verify the implementation meets the goal.',
       'step-documentation': 'Record the outcome and decisions made.',
     };
@@ -122,7 +124,9 @@ export class GoalDecomposer {
         taskId,
         stepId: step.stepId,
         title: taskTitleByStepId[step.stepId] ?? `Task for ${step.stepId}`,
-        description: taskDescriptionByStepId[step.stepId] ?? `Task supporting ${step.stepId}.`,
+        description:
+          taskDescriptionByStepId[step.stepId] ??
+          `Task supporting ${step.stepId}.`,
         status: 'pending',
       };
     });

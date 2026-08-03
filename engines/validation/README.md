@@ -138,12 +138,12 @@ Milestone 1.
 
 ## Public API (Milestone 5)
 
-| Method | Behavior (Milestone 5) |
-|---|---|
-| `validate(request)` | Validates that `request` is a non-null object, then delegates entirely to `ValidationPipelineRunner.run(request.subject)`. Returns a `ValidationPipelineResult`, now with a populated `evidence` array. `request.policyRules`/`request.governanceRules`, if present, are never read. Throws `ValidationRequestError` for a malformed request or subject. |
-| `getValidationStatus(request)` | Validates that `request` is a non-null object, then delegates entirely to `ValidationValidator.validate(request.verdict)`. Returns a `ValidationStructuralResult`. Throws `ValidationRequestError` for a malformed request or verdict. Unchanged since Milestone 4. |
-| `approveValidation(request)` | Always throws `NotImplementedError`. No request field is read. Milestone 6 deliberately deferred — see above. |
-| `rejectValidation(request)` | Always throws `NotImplementedError`. No request field is read. Milestone 6 deliberately deferred — see above. |
+| Method                         | Behavior (Milestone 5)                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `validate(request)`            | Validates that `request` is a non-null object, then delegates entirely to `ValidationPipelineRunner.run(request.subject)`. Returns a `ValidationPipelineResult`, now with a populated `evidence` array. `request.policyRules`/`request.governanceRules`, if present, are never read. Throws `ValidationRequestError` for a malformed request or subject. |
+| `getValidationStatus(request)` | Validates that `request` is a non-null object, then delegates entirely to `ValidationValidator.validate(request.verdict)`. Returns a `ValidationStructuralResult`. Throws `ValidationRequestError` for a malformed request or verdict. Unchanged since Milestone 4.                                                                                      |
+| `approveValidation(request)`   | Always throws `NotImplementedError`. No request field is read. Milestone 6 deliberately deferred — see above.                                                                                                                                                                                                                                            |
+| `rejectValidation(request)`    | Always throws `NotImplementedError`. No request field is read. Milestone 6 deliberately deferred — see above.                                                                                                                                                                                                                                            |
 
 ## `ValidationBuilder` (Milestone 3)
 
@@ -212,7 +212,7 @@ sole delegate of `ValidationEngine.validate()`.
 ## `ValidationValidator` (Milestone 4)
 
 `ValidationValidator.validate(verdict, timestamp?)` checks only the
-*structure* of an already-constructed `ValidationVerdict`:
+_structure_ of an already-constructed `ValidationVerdict`:
 
 - Required identifiers (`validationId`, `target.executionId`,
   `target.workflowId`, `target.itemId`) are non-empty strings.
@@ -259,7 +259,7 @@ package:
   are never read, checked, or enforced.
 - No check execution of any kind (testing, quality, policy, security,
   governance) — `ValidationBuilder` always returns an empty `checks`
-  array; `ValidationValidator` only checks the *shape* of any checks
+  array; `ValidationValidator` only checks the _shape_ of any checks
   already present.
 - No **real** evidence collection — `ValidationEvidenceCollector`
   records only which Execution Engine representation a verdict was
@@ -302,7 +302,7 @@ This package currently provides only:
 
 No independent business-level verification, no **real** evidence
 collection (only structural source-representation recording), no
-verdict *evaluation* (only structural translation), no escalation
+verdict _evaluation_ (only structural translation), no escalation
 logic, no learning handoff, no approval/rejection workflow, and no
 cross-engine runtime behavior of any kind exists anywhere in this
 package. Those remain out of scope pending a future phase or ADR that

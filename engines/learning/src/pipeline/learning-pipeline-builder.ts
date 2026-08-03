@@ -1,7 +1,11 @@
 import { LearningProposedAdrBuilder } from '../adr/learning-proposed-adr-builder';
 import { LearningLessonBuilder } from '../builders/learning-lesson-builder';
 import { LearningProposalBuilder } from '../builders/learning-proposal-builder';
-import type { LearningKnowledgeUpdateProposal, LearningObservation, LearningPipelineResult } from '../models/types';
+import type {
+  LearningKnowledgeUpdateProposal,
+  LearningObservation,
+  LearningPipelineResult,
+} from '../models/types';
 import { LearningFlaggedRiskBuilder } from '../risk/learning-flagged-risk-builder';
 
 /**
@@ -65,9 +69,17 @@ export class LearningPipelineBuilder {
     const resolvedTimestamp = timestamp ?? new Date().toISOString();
 
     const lessons = this.lessonBuilder.build(observations, resolvedTimestamp);
-    const proposal = this.proposalBuilder.build(observations, resolvedTimestamp, lessons, priorProposals);
+    const proposal = this.proposalBuilder.build(
+      observations,
+      resolvedTimestamp,
+      lessons,
+      priorProposals,
+    );
     const flaggedRisks = this.riskBuilder.build(lessons, resolvedTimestamp);
-    const proposedAdrs = flaggedRisks.length > 0 ? this.adrBuilder.build(flaggedRisks, resolvedTimestamp) : [];
+    const proposedAdrs =
+      flaggedRisks.length > 0
+        ? this.adrBuilder.build(flaggedRisks, resolvedTimestamp)
+        : [];
 
     return {
       lessons,

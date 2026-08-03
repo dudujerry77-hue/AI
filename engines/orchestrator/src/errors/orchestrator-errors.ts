@@ -38,7 +38,10 @@ export interface OrchestratorValidationIssue {
 export class OrchestratorValidationError extends Error {
   public readonly issues: readonly OrchestratorValidationIssue[];
 
-  constructor(message: string, issues: readonly OrchestratorValidationIssue[] = []) {
+  constructor(
+    message: string,
+    issues: readonly OrchestratorValidationIssue[] = [],
+  ) {
     super(message);
     this.name = 'OrchestratorValidationError';
     this.issues = issues;

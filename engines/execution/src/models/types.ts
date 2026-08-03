@@ -57,11 +57,7 @@ import type { WorkflowDispatchResult } from '../../../orchestrator/src/models/ty
  * Orchestrator Engine.
  */
 export type ExecutionStatus =
-  | 'pending'
-  | 'running'
-  | 'completed'
-  | 'failed'
-  | 'cancelled';
+  'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 
 /**
  * Identifies the workflow item (Orchestrator step or task) that a
@@ -153,7 +149,8 @@ export interface ExecutionSummary {
  * classification only — introducing this type does not imply any
  * action of this kind is actually performed by this package.
  */
-export type ExecutionActionType = 'command' | 'script' | 'api-call' | 'transformation' | 'notification';
+export type ExecutionActionType =
+  'command' | 'script' | 'api-call' | 'transformation' | 'notification';
 
 /**
  * Immutable description of a single action to be carried out by a
@@ -231,7 +228,8 @@ export interface ExecutionPolicy {
  * Kind of observability signal an `ExecutionObservabilityEvent` may
  * represent. Pure classification only.
  */
-export type ExecutionObservabilityEventType = 'lifecycle' | 'progress' | 'metric' | 'log';
+export type ExecutionObservabilityEventType =
+  'lifecycle' | 'progress' | 'metric' | 'log';
 
 /**
  * Immutable observability hook record: a single structured

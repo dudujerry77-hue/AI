@@ -7,7 +7,11 @@ import type {
   ValidationVerdictStatus,
 } from '../models/types';
 
-const VALID_STATUSES: readonly ValidationVerdictStatus[] = ['pass', 'fail', 'partial'];
+const VALID_STATUSES: readonly ValidationVerdictStatus[] = [
+  'pass',
+  'fail',
+  'partial',
+];
 const VALID_ITEM_TYPES: readonly string[] = ['step', 'task'];
 const VALID_CHECK_TYPES: readonly ValidationCheckType[] = [
   'testing',
@@ -95,7 +99,10 @@ export class ValidationValidator {
    * structural defects are reported as issues in the returned result
    * rather than thrown.
    */
-  validate(verdict: ValidationVerdict, timestamp?: string): ValidationStructuralResult {
+  validate(
+    verdict: ValidationVerdict,
+    timestamp?: string,
+  ): ValidationStructuralResult {
     this.validateShape(verdict);
 
     const issues: ValidationIssue[] = [];
@@ -113,7 +120,9 @@ export class ValidationValidator {
     const resolvedTimestamp = timestamp ?? new Date().toISOString();
 
     return {
-      validationId: isNonEmptyString(verdict.validationId) ? verdict.validationId : '',
+      validationId: isNonEmptyString(verdict.validationId)
+        ? verdict.validationId
+        : '',
       valid: issues.length === 0,
       issues,
       validatedAt: resolvedTimestamp,
@@ -128,29 +137,38 @@ export class ValidationValidator {
    */
   private validateShape(verdict: ValidationVerdict): void {
     if (verdict === null || verdict === undefined || !isPlainObject(verdict)) {
-      throw new ValidationRequestError('ValidationVerdict must be a non-null object.', [
-        {
-          field: 'verdict',
-          code: 'missing-verdict',
-          message: 'ValidationVerdict must be a non-null object.',
-        },
-      ]);
+      throw new ValidationRequestError(
+        'ValidationVerdict must be a non-null object.',
+        [
+          {
+            field: 'verdict',
+            code: 'missing-verdict',
+            message: 'ValidationVerdict must be a non-null object.',
+          },
+        ],
+      );
     }
 
     const target = (verdict as unknown as Record<string, unknown>).target;
 
     if (target === null || target === undefined || !isPlainObject(target)) {
-      throw new ValidationRequestError('ValidationVerdict.target must be a non-null object.', [
-        {
-          field: 'verdict.target',
-          code: 'missing-target',
-          message: 'ValidationVerdict.target must be a non-null object.',
-        },
-      ]);
+      throw new ValidationRequestError(
+        'ValidationVerdict.target must be a non-null object.',
+        [
+          {
+            field: 'verdict.target',
+            code: 'missing-target',
+            message: 'ValidationVerdict.target must be a non-null object.',
+          },
+        ],
+      );
     }
   }
 
-  private checkValidationId(verdict: ValidationVerdict, issues: ValidationIssue[]): void {
+  private checkValidationId(
+    verdict: ValidationVerdict,
+    issues: ValidationIssue[],
+  ): void {
     if (!isNonEmptyString(verdict.validationId)) {
       issues.push({
         field: 'validationId',
@@ -160,27 +178,38 @@ export class ValidationValidator {
     }
   }
 
-  private checkExecutionId(target: Record<string, unknown>, issues: ValidationIssue[]): void {
+  private checkExecutionId(
+    target: Record<string, unknown>,
+    issues: ValidationIssue[],
+  ): void {
     if (!isNonEmptyString(target.executionId)) {
       issues.push({
         field: 'target.executionId',
         code: 'MISSING_EXECUTION_ID',
-        message: 'ValidationVerdict.target.executionId must be a non-empty string.',
+        message:
+          'ValidationVerdict.target.executionId must be a non-empty string.',
       });
     }
   }
 
-  private checkWorkflowId(target: Record<string, unknown>, issues: ValidationIssue[]): void {
+  private checkWorkflowId(
+    target: Record<string, unknown>,
+    issues: ValidationIssue[],
+  ): void {
     if (!isNonEmptyString(target.workflowId)) {
       issues.push({
         field: 'target.workflowId',
         code: 'MISSING_TARGET',
-        message: 'ValidationVerdict.target.workflowId must be a non-empty string.',
+        message:
+          'ValidationVerdict.target.workflowId must be a non-empty string.',
       });
     }
   }
 
-  private checkItemId(target: Record<string, unknown>, issues: ValidationIssue[]): void {
+  private checkItemId(
+    target: Record<string, unknown>,
+    issues: ValidationIssue[],
+  ): void {
     if (!isNonEmptyString(target.itemId)) {
       issues.push({
         field: 'target.itemId',
@@ -190,8 +219,14 @@ export class ValidationValidator {
     }
   }
 
-  private checkItemType(target: Record<string, unknown>, issues: ValidationIssue[]): void {
-    if (typeof target.itemType !== 'string' || !VALID_ITEM_TYPES.includes(target.itemType)) {
+  private checkItemType(
+    target: Record<string, unknown>,
+    issues: ValidationIssue[],
+  ): void {
+    if (
+      typeof target.itemType !== 'string' ||
+      !VALID_ITEM_TYPES.includes(target.itemType)
+    ) {
       issues.push({
         field: 'target.itemType',
         code: 'MISSING_TARGET',
@@ -200,8 +235,14 @@ export class ValidationValidator {
     }
   }
 
-  private checkStatus(verdict: ValidationVerdict, issues: ValidationIssue[]): void {
-    if (typeof verdict.status !== 'string' || !VALID_STATUSES.includes(verdict.status)) {
+  private checkStatus(
+    verdict: ValidationVerdict,
+    issues: ValidationIssue[],
+  ): void {
+    if (
+      typeof verdict.status !== 'string' ||
+      !VALID_STATUSES.includes(verdict.status)
+    ) {
       issues.push({
         field: 'status',
         code: 'INVALID_STATUS',
@@ -217,7 +258,10 @@ export class ValidationValidator {
    * `checkType` from the known enumeration, and a `status` from the
    * known enumeration.
    */
-  private checkChecks(verdict: ValidationVerdict, issues: ValidationIssue[]): void {
+  private checkChecks(
+    verdict: ValidationVerdict,
+    issues: ValidationIssue[],
+  ): void {
     const checks = (verdict as unknown as Record<string, unknown>).checks;
 
     if (!Array.isArray(checks)) {
@@ -247,7 +291,10 @@ export class ValidationValidator {
         });
       }
 
-      if (typeof check.checkType !== 'string' || !VALID_CHECK_TYPES.includes(check.checkType as ValidationCheckType)) {
+      if (
+        typeof check.checkType !== 'string' ||
+        !VALID_CHECK_TYPES.includes(check.checkType as ValidationCheckType)
+      ) {
         issues.push({
           field: `checks[${index}].checkType`,
           code: 'MISSING_TARGET',
@@ -255,7 +302,10 @@ export class ValidationValidator {
         });
       }
 
-      if (typeof check.status !== 'string' || !VALID_STATUSES.includes(check.status as ValidationVerdictStatus)) {
+      if (
+        typeof check.status !== 'string' ||
+        !VALID_STATUSES.includes(check.status as ValidationVerdictStatus)
+      ) {
         issues.push({
           field: `checks[${index}].status`,
           code: 'INVALID_STATUS',
@@ -265,12 +315,23 @@ export class ValidationValidator {
     });
   }
 
-  private checkTimestamps(verdict: ValidationVerdict, issues: ValidationIssue[]): void {
-    const createdAtRaw = (verdict as unknown as Record<string, unknown>).createdAt;
-    const updatedAtRaw = (verdict as unknown as Record<string, unknown>).updatedAt;
+  private checkTimestamps(
+    verdict: ValidationVerdict,
+    issues: ValidationIssue[],
+  ): void {
+    const createdAtRaw = (verdict as unknown as Record<string, unknown>)
+      .createdAt;
+    const updatedAtRaw = (verdict as unknown as Record<string, unknown>)
+      .updatedAt;
 
-    const createdAtPresent = createdAtRaw !== undefined && createdAtRaw !== null && createdAtRaw !== '';
-    const updatedAtPresent = updatedAtRaw !== undefined && updatedAtRaw !== null && updatedAtRaw !== '';
+    const createdAtPresent =
+      createdAtRaw !== undefined &&
+      createdAtRaw !== null &&
+      createdAtRaw !== '';
+    const updatedAtPresent =
+      updatedAtRaw !== undefined &&
+      updatedAtRaw !== null &&
+      updatedAtRaw !== '';
 
     if (!createdAtPresent) {
       issues.push({
@@ -282,7 +343,8 @@ export class ValidationValidator {
       issues.push({
         field: 'createdAt',
         code: 'MISSING_CREATED_AT',
-        message: 'ValidationVerdict.createdAt must be a well-formed ISO-8601 timestamp string.',
+        message:
+          'ValidationVerdict.createdAt must be a well-formed ISO-8601 timestamp string.',
       });
     }
 
@@ -296,11 +358,17 @@ export class ValidationValidator {
       issues.push({
         field: 'updatedAt',
         code: 'MISSING_UPDATED_AT',
-        message: 'ValidationVerdict.updatedAt must be a well-formed ISO-8601 timestamp string.',
+        message:
+          'ValidationVerdict.updatedAt must be a well-formed ISO-8601 timestamp string.',
       });
     }
 
-    if (createdAtPresent && updatedAtPresent && isIsoTimestamp(createdAtRaw) && isIsoTimestamp(updatedAtRaw)) {
+    if (
+      createdAtPresent &&
+      updatedAtPresent &&
+      isIsoTimestamp(createdAtRaw) &&
+      isIsoTimestamp(updatedAtRaw)
+    ) {
       const createdAtMs = new Date(createdAtRaw).getTime();
       const updatedAtMs = new Date(updatedAtRaw).getTime();
 
@@ -308,7 +376,8 @@ export class ValidationValidator {
         issues.push({
           field: 'updatedAt',
           code: 'MISSING_UPDATED_AT',
-          message: 'ValidationVerdict.updatedAt must not be earlier than ValidationVerdict.createdAt.',
+          message:
+            'ValidationVerdict.updatedAt must not be earlier than ValidationVerdict.createdAt.',
         });
       }
     }

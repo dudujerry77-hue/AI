@@ -17,6 +17,8 @@ export class EngineRegistry {
   }
 
   findByCapability(capability: string): EngineContract[] {
-    return this.list().filter((engine) => resolveEngineMetadata(engine).capabilities.includes(capability));
+    return this.list().filter((engine) =>
+      resolveEngineMetadata(engine).capabilities.includes(capability),
+    );
   }
 }

@@ -71,57 +71,80 @@ export class LearningObservationBuilder {
 
   private validateSubject(subject: LearningSubject): void {
     if (subject === null || subject === undefined || !isPlainObject(subject)) {
-      throw new LearningRequestError('LearningSubject must be a non-null object.', [
-        {
-          field: 'subject',
-          code: 'missing-subject',
-          message: 'LearningSubject must be a non-null object.',
-        },
-      ]);
+      throw new LearningRequestError(
+        'LearningSubject must be a non-null object.',
+        [
+          {
+            field: 'subject',
+            code: 'missing-subject',
+            message: 'LearningSubject must be a non-null object.',
+          },
+        ],
+      );
     }
 
     const outcome = (subject as unknown as Record<string, unknown>).outcome;
 
     if (outcome === null || outcome === undefined || !isPlainObject(outcome)) {
-      throw new LearningRequestError('LearningSubject.outcome must be a non-null object.', [
-        {
-          field: 'subject.outcome',
-          code: 'missing-outcome',
-          message: 'LearningSubject.outcome must be a non-null object.',
-        },
-      ]);
+      throw new LearningRequestError(
+        'LearningSubject.outcome must be a non-null object.',
+        [
+          {
+            field: 'subject.outcome',
+            code: 'missing-outcome',
+            message: 'LearningSubject.outcome must be a non-null object.',
+          },
+        ],
+      );
     }
 
-    if (typeof outcome.workflowId !== 'string' || outcome.workflowId.trim().length === 0) {
-      throw new LearningRequestError('LearningSubject.outcome.workflowId is required.', [
-        {
-          field: 'subject.outcome.workflowId',
-          code: 'missing-workflow-id',
-          message: 'LearningSubject.outcome.workflowId must be a non-empty string.',
-        },
-      ]);
+    if (
+      typeof outcome.workflowId !== 'string' ||
+      outcome.workflowId.trim().length === 0
+    ) {
+      throw new LearningRequestError(
+        'LearningSubject.outcome.workflowId is required.',
+        [
+          {
+            field: 'subject.outcome.workflowId',
+            code: 'missing-workflow-id',
+            message:
+              'LearningSubject.outcome.workflowId must be a non-empty string.',
+          },
+        ],
+      );
     }
 
     const verdict = (subject as unknown as Record<string, unknown>).verdict;
 
     if (verdict === null || verdict === undefined || !isPlainObject(verdict)) {
-      throw new LearningRequestError('LearningSubject.verdict must be a non-null object.', [
-        {
-          field: 'subject.verdict',
-          code: 'missing-verdict',
-          message: 'LearningSubject.verdict must be a non-null object.',
-        },
-      ]);
+      throw new LearningRequestError(
+        'LearningSubject.verdict must be a non-null object.',
+        [
+          {
+            field: 'subject.verdict',
+            code: 'missing-verdict',
+            message: 'LearningSubject.verdict must be a non-null object.',
+          },
+        ],
+      );
     }
 
-    if (typeof verdict.validationId !== 'string' || verdict.validationId.trim().length === 0) {
-      throw new LearningRequestError('LearningSubject.verdict.validationId is required.', [
-        {
-          field: 'subject.verdict.validationId',
-          code: 'missing-validation-id',
-          message: 'LearningSubject.verdict.validationId must be a non-empty string.',
-        },
-      ]);
+    if (
+      typeof verdict.validationId !== 'string' ||
+      verdict.validationId.trim().length === 0
+    ) {
+      throw new LearningRequestError(
+        'LearningSubject.verdict.validationId is required.',
+        [
+          {
+            field: 'subject.verdict.validationId',
+            code: 'missing-validation-id',
+            message:
+              'LearningSubject.verdict.validationId must be a non-empty string.',
+          },
+        ],
+      );
     }
   }
 }

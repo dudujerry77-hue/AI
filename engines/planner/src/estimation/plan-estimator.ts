@@ -58,7 +58,11 @@ export class PlanEstimator {
 
     const estimatedDurationHours = totalSteps * DURATION_HOURS_PER_STEP;
     const estimatedEffortHours = totalTasks * EFFORT_HOURS_PER_TASK;
-    const complexityLevel = this.deriveComplexityLevel(totalSteps, totalTasks, dependencyCount);
+    const complexityLevel = this.deriveComplexityLevel(
+      totalSteps,
+      totalTasks,
+      dependencyCount,
+    );
 
     return {
       confidence: 1,

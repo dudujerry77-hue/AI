@@ -1,4 +1,9 @@
-import type { DependencySummary, DependencyType, Plan, PlanExplanation } from '../models/types';
+import type {
+  DependencySummary,
+  DependencyType,
+  Plan,
+  PlanExplanation,
+} from '../models/types';
 import { PlanValidator } from '../validation/plan-validator';
 
 /**
@@ -92,10 +97,13 @@ export class PlanExplainer {
 
     return {
       total: plan.dependencies.length,
-      byType: ALL_DEPENDENCY_TYPES.reduce<Record<DependencyType, number>>((accumulator, type) => {
-        accumulator[type] = byType[type];
-        return accumulator;
-      }, {} as Record<DependencyType, number>),
+      byType: ALL_DEPENDENCY_TYPES.reduce<Record<DependencyType, number>>(
+        (accumulator, type) => {
+          accumulator[type] = byType[type];
+          return accumulator;
+        },
+        {} as Record<DependencyType, number>,
+      ),
     };
   }
 

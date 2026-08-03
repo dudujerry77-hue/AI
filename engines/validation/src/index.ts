@@ -1,6 +1,12 @@
 import { BaseEngine } from '../../../runtime/engine/base';
-import { ENGINE_API_CONTRACT_VERSION, type BaseEngineOptions } from '../../../runtime/engine/types';
-import { NotImplementedError, ValidationRequestError } from './errors/validation-errors';
+import {
+  ENGINE_API_CONTRACT_VERSION,
+  type BaseEngineOptions,
+} from '../../../runtime/engine/types';
+import {
+  NotImplementedError,
+  ValidationRequestError,
+} from './errors/validation-errors';
 import type {
   ValidationGovernanceRule,
   ValidationPipelineResult,
@@ -16,7 +22,10 @@ export { ValidationBuilder } from './builders/validation-builder';
 export { ValidationEvidenceCollector } from './evidence/validation-evidence-collector';
 export { ValidationPipelineRunner } from './pipeline/validation-pipeline-runner';
 export { ValidationValidator } from './validation/validation-validator';
-export { NotImplementedError, ValidationRequestError } from './errors/validation-errors';
+export {
+  NotImplementedError,
+  ValidationRequestError,
+} from './errors/validation-errors';
 
 export type {
   ValidationCheckResult,
@@ -102,7 +111,10 @@ export interface ValidationRejectValidationRequest {
   readonly reason?: string;
 }
 
-export interface ValidationEngineOptions extends Omit<BaseEngineOptions, 'id' | 'name' | 'version'> {
+export interface ValidationEngineOptions extends Omit<
+  BaseEngineOptions,
+  'id' | 'name' | 'version'
+> {
   readonly id?: string;
   readonly name?: string;
   readonly version?: string;
@@ -200,15 +212,25 @@ export class ValidationEngine extends BaseEngine {
    * execution, orchestration, persistence, networking, AI logic, or
    * heuristic behavior, and calls no other Titan engine's runtime.
    */
-  async validate(request: ValidationValidateRequest): Promise<ValidationPipelineResult> {
-    if (request === null || request === undefined || typeof request !== 'object' || Array.isArray(request)) {
-      throw new ValidationRequestError('ValidationValidateRequest must be a non-null object.', [
-        {
-          field: 'request',
-          code: 'missing-request',
-          message: 'ValidationValidateRequest must be a non-null object.',
-        },
-      ]);
+  async validate(
+    request: ValidationValidateRequest,
+  ): Promise<ValidationPipelineResult> {
+    if (
+      request === null ||
+      request === undefined ||
+      typeof request !== 'object' ||
+      Array.isArray(request)
+    ) {
+      throw new ValidationRequestError(
+        'ValidationValidateRequest must be a non-null object.',
+        [
+          {
+            field: 'request',
+            code: 'missing-request',
+            message: 'ValidationValidateRequest must be a non-null object.',
+          },
+        ],
+      );
     }
 
     return this.validationPipelineRunner.run(request.subject);
@@ -225,15 +247,26 @@ export class ValidationEngine extends BaseEngine {
    * policy evaluation, governance enforcement, or learning
    * integration, and calls no other Titan engine's runtime.
    */
-  async getValidationStatus(request: ValidationGetValidationStatusRequest): Promise<ValidationStructuralResult> {
-    if (request === null || request === undefined || typeof request !== 'object' || Array.isArray(request)) {
-      throw new ValidationRequestError('ValidationGetValidationStatusRequest must be a non-null object.', [
-        {
-          field: 'request',
-          code: 'missing-request',
-          message: 'ValidationGetValidationStatusRequest must be a non-null object.',
-        },
-      ]);
+  async getValidationStatus(
+    request: ValidationGetValidationStatusRequest,
+  ): Promise<ValidationStructuralResult> {
+    if (
+      request === null ||
+      request === undefined ||
+      typeof request !== 'object' ||
+      Array.isArray(request)
+    ) {
+      throw new ValidationRequestError(
+        'ValidationGetValidationStatusRequest must be a non-null object.',
+        [
+          {
+            field: 'request',
+            code: 'missing-request',
+            message:
+              'ValidationGetValidationStatusRequest must be a non-null object.',
+          },
+        ],
+      );
     }
 
     return this.validationValidator.validate(request.verdict);
@@ -254,7 +287,9 @@ export class ValidationEngine extends BaseEngine {
    * deterministic-structural-processing boundary. See the Milestone 6
    * governance note in `phases/phase-011-validation-engine-implementation.md`.
    */
-  async approveValidation(_request: ValidationApproveValidationRequest): Promise<ValidationVerdict> {
+  async approveValidation(
+    _request: ValidationApproveValidationRequest,
+  ): Promise<ValidationVerdict> {
     throw new NotImplementedError(
       'ValidationEngine.approveValidation is not implemented (Milestone 5: structural validation pipeline and validator only; Milestone 6 approval/rejection workflows are deliberately deferred — see phase-011 governance notes).',
     );
@@ -268,7 +303,9 @@ export class ValidationEngine extends BaseEngine {
    * Deliberately not implemented as part of Milestone 6, for the same
    * reason as `approveValidation` above.
    */
-  async rejectValidation(_request: ValidationRejectValidationRequest): Promise<ValidationVerdict> {
+  async rejectValidation(
+    _request: ValidationRejectValidationRequest,
+  ): Promise<ValidationVerdict> {
     throw new NotImplementedError(
       'ValidationEngine.rejectValidation is not implemented (Milestone 5: structural validation pipeline and validator only; Milestone 6 approval/rejection workflows are deliberately deferred — see phase-011 governance notes).',
     );

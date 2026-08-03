@@ -53,48 +53,79 @@ describe('createTitanShell', () => {
     it('reports correct identity metadata for each registered engine', () => {
       const shell = createTitanShell();
 
-      expect(resolveEngineMetadata(shell.registry.get('context-engine')!).name).toBe('Context Engine');
-      expect(resolveEngineMetadata(shell.registry.get('knowledge-engine')!).name).toBe('Knowledge Engine');
-      expect(resolveEngineMetadata(shell.registry.get('planner-engine')!).name).toBe('Planner Engine');
-      expect(resolveEngineMetadata(shell.registry.get('orchestrator-engine')!).name).toBe('Orchestrator Engine');
-      expect(resolveEngineMetadata(shell.registry.get('execution-engine')!).name).toBe('Execution Engine');
-      expect(resolveEngineMetadata(shell.registry.get('validation-engine')!).name).toBe('Validation Engine');
-      expect(resolveEngineMetadata(shell.registry.get('learning-engine')!).name).toBe('Learning Engine');
+      expect(
+        resolveEngineMetadata(shell.registry.get('context-engine')!).name,
+      ).toBe('Context Engine');
+      expect(
+        resolveEngineMetadata(shell.registry.get('knowledge-engine')!).name,
+      ).toBe('Knowledge Engine');
+      expect(
+        resolveEngineMetadata(shell.registry.get('planner-engine')!).name,
+      ).toBe('Planner Engine');
+      expect(
+        resolveEngineMetadata(shell.registry.get('orchestrator-engine')!).name,
+      ).toBe('Orchestrator Engine');
+      expect(
+        resolveEngineMetadata(shell.registry.get('execution-engine')!).name,
+      ).toBe('Execution Engine');
+      expect(
+        resolveEngineMetadata(shell.registry.get('validation-engine')!).name,
+      ).toBe('Validation Engine');
+      expect(
+        resolveEngineMetadata(shell.registry.get('learning-engine')!).name,
+      ).toBe('Learning Engine');
     });
 
     it("each registered engine's capabilities match a freshly constructed instance of the same engine class", () => {
       const shell = createTitanShell();
 
-      expect(resolveEngineMetadata(shell.registry.get('context-engine')!).capabilities).toEqual(
-        new ContextEngine().metadata().capabilities,
-      );
-      expect(resolveEngineMetadata(shell.registry.get('planner-engine')!).capabilities).toEqual(
-        new PlannerEngine().metadata().capabilities,
-      );
-      expect(resolveEngineMetadata(shell.registry.get('orchestrator-engine')!).capabilities).toEqual(
-        new OrchestratorEngine().metadata().capabilities,
-      );
-      expect(resolveEngineMetadata(shell.registry.get('execution-engine')!).capabilities).toEqual(
-        new ExecutionEngine().metadata().capabilities,
-      );
-      expect(resolveEngineMetadata(shell.registry.get('validation-engine')!).capabilities).toEqual(
-        new ValidationEngine().metadata().capabilities,
-      );
-      expect(resolveEngineMetadata(shell.registry.get('learning-engine')!).capabilities).toEqual(
-        new LearningEngine().metadata().capabilities,
-      );
-      expect(resolveEngineMetadata(shell.registry.get('knowledge-engine')!).capabilities).toEqual(
-        new KnowledgeEngine({ rootDir: process.cwd(), actorId: 'test', roles: ['ai-agent'] }).metadata().capabilities,
+      expect(
+        resolveEngineMetadata(shell.registry.get('context-engine')!)
+          .capabilities,
+      ).toEqual(new ContextEngine().metadata().capabilities);
+      expect(
+        resolveEngineMetadata(shell.registry.get('planner-engine')!)
+          .capabilities,
+      ).toEqual(new PlannerEngine().metadata().capabilities);
+      expect(
+        resolveEngineMetadata(shell.registry.get('orchestrator-engine')!)
+          .capabilities,
+      ).toEqual(new OrchestratorEngine().metadata().capabilities);
+      expect(
+        resolveEngineMetadata(shell.registry.get('execution-engine')!)
+          .capabilities,
+      ).toEqual(new ExecutionEngine().metadata().capabilities);
+      expect(
+        resolveEngineMetadata(shell.registry.get('validation-engine')!)
+          .capabilities,
+      ).toEqual(new ValidationEngine().metadata().capabilities);
+      expect(
+        resolveEngineMetadata(shell.registry.get('learning-engine')!)
+          .capabilities,
+      ).toEqual(new LearningEngine().metadata().capabilities);
+      expect(
+        resolveEngineMetadata(shell.registry.get('knowledge-engine')!)
+          .capabilities,
+      ).toEqual(
+        new KnowledgeEngine({
+          rootDir: process.cwd(),
+          actorId: 'test',
+          roles: ['ai-agent'],
+        }).metadata().capabilities,
       );
     });
 
     it('supports capability-based discovery through the registry', () => {
       const shell = createTitanShell();
 
-      const learningCapableEngines = shell.registry.findByCapability('learning.analyze-cycle');
+      const learningCapableEngines = shell.registry.findByCapability(
+        'learning.analyze-cycle',
+      );
 
       expect(learningCapableEngines).toHaveLength(1);
-      expect(resolveEngineMetadata(learningCapableEngines[0]).id).toBe('learning-engine');
+      expect(resolveEngineMetadata(learningCapableEngines[0]).id).toBe(
+        'learning-engine',
+      );
     });
 
     it('registers every engine in the created state, proving no lifecycle or business method was invoked during wiring', () => {
@@ -109,7 +140,9 @@ describe('createTitanShell', () => {
       const first = createTitanShell();
       const second = createTitanShell();
 
-      expect(first.registry.get('learning-engine')).not.toBe(second.registry.get('learning-engine'));
+      expect(first.registry.get('learning-engine')).not.toBe(
+        second.registry.get('learning-engine'),
+      );
     });
   });
 });

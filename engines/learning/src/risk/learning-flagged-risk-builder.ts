@@ -63,13 +63,20 @@ export class LearningFlaggedRiskBuilder {
    * array, or if any entry is not a well-formed `LearningLesson`-shaped
    * object.
    */
-  build(lessons: readonly LearningLesson[], timestamp?: string): readonly LearningFlaggedRisk[] {
+  build(
+    lessons: readonly LearningLesson[],
+    timestamp?: string,
+  ): readonly LearningFlaggedRisk[] {
     this.validateLessons(lessons);
 
     const resolvedTimestamp = timestamp ?? new Date().toISOString();
 
     return lessons
-      .filter((lesson) => lesson.category === 'failure' || lesson.category === 'estimate-inaccuracy')
+      .filter(
+        (lesson) =>
+          lesson.category === 'failure' ||
+          lesson.category === 'estimate-inaccuracy',
+      )
       .map((lesson) => ({
         riskId: `risk-${lesson.lessonId}`,
         description: `Flagged risk derived from lesson ${lesson.lessonId} (category: ${lesson.category}).`,
@@ -90,45 +97,65 @@ export class LearningFlaggedRiskBuilder {
     }
 
     if (lessons.length === 0) {
-      throw new LearningRequestError('lessons must contain at least one entry.', [
-        {
-          field: 'lessons',
-          code: 'empty-lessons',
-          message: 'lessons must contain at least one entry.',
-        },
-      ]);
+      throw new LearningRequestError(
+        'lessons must contain at least one entry.',
+        [
+          {
+            field: 'lessons',
+            code: 'empty-lessons',
+            message: 'lessons must contain at least one entry.',
+          },
+        ],
+      );
     }
 
     lessons.forEach((lesson, index) => {
       if (!isPlainObject(lesson)) {
-        throw new LearningRequestError(`lessons[${index}] must be a non-null object.`, [
-          {
-            field: `lessons[${index}]`,
-            code: 'invalid-lesson',
-            message: `lessons[${index}] must be a non-null object.`,
-          },
-        ]);
+        throw new LearningRequestError(
+          `lessons[${index}] must be a non-null object.`,
+          [
+            {
+              field: `lessons[${index}]`,
+              code: 'invalid-lesson',
+              message: `lessons[${index}] must be a non-null object.`,
+            },
+          ],
+        );
       }
 
-      if (!isNonEmptyString((lesson as unknown as Record<string, unknown>).lessonId)) {
-        throw new LearningRequestError(`lessons[${index}].lessonId is required.`, [
-          {
-            field: `lessons[${index}].lessonId`,
-            code: 'missing-lesson-id',
-            message: `lessons[${index}].lessonId must be a non-empty string.`,
-          },
-        ]);
+      if (
+        !isNonEmptyString(
+          (lesson as unknown as Record<string, unknown>).lessonId,
+        )
+      ) {
+        throw new LearningRequestError(
+          `lessons[${index}].lessonId is required.`,
+          [
+            {
+              field: `lessons[${index}].lessonId`,
+              code: 'missing-lesson-id',
+              message: `lessons[${index}].lessonId must be a non-empty string.`,
+            },
+          ],
+        );
       }
 
       const category = (lesson as unknown as Record<string, unknown>).category;
-      if (category !== 'pattern-worked' && category !== 'failure' && category !== 'estimate-inaccuracy') {
-        throw new LearningRequestError(`lessons[${index}].category is required.`, [
-          {
-            field: `lessons[${index}].category`,
-            code: 'missing-category',
-            message: `lessons[${index}].category must be one of: pattern-worked, failure, estimate-inaccuracy.`,
-          },
-        ]);
+      if (
+        category !== 'pattern-worked' &&
+        category !== 'failure' &&
+        category !== 'estimate-inaccuracy'
+      ) {
+        throw new LearningRequestError(
+          `lessons[${index}].category is required.`,
+          [
+            {
+              field: `lessons[${index}].category`,
+              code: 'missing-category',
+              message: `lessons[${index}].category must be one of: pattern-worked, failure, estimate-inaccuracy.`,
+            },
+          ],
+        );
       }
     });
   }

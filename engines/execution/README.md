@@ -91,7 +91,7 @@ this package):
   `WorkflowDispatchResult`, or a self-contained `ExecutionRecord`).
   This package never imports `OrchestratorEngine`, never instantiates
   it, and never calls the Orchestrator Engine's runtime — it uses only
-  the Orchestrator's `WorkflowDispatchResult` *type* to describe an
+  the Orchestrator's `WorkflowDispatchResult` _type_ to describe an
   input shape.
 
 ## Runtime Contract (unchanged from Milestone 1)
@@ -122,12 +122,12 @@ Milestone 1.
 
 ## Public API (Milestone 5)
 
-| Method | Behavior (Milestone 5) |
-|---|---|
-| `execute(request)` | **Implemented** (Milestone 3, unchanged). Validates `request`, then delegates entirely to `ExecutionBuilder.build`. Returns the resulting `ExecutionRecord`. Throws `ExecutionValidationError` for a malformed request. |
-| `getExecutionStatus(request)` | **Implemented** (Milestone 4, unchanged). Validates `request`, then delegates entirely to `ExecutionValidator.validate`. Returns the resulting `ExecutionValidationResult`. Throws `ExecutionValidationError` for a malformed request. |
-| `cancelExecution(request)` | Always throws `NotImplementedError`. Unchanged from Milestone 1. The Execution Engine's only remaining unimplemented method. |
-| `reportResult(request)` | **Implemented.** Validates `request`, then delegates entirely to `ExecutionStatusTracker.summarize`. Returns the resulting `ExecutionSummary`. Throws `ExecutionValidationError` for a malformed request (missing/null `request`, or a `request.record` that is missing, `null`, or not an inspectable object). Performs **no real result reporting**. |
+| Method                        | Behavior (Milestone 5)                                                                                                                                                                                                                                                                                                                                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `execute(request)`            | **Implemented** (Milestone 3, unchanged). Validates `request`, then delegates entirely to `ExecutionBuilder.build`. Returns the resulting `ExecutionRecord`. Throws `ExecutionValidationError` for a malformed request.                                                                                                                                |
+| `getExecutionStatus(request)` | **Implemented** (Milestone 4, unchanged). Validates `request`, then delegates entirely to `ExecutionValidator.validate`. Returns the resulting `ExecutionValidationResult`. Throws `ExecutionValidationError` for a malformed request.                                                                                                                 |
+| `cancelExecution(request)`    | Always throws `NotImplementedError`. Unchanged from Milestone 1. The Execution Engine's only remaining unimplemented method.                                                                                                                                                                                                                           |
+| `reportResult(request)`       | **Implemented.** Validates `request`, then delegates entirely to `ExecutionStatusTracker.summarize`. Returns the resulting `ExecutionSummary`. Throws `ExecutionValidationError` for a malformed request (missing/null `request`, or a `request.record` that is missing, `null`, or not an inspectable object). Performs **no real result reporting**. |
 
 ## `ExecutionStatusTracker` (new in Milestone 5)
 
@@ -168,8 +168,8 @@ scheduling, and no calls to any other Titan engine.
 All Milestone 2, 3, and 4 domain types are retained unchanged, except
 for an additive extension to `ExecutionSummary`:
 
-| Type | Change in Milestone 5 |
-|---|---|
+| Type               | Change in Milestone 5                                                                                                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `ExecutionSummary` | Adds `createdAt: string`, `updatedAt: string`, `durationMs?: number`, `isTerminal: boolean`, `isCancelled: boolean`. `executionId`, `status`, and `target` are unchanged from Milestone 1. |
 
 `ExecutionReportResultRequest` (in `src/index.ts`) now carries

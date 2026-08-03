@@ -6,7 +6,13 @@ import type {
   ExecutionValidationResultIssue,
 } from '../models/types';
 
-const VALID_STATUSES: readonly ExecutionStatus[] = ['pending', 'running', 'completed', 'failed', 'cancelled'];
+const VALID_STATUSES: readonly ExecutionStatus[] = [
+  'pending',
+  'running',
+  'completed',
+  'failed',
+  'cancelled',
+];
 const VALID_ITEM_TYPES: readonly string[] = ['step', 'task'];
 
 /**
@@ -85,7 +91,10 @@ export class ExecutionValidator {
    * structural defects are reported as issues in the returned result
    * rather than thrown.
    */
-  validate(record: ExecutionRecord, timestamp?: string): ExecutionValidationResult {
+  validate(
+    record: ExecutionRecord,
+    timestamp?: string,
+  ): ExecutionValidationResult {
     this.validateShape(record);
 
     const issues: ExecutionValidationResultIssue[] = [];
@@ -101,7 +110,9 @@ export class ExecutionValidator {
     const resolvedTimestamp = timestamp ?? new Date().toISOString();
 
     return {
-      executionId: isNonEmptyString(record.executionId) ? record.executionId : '',
+      executionId: isNonEmptyString(record.executionId)
+        ? record.executionId
+        : '',
       valid: issues.length === 0,
       issues,
       validatedAt: resolvedTimestamp,
@@ -116,29 +127,38 @@ export class ExecutionValidator {
    */
   private validateShape(record: ExecutionRecord): void {
     if (record === null || record === undefined || !isPlainObject(record)) {
-      throw new ExecutionValidationError('ExecutionRecord must be a non-null object.', [
-        {
-          field: 'record',
-          code: 'missing-record',
-          message: 'ExecutionRecord must be a non-null object.',
-        },
-      ]);
+      throw new ExecutionValidationError(
+        'ExecutionRecord must be a non-null object.',
+        [
+          {
+            field: 'record',
+            code: 'missing-record',
+            message: 'ExecutionRecord must be a non-null object.',
+          },
+        ],
+      );
     }
 
     const target = (record as unknown as Record<string, unknown>).target;
 
     if (target === null || target === undefined || !isPlainObject(target)) {
-      throw new ExecutionValidationError('ExecutionRecord.target must be a non-null object.', [
-        {
-          field: 'record.target',
-          code: 'missing-target',
-          message: 'ExecutionRecord.target must be a non-null object.',
-        },
-      ]);
+      throw new ExecutionValidationError(
+        'ExecutionRecord.target must be a non-null object.',
+        [
+          {
+            field: 'record.target',
+            code: 'missing-target',
+            message: 'ExecutionRecord.target must be a non-null object.',
+          },
+        ],
+      );
     }
   }
 
-  private checkExecutionId(record: ExecutionRecord, issues: ExecutionValidationResultIssue[]): void {
+  private checkExecutionId(
+    record: ExecutionRecord,
+    issues: ExecutionValidationResultIssue[],
+  ): void {
     if (!isNonEmptyString(record.executionId)) {
       issues.push({
         field: 'executionId',
@@ -148,17 +168,24 @@ export class ExecutionValidator {
     }
   }
 
-  private checkWorkflowId(target: Record<string, unknown>, issues: ExecutionValidationResultIssue[]): void {
+  private checkWorkflowId(
+    target: Record<string, unknown>,
+    issues: ExecutionValidationResultIssue[],
+  ): void {
     if (!isNonEmptyString(target.workflowId)) {
       issues.push({
         field: 'target.workflowId',
         code: 'MISSING_WORKFLOW_ID',
-        message: 'ExecutionRecord.target.workflowId must be a non-empty string.',
+        message:
+          'ExecutionRecord.target.workflowId must be a non-empty string.',
       });
     }
   }
 
-  private checkItemId(target: Record<string, unknown>, issues: ExecutionValidationResultIssue[]): void {
+  private checkItemId(
+    target: Record<string, unknown>,
+    issues: ExecutionValidationResultIssue[],
+  ): void {
     if (!isNonEmptyString(target.itemId)) {
       issues.push({
         field: 'target.itemId',
@@ -168,8 +195,14 @@ export class ExecutionValidator {
     }
   }
 
-  private checkItemType(target: Record<string, unknown>, issues: ExecutionValidationResultIssue[]): void {
-    if (typeof target.itemType !== 'string' || !VALID_ITEM_TYPES.includes(target.itemType)) {
+  private checkItemType(
+    target: Record<string, unknown>,
+    issues: ExecutionValidationResultIssue[],
+  ): void {
+    if (
+      typeof target.itemType !== 'string' ||
+      !VALID_ITEM_TYPES.includes(target.itemType)
+    ) {
       issues.push({
         field: 'target.itemType',
         code: 'INVALID_ITEM_TYPE',
@@ -178,8 +211,14 @@ export class ExecutionValidator {
     }
   }
 
-  private checkStatus(record: ExecutionRecord, issues: ExecutionValidationResultIssue[]): void {
-    if (typeof record.status !== 'string' || !VALID_STATUSES.includes(record.status)) {
+  private checkStatus(
+    record: ExecutionRecord,
+    issues: ExecutionValidationResultIssue[],
+  ): void {
+    if (
+      typeof record.status !== 'string' ||
+      !VALID_STATUSES.includes(record.status)
+    ) {
       issues.push({
         field: 'status',
         code: 'INVALID_STATUS',
@@ -188,12 +227,23 @@ export class ExecutionValidator {
     }
   }
 
-  private checkTimestamps(record: ExecutionRecord, issues: ExecutionValidationResultIssue[]): void {
-    const createdAtRaw = (record as unknown as Record<string, unknown>).createdAt;
-    const updatedAtRaw = (record as unknown as Record<string, unknown>).updatedAt;
+  private checkTimestamps(
+    record: ExecutionRecord,
+    issues: ExecutionValidationResultIssue[],
+  ): void {
+    const createdAtRaw = (record as unknown as Record<string, unknown>)
+      .createdAt;
+    const updatedAtRaw = (record as unknown as Record<string, unknown>)
+      .updatedAt;
 
-    const createdAtPresent = createdAtRaw !== undefined && createdAtRaw !== null && createdAtRaw !== '';
-    const updatedAtPresent = updatedAtRaw !== undefined && updatedAtRaw !== null && updatedAtRaw !== '';
+    const createdAtPresent =
+      createdAtRaw !== undefined &&
+      createdAtRaw !== null &&
+      createdAtRaw !== '';
+    const updatedAtPresent =
+      updatedAtRaw !== undefined &&
+      updatedAtRaw !== null &&
+      updatedAtRaw !== '';
 
     if (!createdAtPresent) {
       issues.push({
@@ -205,7 +255,8 @@ export class ExecutionValidator {
       issues.push({
         field: 'createdAt',
         code: 'INVALID_CREATED_AT',
-        message: 'ExecutionRecord.createdAt must be a well-formed ISO-8601 timestamp string.',
+        message:
+          'ExecutionRecord.createdAt must be a well-formed ISO-8601 timestamp string.',
       });
     }
 
@@ -219,11 +270,17 @@ export class ExecutionValidator {
       issues.push({
         field: 'updatedAt',
         code: 'INVALID_UPDATED_AT',
-        message: 'ExecutionRecord.updatedAt must be a well-formed ISO-8601 timestamp string.',
+        message:
+          'ExecutionRecord.updatedAt must be a well-formed ISO-8601 timestamp string.',
       });
     }
 
-    if (createdAtPresent && updatedAtPresent && isIsoTimestamp(createdAtRaw) && isIsoTimestamp(updatedAtRaw)) {
+    if (
+      createdAtPresent &&
+      updatedAtPresent &&
+      isIsoTimestamp(createdAtRaw) &&
+      isIsoTimestamp(updatedAtRaw)
+    ) {
       const createdAtMs = new Date(createdAtRaw).getTime();
       const updatedAtMs = new Date(updatedAtRaw).getTime();
 
@@ -231,7 +288,8 @@ export class ExecutionValidator {
         issues.push({
           field: 'updatedAt',
           code: 'UPDATED_BEFORE_CREATED',
-          message: 'ExecutionRecord.updatedAt must not be earlier than ExecutionRecord.createdAt.',
+          message:
+            'ExecutionRecord.updatedAt must not be earlier than ExecutionRecord.createdAt.',
         });
       }
     }

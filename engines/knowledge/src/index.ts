@@ -6,23 +6,41 @@ import { createHash, randomUUID } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import type { EngineDependencies, EngineMetadata } from '../../../runtime/engine/types';
+import type {
+  EngineDependencies,
+  EngineMetadata,
+} from '../../../runtime/engine/types';
 import { ENGINE_API_CONTRACT_VERSION } from '../../../runtime/engine/types';
 import { ConfigurationService } from '../../../runtime/config/configuration-service';
 import { ConfigurationError } from '../../../runtime/errors/errors';
-import { EventBus, type EventPublishOptions } from '../../../runtime/events/event-bus';
-import { HealthMonitor, type HealthSnapshot } from '../../../runtime/health/health-monitor';
-import { LifecycleManager, type LifecycleState } from '../../../runtime/lifecycle/lifecycle-manager';
+import {
+  EventBus,
+  type EventPublishOptions,
+} from '../../../runtime/events/event-bus';
+import {
+  HealthMonitor,
+  type HealthSnapshot,
+} from '../../../runtime/health/health-monitor';
+import {
+  LifecycleManager,
+  type LifecycleState,
+} from '../../../runtime/lifecycle/lifecycle-manager';
 import { Logger } from '../../../runtime/logging/logger';
 import { MetricsCollector } from '../../../runtime/metrics/metrics';
 
-export type KnowledgeRole = 'owner' | 'admin' | 'developer' | 'reviewer' | 'guest' | 'ai-agent';
+export type KnowledgeRole =
+  'owner' | 'admin' | 'developer' | 'reviewer' | 'guest' | 'ai-agent';
 
 type EngineLifecycleState = LifecycleState;
 
 type WriteAction = 'add' | 'update' | 'remove' | 'archive' | 'import' | 'save';
 
-const ALLOWED_SECURITY_CLASSES = new Set(['public', 'internal', 'restricted', 'confidential']);
+const ALLOWED_SECURITY_CLASSES = new Set([
+  'public',
+  'internal',
+  'restricted',
+  'confidential',
+]);
 
 export interface KnowledgeRelationship {
   readonly type: string;
@@ -183,8 +201,12 @@ function deepFreezeRecord(record: KnowledgeRecord): KnowledgeRecord {
   const frozen: KnowledgeRecord = {
     ...record,
     tags: Object.freeze([...record.tags]),
-    relationships: Object.freeze(record.relationships.map((entry) => Object.freeze({ ...entry }))),
-    metadata: record.metadata ? Object.freeze({ ...record.metadata }) : undefined,
+    relationships: Object.freeze(
+      record.relationships.map((entry) => Object.freeze({ ...entry })),
+    ),
+    metadata: record.metadata
+      ? Object.freeze({ ...record.metadata })
+      : undefined,
   };
 
   return Object.freeze(frozen);
@@ -208,39 +230,64 @@ function inferAuthority(category: string, canonicalLocation: string): string {
   const normalizedPath = canonicalLocation.replace(/\\/g, '/').toLowerCase();
   if (normalizedPath.endsWith('/constitution.md')) return 'constitution';
   if (category === 'security') return 'security';
-  if (category === 'architecture' || category === 'decisions') return 'architecture';
-  if (category === 'governance' || category === 'project-state') return 'governance';
+  if (category === 'architecture' || category === 'decisions')
+    return 'architecture';
+  if (category === 'governance' || category === 'project-state')
+    return 'governance';
   if (category === 'sessions') return 'session';
   if (category === 'user') return 'user';
   return 'documentation';
 }
 
-function assertClassification(authority: string, category: string, securityClass: string): void {
+function assertClassification(
+  authority: string,
+  category: string,
+  securityClass: string,
+): void {
   if (!ALLOWED_SECURITY_CLASSES.has(securityClass)) {
     throw new KnowledgeError(`Invalid securityClass: ${securityClass}`);
   }
 
   if (category === 'security' && authority !== 'security') {
-    throw new KnowledgeError('Security category records must use security authority');
+    throw new KnowledgeError(
+      'Security category records must use security authority',
+    );
   }
 
-  if ((category === 'architecture' || category === 'decisions') && authority !== 'architecture') {
-    throw new KnowledgeError('Architecture and decisions records must use architecture authority');
+  if (
+    (category === 'architecture' || category === 'decisions') &&
+    authority !== 'architecture'
+  ) {
+    throw new KnowledgeError(
+      'Architecture and decisions records must use architecture authority',
+    );
   }
 
-  if ((category === 'governance' || category === 'project-state') && authority !== 'governance' && authority !== 'constitution') {
-    throw new KnowledgeError('Governance and project-state records must use governance or constitution authority');
+  if (
+    (category === 'governance' || category === 'project-state') &&
+    authority !== 'governance' &&
+    authority !== 'constitution'
+  ) {
+    throw new KnowledgeError(
+      'Governance and project-state records must use governance or constitution authority',
+    );
   }
 }
 
-function isKnowledgeRecordCandidate(value: unknown): value is Partial<KnowledgeRecord> & { recordId: string } {
+function isKnowledgeRecordCandidate(
+  value: unknown,
+): value is Partial<KnowledgeRecord> & { recordId: string } {
   return typeof value === 'object' && value !== null && 'recordId' in value;
 }
 
-function normalizeRecord(candidate: Partial<KnowledgeRecord> & { recordId: string }, canonicalLocation: string): KnowledgeRecord {
+function normalizeRecord(
+  candidate: Partial<KnowledgeRecord> & { recordId: string },
+  canonicalLocation: string,
+): KnowledgeRecord {
   const category = candidate.category ?? inferCategory(canonicalLocation);
   const body = candidate.body ?? '';
-  const authority = candidate.authority ?? inferAuthority(category, canonicalLocation);
+  const authority =
+    candidate.authority ?? inferAuthority(category, canonicalLocation);
 
   const normalized: KnowledgeRecord = {
     recordId: candidate.recordId,
@@ -276,10 +323,19 @@ function normalizeRecord(candidate: Partial<KnowledgeRecord> & { recordId: strin
   assertNonEmpty(normalized.source, 'source');
   assertNonEmpty(normalized.author, 'author');
   assertNonEmpty(normalized.approvalStatus, 'approvalStatus');
-  assertClassification(normalized.authority, normalized.category, normalized.securityClass);
+  assertClassification(
+    normalized.authority,
+    normalized.category,
+    normalized.securityClass,
+  );
 
-  if (!Array.isArray(normalized.tags) || !Array.isArray(normalized.relationships)) {
-    throw new KnowledgeError('Invalid record: tags and relationships must be arrays');
+  if (
+    !Array.isArray(normalized.tags) ||
+    !Array.isArray(normalized.relationships)
+  ) {
+    throw new KnowledgeError(
+      'Invalid record: tags and relationships must be arrays',
+    );
   }
 
   return deepFreezeRecord(normalized);
@@ -328,7 +384,10 @@ export class MarkdownLoader {
   loadFromText(content: string, canonicalLocation: string): KnowledgeRecord {
     const trimmed = content.trimStart();
     if (!trimmed.startsWith('---\n')) {
-      const recordId = slugify(path.basename(canonicalLocation, path.extname(canonicalLocation))) || randomUUID();
+      const recordId =
+        slugify(
+          path.basename(canonicalLocation, path.extname(canonicalLocation)),
+        ) || randomUUID();
       const category = inferCategory(canonicalLocation);
       return normalizeRecord(
         {
@@ -361,25 +420,37 @@ export class MarkdownLoader {
     }
 
     if (cursor >= lines.length) {
-      throw new KnowledgeError(`Invalid markdown front matter: ${canonicalLocation}`);
+      throw new KnowledgeError(
+        `Invalid markdown front matter: ${canonicalLocation}`,
+      );
     }
 
-    const body = lines.slice(cursor + 1).join('\n').trim();
+    const body = lines
+      .slice(cursor + 1)
+      .join('\n')
+      .trim();
     let metadata: unknown;
     try {
       metadata = JSON.parse(metadataLines.join('\n'));
     } catch {
-      throw new KnowledgeError(`Invalid markdown metadata JSON: ${canonicalLocation}`);
+      throw new KnowledgeError(
+        `Invalid markdown metadata JSON: ${canonicalLocation}`,
+      );
     }
 
     if (!isKnowledgeRecordCandidate(metadata)) {
-      throw new KnowledgeError(`Markdown metadata missing recordId: ${canonicalLocation}`);
+      throw new KnowledgeError(
+        `Markdown metadata missing recordId: ${canonicalLocation}`,
+      );
     }
 
     return normalizeRecord(
       {
         ...metadata,
-        summary: typeof metadata.summary === 'string' ? metadata.summary : (metadata.title as string) ?? metadata.recordId,
+        summary:
+          typeof metadata.summary === 'string'
+            ? metadata.summary
+            : ((metadata.title as string) ?? metadata.recordId),
         body,
         bodyFormat: 'markdown',
       },
@@ -401,11 +472,18 @@ export class JsonLoader {
       return normalizeRecord(
         {
           ...parsed,
-          summary: typeof parsed.summary === 'string' ? parsed.summary : (parsed.title as string) ?? parsed.recordId,
+          summary:
+            typeof parsed.summary === 'string'
+              ? parsed.summary
+              : ((parsed.title as string) ?? parsed.recordId),
           body:
             typeof parsed.body === 'string'
               ? parsed.body
-              : JSON.stringify((parsed as Record<string, unknown>).body ?? '', null, 2),
+              : JSON.stringify(
+                  (parsed as Record<string, unknown>).body ?? '',
+                  null,
+                  2,
+                ),
           bodyFormat: 'json',
         },
         canonicalLocation,
@@ -413,7 +491,8 @@ export class JsonLoader {
     }
 
     const category = inferCategory(canonicalLocation);
-    const recordId = slugify(path.basename(canonicalLocation, '.json')) || randomUUID();
+    const recordId =
+      slugify(path.basename(canonicalLocation, '.json')) || randomUUID();
     return normalizeRecord(
       {
         recordId,
@@ -446,9 +525,18 @@ export class AuthorityManager {
     return deepFreezeRecord(record);
   }
 
-  canWrite(roles: readonly string[], authority: string, category: string): boolean {
-    const normalizedRoles = roles.map(normalizeRole).filter((role): role is KnowledgeRole => role !== undefined);
-    if (normalizedRoles.includes('owner') || normalizedRoles.includes('admin')) {
+  canWrite(
+    roles: readonly string[],
+    authority: string,
+    category: string,
+  ): boolean {
+    const normalizedRoles = roles
+      .map(normalizeRole)
+      .filter((role): role is KnowledgeRole => role !== undefined);
+    if (
+      normalizedRoles.includes('owner') ||
+      normalizedRoles.includes('admin')
+    ) {
       return true;
     }
 
@@ -460,11 +548,20 @@ export class AuthorityManager {
       return false;
     }
 
-    if (authority === 'governance' || authority === 'security' || authority === 'architecture') {
+    if (
+      authority === 'governance' ||
+      authority === 'security' ||
+      authority === 'architecture'
+    ) {
       return false;
     }
 
-    return category === 'user' || category === 'documentation' || category === 'sessions' || category === 'runtime';
+    return (
+      category === 'user' ||
+      category === 'documentation' ||
+      category === 'sessions' ||
+      category === 'runtime'
+    );
   }
 
   authorityRank(authority: string): number {
@@ -539,7 +636,9 @@ function scoreTextMatch(query: string, record: KnowledgeRecord): number {
     score += 20;
   }
 
-  for (const term of normalizedQuery.split(/\s+/).filter((term) => term.length > 0)) {
+  for (const term of normalizedQuery
+    .split(/\s+/)
+    .filter((term) => term.length > 0)) {
     if (title.includes(term)) {
       score += 6;
     }
@@ -561,9 +660,15 @@ export class KnowledgeSearch {
     return [...records]
       .map((record) => ({
         record,
-        score: scoreTextMatch(query, record) + this.authorityManager.authorityRank(record.authority),
+        score:
+          scoreTextMatch(query, record) +
+          this.authorityManager.authorityRank(record.authority),
       }))
-      .sort((left, right) => right.score - left.score || left.record.title.localeCompare(right.record.title))
+      .sort(
+        (left, right) =>
+          right.score - left.score ||
+          left.record.title.localeCompare(right.record.title),
+      )
       .map((entry) => entry.record);
   }
 }
@@ -574,7 +679,9 @@ export class VersionManager {
       return '1.0.0';
     }
 
-    const [major, minor, patch] = previousVersion.split('.').map((token) => Number.parseInt(token, 10));
+    const [major, minor, patch] = previousVersion
+      .split('.')
+      .map((token) => Number.parseInt(token, 10));
     if ([major, minor, patch].some((value) => Number.isNaN(value))) {
       throw new KnowledgeError(`Invalid semantic version: ${previousVersion}`);
     }
@@ -597,7 +704,8 @@ export class KnowledgeStore {
     const frozen = deepFreezeRecord(record);
     this.records.set(frozen.recordId, frozen);
 
-    const versions = this.versions.get(frozen.recordId) ?? new Map<string, KnowledgeRecord>();
+    const versions =
+      this.versions.get(frozen.recordId) ?? new Map<string, KnowledgeRecord>();
     versions.set(frozen.version, frozen);
     this.versions.set(frozen.recordId, versions);
     return frozen;
@@ -633,7 +741,9 @@ export class KnowledgeRepository {
 
     return Object.freeze({
       generatedAt: toIsoNow(),
-      records: Object.freeze(this.options.store.all().map((record) => deepFreezeRecord(record))),
+      records: Object.freeze(
+        this.options.store.all().map((record) => deepFreezeRecord(record)),
+      ),
     });
   }
 
@@ -654,7 +764,10 @@ export class KnowledgeRepository {
       }
 
       content = await readFile(file, 'utf8');
-      const loaded = extension === '.md' ? this.markdownLoader.loadFromText(content, file) : this.jsonLoader.loadFromText(content, file);
+      const loaded =
+        extension === '.md'
+          ? this.markdownLoader.loadFromText(content, file)
+          : this.jsonLoader.loadFromText(content, file);
       this.options.store.upsert(loaded);
     }
   }
@@ -681,23 +794,56 @@ export class KnowledgeEngine {
   constructor(private readonly options: KnowledgeEngineOptions) {
     this.config = options.config ?? new ConfigurationService();
 
-    this.rootDir = this.config.get<string>('knowledge.rootDir', options.rootDir) ?? options.rootDir;
-    const engineId = this.config.get<string>('knowledge.id', options.id ?? 'knowledge-engine') ?? (options.id ?? 'knowledge-engine');
+    this.rootDir =
+      this.config.get<string>('knowledge.rootDir', options.rootDir) ??
+      options.rootDir;
+    const engineId =
+      this.config.get<string>(
+        'knowledge.id',
+        options.id ?? 'knowledge-engine',
+      ) ??
+      options.id ??
+      'knowledge-engine';
     const engineName =
-      this.config.get<string>('knowledge.name', options.name ?? 'Knowledge Engine') ??
-      (options.name ?? 'Knowledge Engine');
-    const engineVersion = this.config.get<string>('knowledge.version', options.version ?? '1.0.0') ?? (options.version ?? '1.0.0');
+      this.config.get<string>(
+        'knowledge.name',
+        options.name ?? 'Knowledge Engine',
+      ) ??
+      options.name ??
+      'Knowledge Engine';
+    const engineVersion =
+      this.config.get<string>(
+        'knowledge.version',
+        options.version ?? '1.0.0',
+      ) ??
+      options.version ??
+      '1.0.0';
     const engineContractVersion =
-      this.config.get<string>('knowledge.contractVersion', options.contractVersion ?? ENGINE_API_CONTRACT_VERSION) ??
-      (options.contractVersion ?? ENGINE_API_CONTRACT_VERSION);
-    const engineDescription = this.config.get<string>('knowledge.description', options.description);
-    const configuredCapabilities = this.config.get<string[]>('knowledge.capabilities', options.capabilities);
+      this.config.get<string>(
+        'knowledge.contractVersion',
+        options.contractVersion ?? ENGINE_API_CONTRACT_VERSION,
+      ) ??
+      options.contractVersion ??
+      ENGINE_API_CONTRACT_VERSION;
+    const engineDescription = this.config.get<string>(
+      'knowledge.description',
+      options.description,
+    );
+    const configuredCapabilities = this.config.get<string[]>(
+      'knowledge.capabilities',
+      options.capabilities,
+    );
 
     this.store = new KnowledgeStore({ rootDir: this.rootDir });
-    this.repository = new KnowledgeRepository({ store: this.store, rootDir: this.rootDir });
+    this.repository = new KnowledgeRepository({
+      store: this.store,
+      rootDir: this.rootDir,
+    });
     this.healthMonitor = options.healthMonitor ?? new HealthMonitor();
     this.eventBus = options.eventBus ?? new EventBus();
-    this.logger = options.logger ?? new Logger({ service: engineName.toLowerCase().replace(/\s+/g, '-') });
+    this.logger =
+      options.logger ??
+      new Logger({ service: engineName.toLowerCase().replace(/\s+/g, '-') });
     this.lifecycleManager =
       options.lifecycleManager ??
       new LifecycleManager({
@@ -705,7 +851,10 @@ export class KnowledgeEngine {
         logger: this.logger,
         supportedContractVersions: [engineContractVersion],
       });
-    this.metrics = options.metrics instanceof MetricsCollector ? options.metrics : new MetricsCollector();
+    this.metrics =
+      options.metrics instanceof MetricsCollector
+        ? options.metrics
+        : new MetricsCollector();
     this.healthMonitor.markDegraded('created');
     this.logger.info('knowledge.lifecycle.created', { state: 'created' });
     this.metadataValue = {
@@ -714,7 +863,11 @@ export class KnowledgeEngine {
       version: engineVersion,
       contractVersion: engineContractVersion,
       description: engineDescription,
-      capabilities: configuredCapabilities ?? ['knowledge.load', 'knowledge.search', 'knowledge.write'],
+      capabilities: configuredCapabilities ?? [
+        'knowledge.load',
+        'knowledge.search',
+        'knowledge.write',
+      ],
     };
   }
 
@@ -728,12 +881,20 @@ export class KnowledgeEngine {
       this.validateConfiguration();
       const repositoryLoadStartedAt = Date.now();
       await this.repository.snapshot();
-      this.metrics.timer('knowledge.repository.load.duration_ms', Date.now() - repositoryLoadStartedAt);
-      await this.lifecycleManager.initialize(this.metadataValue.contractVersion);
+      this.metrics.timer(
+        'knowledge.repository.load.duration_ms',
+        Date.now() - repositoryLoadStartedAt,
+      );
+      await this.lifecycleManager.initialize(
+        this.metadataValue.contractVersion,
+      );
       this.initialized = true;
       this.healthMonitor.markHealthy('initialized');
       this.metrics.counter('knowledge.initialize.success').increment();
-      this.metrics.timer('knowledge.initialize.duration_ms', Date.now() - startedAt);
+      this.metrics.timer(
+        'knowledge.initialize.duration_ms',
+        Date.now() - startedAt,
+      );
       this.logger.info('knowledge.lifecycle.initialized', {
         state: 'initialized',
         durationMs: Date.now() - startedAt,
@@ -743,22 +904,38 @@ export class KnowledgeEngine {
         durationMs: Date.now() - startedAt,
       });
     } catch (error) {
-      this.lifecycleManager.markFailed(error instanceof Error ? error : new Error(String(error ?? 'unknown error')));
+      this.lifecycleManager.markFailed(
+        error instanceof Error
+          ? error
+          : new Error(String(error ?? 'unknown error')),
+      );
       this.healthMonitor.markFailed('initialization failed', error);
       this.metrics.counter('knowledge.initialize.failure').increment();
-      this.metrics.timer('knowledge.initialize.duration_ms', Date.now() - startedAt);
+      this.metrics.timer(
+        'knowledge.initialize.duration_ms',
+        Date.now() - startedAt,
+      );
       this.logger.error('knowledge.lifecycle.initialize.failed', {
         state: 'failed',
         durationMs: Date.now() - startedAt,
-        error: error instanceof Error ? error.message : String(error ?? 'unknown error'),
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error ?? 'unknown error'),
       });
       this.logger.error('knowledge.repository.load.failed', {
-        error: error instanceof Error ? error.message : String(error ?? 'unknown error'),
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error ?? 'unknown error'),
       });
       this.publishEvent('titan.engine.knowledge.failure', {
         phase: 'initialize',
         state: 'failed',
-        error: error instanceof Error ? error.message : String(error ?? 'unknown error'),
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error ?? 'unknown error'),
       });
       throw error;
     }
@@ -766,7 +943,9 @@ export class KnowledgeEngine {
 
   private validateConfiguration(): void {
     if (typeof this.rootDir !== 'string' || this.rootDir.trim().length === 0) {
-      const error = new ConfigurationError('Invalid required configuration value: knowledge.rootDir');
+      const error = new ConfigurationError(
+        'Invalid required configuration value: knowledge.rootDir',
+      );
       this.logger.error('knowledge.configuration.invalid', {
         key: 'knowledge.rootDir',
         reason: 'must_be_non_empty_string',
@@ -796,7 +975,9 @@ export class KnowledgeEngine {
     }
 
     if (currentState === 'stopped') {
-      await this.lifecycleManager.initialize(this.metadataValue.contractVersion);
+      await this.lifecycleManager.initialize(
+        this.metadataValue.contractVersion,
+      );
     }
     await this.lifecycleManager.start();
     this.healthMonitor.markHealthy('running');
@@ -829,17 +1010,27 @@ export class KnowledgeEngine {
   }
 
   version(): string;
-  version(recordId: string, recordVersion: string): Promise<KnowledgeRecord | undefined>;
-  version(recordId?: string, recordVersion?: string): string | Promise<KnowledgeRecord | undefined> {
+  version(
+    recordId: string,
+    recordVersion: string,
+  ): Promise<KnowledgeRecord | undefined>;
+  version(
+    recordId?: string,
+    recordVersion?: string,
+  ): string | Promise<KnowledgeRecord | undefined> {
     if (!recordId && !recordVersion) {
       return this.metadataValue.version;
     }
 
     if (!recordId || !recordVersion) {
-      throw new KnowledgeError('version(recordId, recordVersion) requires both parameters');
+      throw new KnowledgeError(
+        'version(recordId, recordVersion) requires both parameters',
+      );
     }
 
-    return this.initialize().then(() => this.store.getVersion(recordId, recordVersion));
+    return this.initialize().then(() =>
+      this.store.getVersion(recordId, recordVersion),
+    );
   }
 
   async load(query: KnowledgeLoadQuery): Promise<KnowledgeRecord[]> {
@@ -860,7 +1051,11 @@ export class KnowledgeEngine {
     }
 
     if (query.canonicalLocation) {
-      result = this.store.all().filter((record) => record.canonicalLocation === query.canonicalLocation);
+      result = this.store
+        .all()
+        .filter(
+          (record) => record.canonicalLocation === query.canonicalLocation,
+        );
       this.publishEvent('titan.engine.knowledge.load', {
         query: {
           recordId: query.recordId,
@@ -885,7 +1080,9 @@ export class KnowledgeEngine {
   async search(query: KnowledgeSearchQuery): Promise<KnowledgeRecord[]> {
     await this.initialize();
     const startedAt = Date.now();
-    const ranked = this.searchService.rank(query.text, this.store.all()).filter((record) => !record.archived);
+    const ranked = this.searchService
+      .rank(query.text, this.store.all())
+      .filter((record) => !record.archived);
     this.metrics.timer('knowledge.search.duration_ms', Date.now() - startedAt);
     this.publishEvent('titan.engine.knowledge.search', {
       query: { text: query.text, limit: query.limit },
@@ -904,25 +1101,37 @@ export class KnowledgeEngine {
 
     let records = this.store.all();
     if (criteria.category) {
-      records = records.filter((record) => record.category === criteria.category);
+      records = records.filter(
+        (record) => record.category === criteria.category,
+      );
     }
     if (criteria.author) {
       records = records.filter((record) => record.author === criteria.author);
     }
     if (criteria.approvalStatus) {
-      records = records.filter((record) => record.approvalStatus === criteria.approvalStatus);
+      records = records.filter(
+        (record) => record.approvalStatus === criteria.approvalStatus,
+      );
     }
     if (criteria.authority) {
-      records = records.filter((record) => record.authority === criteria.authority);
+      records = records.filter(
+        (record) => record.authority === criteria.authority,
+      );
     }
     if (criteria.securityClass) {
-      records = records.filter((record) => record.securityClass === criteria.securityClass);
+      records = records.filter(
+        (record) => record.securityClass === criteria.securityClass,
+      );
     }
     if (criteria.archived !== undefined) {
-      records = records.filter((record) => record.archived === criteria.archived);
+      records = records.filter(
+        (record) => record.archived === criteria.archived,
+      );
     }
     if (criteria.tags && criteria.tags.length > 0) {
-      records = records.filter((record) => criteria.tags?.every((tag) => record.tags.includes(tag)));
+      records = records.filter((record) =>
+        criteria.tags?.every((tag) => record.tags.includes(tag)),
+      );
     }
 
     if (criteria.text) {
@@ -971,13 +1180,23 @@ export class KnowledgeEngine {
 
   async add(input: KnowledgeCreateInput): Promise<KnowledgeRecord> {
     await this.initialize();
-    const authority = input.authority ?? inferAuthority(input.category, input.canonicalLocation ?? input.category);
+    const authority =
+      input.authority ??
+      inferAuthority(input.category, input.canonicalLocation ?? input.category);
 
     return this.executeWrite('add', input.category, async () => {
       this.validateCreateInput(input, authority);
       const recordId = `${slugify(input.category)}.${slugify(input.title)}.${randomUUID().slice(0, 8)}`;
       const now = toIsoNow();
-      const canonicalLocation = input.canonicalLocation ?? path.join(this.options.rootDir, '.titan', 'knowledge', 'records', `${recordId}.md`);
+      const canonicalLocation =
+        input.canonicalLocation ??
+        path.join(
+          this.options.rootDir,
+          '.titan',
+          'knowledge',
+          'records',
+          `${recordId}.md`,
+        );
       const record = normalizeRecord(
         {
           recordId,
@@ -1014,7 +1233,9 @@ export class KnowledgeEngine {
 
     return this.executeWrite('save', record.recordId, async () => {
       const existing = this.store.get(record.recordId);
-      const authority = record.authority ?? inferAuthority(record.category, record.canonicalLocation);
+      const authority =
+        record.authority ??
+        inferAuthority(record.category, record.canonicalLocation);
       this.validateRecordForWrite(record, authority);
 
       const normalized = normalizeRecord(
@@ -1033,7 +1254,10 @@ export class KnowledgeEngine {
     });
   }
 
-  async update(recordId: string, patch: KnowledgeUpdatePatch): Promise<KnowledgeRecord> {
+  async update(
+    recordId: string,
+    patch: KnowledgeUpdatePatch,
+  ): Promise<KnowledgeRecord> {
     await this.initialize();
     const current = this.store.get(recordId);
     if (!current) {
@@ -1123,7 +1347,9 @@ export class KnowledgeEngine {
     const startedAt = Date.now();
     const selected =
       query.recordIds && query.recordIds.length > 0
-        ? this.store.all().filter((record) => query.recordIds?.includes(record.recordId))
+        ? this.store
+            .all()
+            .filter((record) => query.recordIds?.includes(record.recordId))
         : this.store.all();
 
     this.metrics.counter('knowledge.export.success').increment();
@@ -1150,25 +1376,40 @@ export class KnowledgeEngine {
 
       const records = Array.isArray(parsed)
         ? parsed
-        : typeof parsed === 'object' && parsed !== null && Array.isArray((parsed as { records?: unknown[] }).records)
+        : typeof parsed === 'object' &&
+            parsed !== null &&
+            Array.isArray((parsed as { records?: unknown[] }).records)
           ? (parsed as { records: unknown[] }).records
           : [];
 
       const imported: KnowledgeRecord[] = [];
       for (const candidate of records) {
         if (!isKnowledgeRecordCandidate(candidate)) {
-          throw new KnowledgeError('Invalid import payload: each record must include recordId');
+          throw new KnowledgeError(
+            'Invalid import payload: each record must include recordId',
+          );
         }
 
-        const category = candidate.category ?? inferCategory(candidate.canonicalLocation ?? '');
-        const authority = candidate.authority ?? inferAuthority(category, candidate.canonicalLocation ?? '');
+        const category =
+          candidate.category ??
+          inferCategory(candidate.canonicalLocation ?? '');
+        const authority =
+          candidate.authority ??
+          inferAuthority(category, candidate.canonicalLocation ?? '');
         const normalized = normalizeRecord(
           {
             ...candidate,
             category,
             authority,
           },
-          candidate.canonicalLocation ?? path.join(this.options.rootDir, '.titan', 'knowledge', 'imported', `${candidate.recordId}.json`),
+          candidate.canonicalLocation ??
+            path.join(
+              this.options.rootDir,
+              '.titan',
+              'knowledge',
+              'imported',
+              `${candidate.recordId}.json`,
+            ),
         );
 
         this.assertWritable(normalized.authority, normalized.category);
@@ -1185,7 +1426,10 @@ export class KnowledgeEngine {
     return saved;
   }
 
-  private validateCreateInput(input: KnowledgeCreateInput, authority: string): void {
+  private validateCreateInput(
+    input: KnowledgeCreateInput,
+    authority: string,
+  ): void {
     assertNonEmpty(input.kind, 'kind');
     assertNonEmpty(input.category, 'category');
     assertNonEmpty(input.title, 'title');
@@ -1203,7 +1447,10 @@ export class KnowledgeEngine {
     assertClassification(authority, input.category, input.securityClass);
   }
 
-  private validateRecordForWrite(record: KnowledgeRecord, authority: string): void {
+  private validateRecordForWrite(
+    record: KnowledgeRecord,
+    authority: string,
+  ): void {
     assertNonEmpty(record.recordId, 'recordId');
     assertNonEmpty(record.kind, 'kind');
     assertNonEmpty(record.category, 'category');
@@ -1216,9 +1463,13 @@ export class KnowledgeEngine {
   }
 
   private assertWritable(authority: string, category: string): void {
-    if (!this.authorityManager.canWrite(this.options.roles, authority, category)) {
+    if (
+      !this.authorityManager.canWrite(this.options.roles, authority, category)
+    ) {
       this.metrics.counter('knowledge.authorization.failure').increment();
-      throw new KnowledgeError(`Write denied for authority=${authority} category=${category}`);
+      throw new KnowledgeError(
+        `Write denied for authority=${authority} category=${category}`,
+      );
     }
   }
 
@@ -1229,10 +1480,14 @@ export class KnowledgeEngine {
   ): Promise<T> {
     const startedAt = Date.now();
     if (!this.options.authenticationProvider) {
-      throw new KnowledgeError('Authentication provider is required for write operations');
+      throw new KnowledgeError(
+        'Authentication provider is required for write operations',
+      );
     }
     if (!this.options.authorizationProvider) {
-      throw new KnowledgeError('Authorization provider is required for write operations');
+      throw new KnowledgeError(
+        'Authorization provider is required for write operations',
+      );
     }
     if (!this.options.auditLogger) {
       throw new KnowledgeError('Audit logger is required for write operations');
@@ -1244,8 +1499,15 @@ export class KnowledgeEngine {
       const result = await Promise.resolve(fn());
       await this.logAudit(action, target, 'success');
       this.metrics.counter(`knowledge.${action}.success`).increment();
-      this.metrics.timer(`knowledge.${action}.duration_ms`, Date.now() - startedAt);
-      this.logger.info('knowledge.write.success', { action, target, durationMs: Date.now() - startedAt });
+      this.metrics.timer(
+        `knowledge.${action}.duration_ms`,
+        Date.now() - startedAt,
+      );
+      this.logger.info('knowledge.write.success', {
+        action,
+        target,
+        durationMs: Date.now() - startedAt,
+      });
       this.publishEvent(`titan.engine.knowledge.${action}`, {
         action,
         target,
@@ -1254,32 +1516,50 @@ export class KnowledgeEngine {
       });
       return result;
     } catch (error) {
-      const auditResult = error instanceof KnowledgeError && error.message.toLowerCase().includes('denied') ? 'denied' : 'failure';
+      const auditResult =
+        error instanceof KnowledgeError &&
+        error.message.toLowerCase().includes('denied')
+          ? 'denied'
+          : 'failure';
       await this.logAudit(action, target, auditResult);
       this.metrics.counter(`knowledge.${action}.${auditResult}`).increment();
-      this.metrics.timer(`knowledge.${action}.duration_ms`, Date.now() - startedAt);
+      this.metrics.timer(
+        `knowledge.${action}.duration_ms`,
+        Date.now() - startedAt,
+      );
       this.logger.error('knowledge.write.failure', {
         action,
         target,
         result: auditResult,
         durationMs: Date.now() - startedAt,
-        error: error instanceof Error ? error.message : String(error ?? 'unknown error'),
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error ?? 'unknown error'),
       });
       this.publishEvent(`titan.engine.knowledge.${action}`, {
         action,
         target,
         result: auditResult,
         durationMs: Date.now() - startedAt,
-        error: error instanceof Error ? error.message : String(error ?? 'unknown error'),
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error ?? 'unknown error'),
       });
       throw error;
     }
   }
 
-  private async assertExternalAuthentication(action: string, resource: string): Promise<void> {
+  private async assertExternalAuthentication(
+    action: string,
+    resource: string,
+  ): Promise<void> {
     const authenticationProvider = this.options.authenticationProvider;
     if (!authenticationProvider) {
-      throw new KnowledgeError('Authentication provider is required for write operations');
+      throw new KnowledgeError(
+        'Authentication provider is required for write operations',
+      );
     }
 
     const result = await authenticationProvider.authenticate({
@@ -1302,10 +1582,15 @@ export class KnowledgeEngine {
     }
   }
 
-  private async assertExternalAuthorization(action: string, resource: string): Promise<void> {
+  private async assertExternalAuthorization(
+    action: string,
+    resource: string,
+  ): Promise<void> {
     const authorizationProvider = this.options.authorizationProvider;
     if (!authorizationProvider) {
-      throw new KnowledgeError('Authorization provider is required for write operations');
+      throw new KnowledgeError(
+        'Authorization provider is required for write operations',
+      );
     }
 
     const result = await authorizationProvider.authorize({
@@ -1326,7 +1611,11 @@ export class KnowledgeEngine {
     }
   }
 
-  private async logAudit(action: string, target: string, result: 'success' | 'failure' | 'denied'): Promise<void> {
+  private async logAudit(
+    action: string,
+    target: string,
+    result: 'success' | 'failure' | 'denied',
+  ): Promise<void> {
     const auditLogger = this.options.auditLogger;
     if (!auditLogger) {
       throw new KnowledgeError('Audit logger is required for write operations');
@@ -1345,7 +1634,11 @@ export class KnowledgeEngine {
     });
   }
 
-  private publishEvent(topic: string, payload: Record<string, unknown>, options: EventPublishOptions = {}): void {
+  private publishEvent(
+    topic: string,
+    payload: Record<string, unknown>,
+    options: EventPublishOptions = {},
+  ): void {
     void this.eventBus
       .publish(topic, payload, {
         engineId: this.metadata().id,
@@ -1356,7 +1649,10 @@ export class KnowledgeEngine {
       .catch((error) => {
         this.logger.warn('knowledge.event.publish.failed', {
           topic,
-          error: error instanceof Error ? error.message : String(error ?? 'unknown error'),
+          error:
+            error instanceof Error
+              ? error.message
+              : String(error ?? 'unknown error'),
         });
       });
   }
@@ -1364,5 +1660,6 @@ export class KnowledgeEngine {
 
 export const knowledgeEngine = {
   name: 'knowledge' as const,
-  description: 'Repository-canonical durable memory and retrieval engine for Titan AI.',
+  description:
+    'Repository-canonical durable memory and retrieval engine for Titan AI.',
 };

@@ -24,7 +24,9 @@ import { ENGINE_API_CONTRACT_VERSION } from '../../runtime/engine/types';
 async function seedRepository(rootDir: string): Promise<void> {
   await mkdir(path.join(rootDir, '.titan', 'security'), { recursive: true });
   await mkdir(path.join(rootDir, '.titan', 'sessions'), { recursive: true });
-  await mkdir(path.join(rootDir, '.titan', 'knowledge', 'records'), { recursive: true });
+  await mkdir(path.join(rootDir, '.titan', 'knowledge', 'records'), {
+    recursive: true,
+  });
 
   await writeFile(
     path.join(rootDir, '.titan', 'constitution.md'),
@@ -44,18 +46,38 @@ async function seedRepository(rootDir: string): Promise<void> {
   );
   await writeFile(
     path.join(rootDir, '.titan', 'project_state.json'),
-    JSON.stringify({ project: { name: 'Titan AI' }, current_phase: { id: '006a' }, next_phase: { id: '007' } }, null, 2),
+    JSON.stringify(
+      {
+        project: { name: 'Titan AI' },
+        current_phase: { id: '006a' },
+        next_phase: { id: '007' },
+      },
+      null,
+      2,
+    ),
   );
   await writeFile(
     path.join(rootDir, '.titan', 'security', 'authorization.md'),
     '# Authorization\n\nOwner and Admin policies govern durable knowledge updates.',
   );
   await writeFile(
-    path.join(rootDir, '.titan', 'sessions', '2026-07-08-0100-titan-core-architecture-approval.md'),
+    path.join(
+      rootDir,
+      '.titan',
+      'sessions',
+      '2026-07-08-0100-titan-core-architecture-approval.md',
+    ),
     '# Session\n\nArchitecture review noted knowledge retrieval requirements and design trade-offs.',
   );
 
-  const writableKnowledgeDir = path.join(rootDir, '.titan', 'knowledge', 'records', 'user', 'preference-1');
+  const writableKnowledgeDir = path.join(
+    rootDir,
+    '.titan',
+    'knowledge',
+    'records',
+    'user',
+    'preference-1',
+  );
   await mkdir(writableKnowledgeDir, { recursive: true });
   await writeFile(
     path.join(writableKnowledgeDir, '1.0.0.md'),
@@ -103,7 +125,10 @@ function createWriteProviders(allowed = true, authenticated = true) {
     },
     auditLogger: { log: vi.fn(async () => undefined) },
     authorizationProvider: {
-      authorize: vi.fn(async () => ({ allowed, reason: allowed ? undefined : 'Denied by policy' })),
+      authorize: vi.fn(async () => ({
+        allowed,
+        reason: allowed ? undefined : 'Denied by policy',
+      })),
     },
   };
 }
@@ -143,7 +168,10 @@ describe('Knowledge Engine components', () => {
     };
 
     const markdown = serializer.serializeMarkdown(record);
-    const parsedMarkdown = markdownLoader.loadFromText(markdown, '/tmp/record-1.md');
+    const parsedMarkdown = markdownLoader.loadFromText(
+      markdown,
+      '/tmp/record-1.md',
+    );
     expect(parsedMarkdown.recordId).toBe('record-1');
     expect(parsedMarkdown.body).toBe('Body text.');
 
@@ -208,13 +236,18 @@ describe('Knowledge Engine components', () => {
     });
 
     const snapshot = indexer.index([governanceRecord, sessionRecord]);
-    expect(snapshot.byCategory.get('architecture')?.has('architecture-1')).toBe(true);
+    expect(snapshot.byCategory.get('architecture')?.has('architecture-1')).toBe(
+      true,
+    );
     expect(snapshot.byTag.get('architecture')?.has('session-1')).toBe(true);
 
     cache.set(governanceRecord);
     expect(cache.get('architecture-1')?.title).toBe('Architecture Memory');
 
-    const ranked = search.rank('architecture memory', [sessionRecord, governanceRecord]);
+    const ranked = search.rank('architecture memory', [
+      sessionRecord,
+      governanceRecord,
+    ]);
     expect(ranked[0].recordId).toBe('architecture-1');
   });
 
@@ -276,11 +309,20 @@ describe('Knowledge Engine integration', () => {
     expect(searchResults.length).toBeGreaterThan(0);
     expect(searchResults[0].title.length).toBeGreaterThan(0);
 
-    const projectState = await engine.load({ canonicalLocation: path.join(rootDir, '.titan', 'project_state.json') });
+    const projectState = await engine.load({
+      canonicalLocation: path.join(rootDir, '.titan', 'project_state.json'),
+    });
     expect(projectState.length).toBe(1);
     expect(projectState[0].category).toBe('project-state');
 
-    const sessionRecord = await engine.load({ canonicalLocation: path.join(rootDir, '.titan', 'sessions', '2026-07-08-0100-titan-core-architecture-approval.md') });
+    const sessionRecord = await engine.load({
+      canonicalLocation: path.join(
+        rootDir,
+        '.titan',
+        'sessions',
+        '2026-07-08-0100-titan-core-architecture-approval.md',
+      ),
+    });
     expect(sessionRecord[0].category).toBe('sessions');
   });
 
@@ -322,8 +364,14 @@ describe('Knowledge Engine integration', () => {
     });
     expect(saved.version).toBe('1.0.1');
 
-    const queried = await engine.query({ category: 'user', tags: ['review'], archived: false });
-    expect(queried.some((record) => record.recordId === saved.recordId)).toBe(true);
+    const queried = await engine.query({
+      category: 'user',
+      tags: ['review'],
+      archived: false,
+    });
+    expect(queried.some((record) => record.recordId === saved.recordId)).toBe(
+      true,
+    );
 
     const archived = await engine.archive(saved.recordId);
     expect(archived.archived).toBe(true);
@@ -399,7 +447,9 @@ describe('Knowledge Engine integration', () => {
 
     expect(providers.authenticationProvider.authenticate).toHaveBeenCalled();
     expect(providers.authorizationProvider.authorize).toHaveBeenCalled();
-    expect(providers.authenticationProvider.authenticate.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(
+      providers.authenticationProvider.authenticate.mock.invocationCallOrder[0],
+    ).toBeLessThan(
       providers.authorizationProvider.authorize.mock.invocationCallOrder[0],
     );
     expect(providers.auditLogger.log).toHaveBeenCalled();
@@ -529,7 +579,9 @@ describe('Knowledge Engine integration', () => {
 
     const imported = await importEngine.import(exported);
     expect(imported.length).toBe(1);
-    expect((await importEngine.search({ text: 'Review Preference' }))[0].recordId).toBe(created.recordId);
+    expect(
+      (await importEngine.search({ text: 'Review Preference' }))[0].recordId,
+    ).toBe(created.recordId);
   });
 
   it('exposes repository, store, and read-model snapshot behavior', async () => {
@@ -542,7 +594,9 @@ describe('Knowledge Engine integration', () => {
 
     expect(snapshot.records.length).toBeGreaterThan(0);
     expect(snapshot.generatedAt.length).toBeGreaterThan(0);
-    expect(snapshot.records.every((record) => Object.isFrozen(record))).toBe(true);
+    expect(snapshot.records.every((record) => Object.isFrozen(record))).toBe(
+      true,
+    );
   });
 });
 
@@ -604,12 +658,16 @@ describe('KnowledgeEngine — Phase 014 Milestone 2 coverage closure', () => {
       // looks the record up before executeWrite()'s provider-presence
       // checks run, so a missing record fails with "Record not found"
       // rather than a provider-dependency error.
-      const engine = new KnowledgeEngine({ rootDir, actorId: 'developer-1', roles: ['Developer'] });
+      const engine = new KnowledgeEngine({
+        rootDir,
+        actorId: 'developer-1',
+        roles: ['Developer'],
+      });
       await engine.initialize();
 
-      await expect(engine.update('does-not-exist', { title: 'x' })).rejects.toThrow(
-        'Record not found: does-not-exist',
-      );
+      await expect(
+        engine.update('does-not-exist', { title: 'x' }),
+      ).rejects.toThrow('Record not found: does-not-exist');
     });
 
     it('requires authentication/authorization/audit dependencies to update an already-existing record', async () => {
@@ -628,7 +686,9 @@ describe('KnowledgeEngine — Phase 014 Milestone 2 coverage closure', () => {
       await engineWithoutSecurity.initialize();
 
       await expect(
-        engineWithoutSecurity.update('user.preference-1', { title: 'Blocked Update' }),
+        engineWithoutSecurity.update('user.preference-1', {
+          title: 'Blocked Update',
+        }),
       ).rejects.toBeInstanceOf(KnowledgeError);
     });
   });
@@ -638,7 +698,12 @@ describe('KnowledgeEngine — Phase 014 Milestone 2 coverage closure', () => {
       const rootDir = await createRepositoryRoot();
       await seedRepository(rootDir);
       const providers = createWriteProviders(true, true);
-      const engine = new KnowledgeEngine({ rootDir, actorId: 'guest-1', roles: ['Guest'], ...providers });
+      const engine = new KnowledgeEngine({
+        rootDir,
+        actorId: 'guest-1',
+        roles: ['Guest'],
+        ...providers,
+      });
       await engine.initialize();
 
       await expect(
@@ -661,7 +726,12 @@ describe('KnowledgeEngine — Phase 014 Milestone 2 coverage closure', () => {
       const rootDir = await createRepositoryRoot();
       await seedRepository(rootDir);
       const providers = createWriteProviders(true, true);
-      const engine = new KnowledgeEngine({ rootDir, actorId: 'developer-1', roles: ['Developer'], ...providers });
+      const engine = new KnowledgeEngine({
+        rootDir,
+        actorId: 'developer-1',
+        roles: ['Developer'],
+        ...providers,
+      });
       await engine.initialize();
 
       await expect(
@@ -677,14 +747,21 @@ describe('KnowledgeEngine — Phase 014 Milestone 2 coverage closure', () => {
           author: 'developer-1',
           approvalStatus: 'approved',
         }),
-      ).rejects.toThrow('Write denied for authority=governance category=governance');
+      ).rejects.toThrow(
+        'Write denied for authority=governance category=governance',
+      );
     });
 
     it('denies a Developer role writing to the architecture category', async () => {
       const rootDir = await createRepositoryRoot();
       await seedRepository(rootDir);
       const providers = createWriteProviders(true, true);
-      const engine = new KnowledgeEngine({ rootDir, actorId: 'developer-1', roles: ['Developer'], ...providers });
+      const engine = new KnowledgeEngine({
+        rootDir,
+        actorId: 'developer-1',
+        roles: ['Developer'],
+        ...providers,
+      });
       await engine.initialize();
 
       await expect(
@@ -700,14 +777,21 @@ describe('KnowledgeEngine — Phase 014 Milestone 2 coverage closure', () => {
           author: 'developer-1',
           approvalStatus: 'approved',
         }),
-      ).rejects.toThrow('Write denied for authority=architecture category=architecture');
+      ).rejects.toThrow(
+        'Write denied for authority=architecture category=architecture',
+      );
     });
 
     it('denies a Developer role writing to the security category', async () => {
       const rootDir = await createRepositoryRoot();
       await seedRepository(rootDir);
       const providers = createWriteProviders(true, true);
-      const engine = new KnowledgeEngine({ rootDir, actorId: 'developer-1', roles: ['Developer'], ...providers });
+      const engine = new KnowledgeEngine({
+        rootDir,
+        actorId: 'developer-1',
+        roles: ['Developer'],
+        ...providers,
+      });
       await engine.initialize();
 
       await expect(
@@ -723,14 +807,21 @@ describe('KnowledgeEngine — Phase 014 Milestone 2 coverage closure', () => {
           author: 'developer-1',
           approvalStatus: 'approved',
         }),
-      ).rejects.toThrow('Write denied for authority=security category=security');
+      ).rejects.toThrow(
+        'Write denied for authority=security category=security',
+      );
     });
 
     it('allows a Developer role writing to the user category (comparison path)', async () => {
       const rootDir = await createRepositoryRoot();
       await seedRepository(rootDir);
       const providers = createWriteProviders(true, true);
-      const engine = new KnowledgeEngine({ rootDir, actorId: 'developer-1', roles: ['Developer'], ...providers });
+      const engine = new KnowledgeEngine({
+        rootDir,
+        actorId: 'developer-1',
+        roles: ['Developer'],
+        ...providers,
+      });
       await engine.initialize();
 
       const added = await engine.add({
@@ -756,7 +847,12 @@ describe('KnowledgeEngine — Phase 014 Milestone 2 coverage closure', () => {
       const rootDir = await createRepositoryRoot();
       await seedRepository(rootDir);
       const providers = createWriteProviders(true, true);
-      const engine = new KnowledgeEngine({ rootDir, actorId: 'owner-1', roles: ['Owner'], ...providers });
+      const engine = new KnowledgeEngine({
+        rootDir,
+        actorId: 'owner-1',
+        roles: ['Owner'],
+        ...providers,
+      });
       await engine.initialize();
 
       await expect(
@@ -773,14 +869,21 @@ describe('KnowledgeEngine — Phase 014 Milestone 2 coverage closure', () => {
           approvalStatus: 'approved',
           authority: 'user',
         }),
-      ).rejects.toThrow('Security category records must use security authority');
+      ).rejects.toThrow(
+        'Security category records must use security authority',
+      );
     });
 
     it('rejects an architecture-category record whose authority is not "architecture"', async () => {
       const rootDir = await createRepositoryRoot();
       await seedRepository(rootDir);
       const providers = createWriteProviders(true, true);
-      const engine = new KnowledgeEngine({ rootDir, actorId: 'owner-1', roles: ['Owner'], ...providers });
+      const engine = new KnowledgeEngine({
+        rootDir,
+        actorId: 'owner-1',
+        roles: ['Owner'],
+        ...providers,
+      });
       await engine.initialize();
 
       await expect(
@@ -797,14 +900,21 @@ describe('KnowledgeEngine — Phase 014 Milestone 2 coverage closure', () => {
           approvalStatus: 'approved',
           authority: 'user',
         }),
-      ).rejects.toThrow('Architecture and decisions records must use architecture authority');
+      ).rejects.toThrow(
+        'Architecture and decisions records must use architecture authority',
+      );
     });
 
     it('rejects a decisions-category record whose authority is not "architecture"', async () => {
       const rootDir = await createRepositoryRoot();
       await seedRepository(rootDir);
       const providers = createWriteProviders(true, true);
-      const engine = new KnowledgeEngine({ rootDir, actorId: 'owner-1', roles: ['Owner'], ...providers });
+      const engine = new KnowledgeEngine({
+        rootDir,
+        actorId: 'owner-1',
+        roles: ['Owner'],
+        ...providers,
+      });
       await engine.initialize();
 
       await expect(
@@ -821,14 +931,21 @@ describe('KnowledgeEngine — Phase 014 Milestone 2 coverage closure', () => {
           approvalStatus: 'approved',
           authority: 'user',
         }),
-      ).rejects.toThrow('Architecture and decisions records must use architecture authority');
+      ).rejects.toThrow(
+        'Architecture and decisions records must use architecture authority',
+      );
     });
 
     it('rejects a governance-category record whose authority is neither "governance" nor "constitution"', async () => {
       const rootDir = await createRepositoryRoot();
       await seedRepository(rootDir);
       const providers = createWriteProviders(true, true);
-      const engine = new KnowledgeEngine({ rootDir, actorId: 'owner-1', roles: ['Owner'], ...providers });
+      const engine = new KnowledgeEngine({
+        rootDir,
+        actorId: 'owner-1',
+        roles: ['Owner'],
+        ...providers,
+      });
       await engine.initialize();
 
       await expect(
@@ -845,14 +962,21 @@ describe('KnowledgeEngine — Phase 014 Milestone 2 coverage closure', () => {
           approvalStatus: 'approved',
           authority: 'user',
         }),
-      ).rejects.toThrow('Governance and project-state records must use governance or constitution authority');
+      ).rejects.toThrow(
+        'Governance and project-state records must use governance or constitution authority',
+      );
     });
 
     it('rejects a project-state-category record whose authority is neither "governance" nor "constitution"', async () => {
       const rootDir = await createRepositoryRoot();
       await seedRepository(rootDir);
       const providers = createWriteProviders(true, true);
-      const engine = new KnowledgeEngine({ rootDir, actorId: 'owner-1', roles: ['Owner'], ...providers });
+      const engine = new KnowledgeEngine({
+        rootDir,
+        actorId: 'owner-1',
+        roles: ['Owner'],
+        ...providers,
+      });
       await engine.initialize();
 
       await expect(
@@ -869,14 +993,21 @@ describe('KnowledgeEngine — Phase 014 Milestone 2 coverage closure', () => {
           approvalStatus: 'approved',
           authority: 'session',
         }),
-      ).rejects.toThrow('Governance and project-state records must use governance or constitution authority');
+      ).rejects.toThrow(
+        'Governance and project-state records must use governance or constitution authority',
+      );
     });
 
     it('allows a governance-category record whose authority is "constitution" (comparison path)', async () => {
       const rootDir = await createRepositoryRoot();
       await seedRepository(rootDir);
       const providers = createWriteProviders(true, true);
-      const engine = new KnowledgeEngine({ rootDir, actorId: 'owner-1', roles: ['Owner'], ...providers });
+      const engine = new KnowledgeEngine({
+        rootDir,
+        actorId: 'owner-1',
+        roles: ['Owner'],
+        ...providers,
+      });
       await engine.initialize();
 
       const added = await engine.add({
@@ -902,25 +1033,35 @@ describe('KnowledgeEngine — Phase 014 Milestone 2 coverage closure', () => {
     it('throws for markdown front matter that never closes', () => {
       const loader = new MarkdownLoader();
 
-      expect(() => loader.loadFromText('---\nfoo: bar\n', '/tmp/bad-front-matter.md')).toThrow(
-        'Invalid markdown front matter: /tmp/bad-front-matter.md',
-      );
+      expect(() =>
+        loader.loadFromText('---\nfoo: bar\n', '/tmp/bad-front-matter.md'),
+      ).toThrow('Invalid markdown front matter: /tmp/bad-front-matter.md');
     });
 
     it('throws for front matter that is not valid JSON', () => {
       const loader = new MarkdownLoader();
-      const content = ['---', 'not valid json', '---', 'Body text.', ''].join('\n');
-
-      expect(() => loader.loadFromText(content, '/tmp/bad-metadata.md')).toThrow(
-        'Invalid markdown metadata JSON: /tmp/bad-metadata.md',
+      const content = ['---', 'not valid json', '---', 'Body text.', ''].join(
+        '\n',
       );
+
+      expect(() =>
+        loader.loadFromText(content, '/tmp/bad-metadata.md'),
+      ).toThrow('Invalid markdown metadata JSON: /tmp/bad-metadata.md');
     });
 
     it('throws for well-formed JSON front matter missing recordId', () => {
       const loader = new MarkdownLoader();
-      const content = ['---', JSON.stringify({ title: 'No Id' }), '---', 'Body.', ''].join('\n');
+      const content = [
+        '---',
+        JSON.stringify({ title: 'No Id' }),
+        '---',
+        'Body.',
+        '',
+      ].join('\n');
 
-      expect(() => loader.loadFromText(content, '/tmp/missing-record-id.md')).toThrow(
+      expect(() =>
+        loader.loadFromText(content, '/tmp/missing-record-id.md'),
+      ).toThrow(
         'Markdown metadata missing recordId: /tmp/missing-record-id.md',
       );
     });
@@ -930,23 +1071,29 @@ describe('KnowledgeEngine — Phase 014 Milestone 2 coverage closure', () => {
     it('throws for content that is not valid JSON', () => {
       const loader = new JsonLoader();
 
-      expect(() => loader.loadFromText('{not valid json', '/tmp/bad-content.json')).toThrow(
-        'Invalid JSON content: /tmp/bad-content.json',
-      );
+      expect(() =>
+        loader.loadFromText('{not valid json', '/tmp/bad-content.json'),
+      ).toThrow('Invalid JSON content: /tmp/bad-content.json');
     });
 
     it('throws from normalizeRecord when a record-shaped payload has an empty recordId', () => {
       const loader = new JsonLoader();
 
-      expect(() => loader.loadFromText(JSON.stringify({ recordId: '' }), '/tmp/empty-record-id.json')).toThrow(
-        'Invalid recordId: must be non-empty',
-      );
+      expect(() =>
+        loader.loadFromText(
+          JSON.stringify({ recordId: '' }),
+          '/tmp/empty-record-id.json',
+        ),
+      ).toThrow('Invalid recordId: must be non-empty');
     });
 
     it('treats a non-object JSON payload as opaque content rather than throwing (JsonLoader has no recordId-shape rejection, unlike MarkdownLoader)', () => {
       const loader = new JsonLoader();
 
-      const record = loader.loadFromText(JSON.stringify('just a string'), '/tmp/opaque-content.json');
+      const record = loader.loadFromText(
+        JSON.stringify('just a string'),
+        '/tmp/opaque-content.json',
+      );
 
       expect(record.recordId.length).toBeGreaterThan(0);
       expect(record.bodyFormat).toBe('json');

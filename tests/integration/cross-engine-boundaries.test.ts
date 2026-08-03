@@ -4,7 +4,12 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { BaseEngine } from '../../runtime/engine/base';
-import { OrchestratorEngine, type Plan, type WorkflowDispatchResult, type WorkflowResult } from '../../engines/orchestrator/src';
+import {
+  OrchestratorEngine,
+  type Plan,
+  type WorkflowDispatchResult,
+  type WorkflowResult,
+} from '../../engines/orchestrator/src';
 import { PlannerEngine, type Goal } from '../../engines/planner/src';
 import { ExecutionEngine } from '../../engines/execution/src';
 import { ValidationEngine } from '../../engines/validation/src';
@@ -33,7 +38,15 @@ import { LearningEngine } from '../../engines/learning/src';
  * passes against the repository as it already exists.
  */
 
-const ENGINE_NAMES = ['context', 'knowledge', 'planner', 'orchestrator', 'execution', 'validation', 'learning'] as const;
+const ENGINE_NAMES = [
+  'context',
+  'knowledge',
+  'planner',
+  'orchestrator',
+  'execution',
+  'validation',
+  'learning',
+] as const;
 type EngineName = (typeof ENGINE_NAMES)[number];
 
 /**
@@ -44,7 +57,10 @@ type EngineName = (typeof ENGINE_NAMES)[number];
  * this exception is currently dormant — it is encoded here so the
  * check remains correct if such an import is ever legitimately added.
  */
-const DIRECT_READ_EXCEPTION_ENGINES: ReadonlySet<EngineName> = new Set(['context', 'knowledge']);
+const DIRECT_READ_EXCEPTION_ENGINES: ReadonlySet<EngineName> = new Set([
+  'context',
+  'knowledge',
+]);
 
 const ENGINES_ROOT = path.join(process.cwd(), 'engines');
 
@@ -80,7 +96,8 @@ interface ParsedImport {
  * Group 3: a default import binding name, if no braces were used.
  * Group 4: the module specifier.
  */
-const IMPORT_DECLARATION_REGEX = /^import\s+(type\s+)?(?:\{([^}]*)\}|([\w$]+))\s+from\s+['"]([^'"]+)['"]/gm;
+const IMPORT_DECLARATION_REGEX =
+  /^import\s+(type\s+)?(?:\{([^}]*)\}|([\w$]+))\s+from\s+['"]([^'"]+)['"]/gm;
 
 function parseImports(source: string): ParsedImport[] {
   const results: ParsedImport[] = [];
@@ -103,11 +120,19 @@ function parseImports(source: string): ParsedImport[] {
         .map((item) => item.trim())
         .filter((item) => item.length > 0);
       const runtimeBindings = items.filter((item) => !item.startsWith('type '));
-      results.push({ specifier, isFullyTypeOnly: runtimeBindings.length === 0, runtimeBindings });
+      results.push({
+        specifier,
+        isFullyTypeOnly: runtimeBindings.length === 0,
+        runtimeBindings,
+      });
       continue;
     }
 
-    results.push({ specifier, isFullyTypeOnly: false, runtimeBindings: [defaultBinding ?? '*'] });
+    results.push({
+      specifier,
+      isFullyTypeOnly: false,
+      runtimeBindings: [defaultBinding ?? '*'],
+    });
   }
 
   return results;
@@ -115,12 +140,18 @@ function parseImports(source: string): ParsedImport[] {
 
 function extractReferencedEngine(specifier: string): EngineName | undefined {
   const aliasMatch = /^@titan\/([\w-]+)/.exec(specifier);
-  if (aliasMatch && (ENGINE_NAMES as readonly string[]).includes(aliasMatch[1])) {
+  if (
+    aliasMatch &&
+    (ENGINE_NAMES as readonly string[]).includes(aliasMatch[1])
+  ) {
     return aliasMatch[1] as EngineName;
   }
 
   const relativeMatch = /(?:^|\/)([\w-]+)\/src(?:\/|$)/.exec(specifier);
-  if (relativeMatch && (ENGINE_NAMES as readonly string[]).includes(relativeMatch[1])) {
+  if (
+    relativeMatch &&
+    (ENGINE_NAMES as readonly string[]).includes(relativeMatch[1])
+  ) {
     return relativeMatch[1] as EngineName;
   }
 
@@ -130,7 +161,9 @@ function extractReferencedEngine(specifier: string): EngineName | undefined {
 function extractOwningEngine(filePath: string): EngineName | undefined {
   const relative = path.relative(ENGINES_ROOT, filePath).split(path.sep);
   const candidate = relative[0];
-  return (ENGINE_NAMES as readonly string[]).includes(candidate) ? (candidate as EngineName) : undefined;
+  return (ENGINE_NAMES as readonly string[]).includes(candidate)
+    ? (candidate as EngineName)
+    : undefined;
 }
 
 /**
@@ -139,7 +172,10 @@ function extractOwningEngine(filePath: string): EngineName | undefined {
  * Milestone 3 end-to-end suite, applied here across every implemented
  * business method's return value.
  */
-function containsEngineInstance(value: unknown, seen: Set<unknown> = new Set()): boolean {
+function containsEngineInstance(
+  value: unknown,
+  seen: Set<unknown> = new Set(),
+): boolean {
   if (value instanceof BaseEngine) {
     return true;
   }
@@ -150,14 +186,17 @@ function containsEngineInstance(value: unknown, seen: Set<unknown> = new Set()):
   if (Array.isArray(value)) {
     return value.some((item) => containsEngineInstance(item, seen));
   }
-  return Object.values(value as Record<string, unknown>).some((item) => containsEngineInstance(item, seen));
+  return Object.values(value as Record<string, unknown>).some((item) =>
+    containsEngineInstance(item, seen),
+  );
 }
 
 function buildGoal(): Goal {
   return {
     goalId: 'goal-boundary-1',
     title: 'Boundary validation goal',
-    description: 'Used only to exercise every implemented business method for boundary checks.',
+    description:
+      'Used only to exercise every implemented business method for boundary checks.',
     type: 'feature',
     priority: 'medium',
     status: 'ready',
@@ -183,10 +222,15 @@ describe('Cross-engine boundary & failure-mode validation (Phase 013 Milestone 4
           const imports = parseImports(source);
 
           for (const importInfo of imports) {
-            const referencedEngine = extractReferencedEngine(importInfo.specifier);
+            const referencedEngine = extractReferencedEngine(
+              importInfo.specifier,
+            );
             const owningEngine = extractOwningEngine(file);
 
-            if (referencedEngine === undefined || referencedEngine === owningEngine) {
+            if (
+              referencedEngine === undefined ||
+              referencedEngine === owningEngine
+            ) {
               continue;
             }
 
@@ -235,21 +279,32 @@ describe('Cross-engine boundary & failure-mode validation (Phase 013 Milestone 4
       const explanation = await planner.explainPlan({ plan });
 
       const workflow = await orchestrator.orchestrate({ plan });
-      const workflowValidation = await orchestrator.executeWorkflow({ workflow });
+      const workflowValidation = await orchestrator.executeWorkflow({
+        workflow,
+      });
       const workflowStatus = await orchestrator.getWorkflowStatus({ workflow });
       const paused = await orchestrator.pauseWorkflow({ workflow });
       const resumed = await orchestrator.resumeWorkflow({ workflow });
       const cancelled = await orchestrator.cancelWorkflow({ workflow });
       const dispatchResult = await orchestrator.dispatchWorkflow({ workflow });
 
-      const executionRecord = await execution.execute({ dispatchResult, itemId: 'task-analysis' });
-      const executionStatus = await execution.getExecutionStatus({ record: executionRecord });
-      const executionSummary = await execution.reportResult({ record: executionRecord });
+      const executionRecord = await execution.execute({
+        dispatchResult,
+        itemId: 'task-analysis',
+      });
+      const executionStatus = await execution.getExecutionStatus({
+        record: executionRecord,
+      });
+      const executionSummary = await execution.reportResult({
+        record: executionRecord,
+      });
 
       const validationResult = await validation.validate({
         subject: { record: executionRecord, summary: executionSummary },
       });
-      const validationStatus = await validation.getValidationStatus({ verdict: validationResult.verdict });
+      const validationStatus = await validation.getValidationStatus({
+        verdict: validationResult.verdict,
+      });
 
       const outcome: WorkflowResult = {
         workflowId: workflow.workflowId,
@@ -257,10 +312,16 @@ describe('Cross-engine boundary & failure-mode validation (Phase 013 Milestone 4
         completedStepIds: [],
         failedStepIds: [],
       };
-      const observation = await learning.observeCycle({ subject: { outcome, verdict: validationResult.verdict } });
-      const proposal = await learning.generateProposal({ observations: [observation] });
+      const observation = await learning.observeCycle({
+        subject: { outcome, verdict: validationResult.verdict },
+      });
+      const proposal = await learning.generateProposal({
+        observations: [observation],
+      });
       const handoff = await learning.prepareKnowledgeHandoff({ proposal });
-      const pipelineResult = await learning.analyzeCycle({ observations: [observation] });
+      const pipelineResult = await learning.analyzeCycle({
+        observations: [observation],
+      });
 
       const allPayloads: readonly unknown[] = [
         plan,
@@ -305,15 +366,20 @@ describe('Cross-engine boundary & failure-mode validation (Phase 013 Milestone 4
     it('OrchestratorEngine.dispatchWorkflow() throws for a malformed Workflow', async () => {
       const orchestrator = new OrchestratorEngine();
 
-      // @ts-expect-error — intentionally malformed for the test
-      await expect(orchestrator.dispatchWorkflow({ workflow: null })).rejects.toThrow();
+      await expect(
+        // @ts-expect-error — intentionally malformed for the test
+        orchestrator.dispatchWorkflow({ workflow: null }),
+      ).rejects.toThrow();
     });
 
     it('ExecutionEngine.execute() throws for a malformed WorkflowDispatchResult crossing the Orchestrator boundary', async () => {
       const execution = new ExecutionEngine();
 
       await expect(
-        execution.execute({ dispatchResult: {} as WorkflowDispatchResult, itemId: 'task-analysis' }),
+        execution.execute({
+          dispatchResult: {} as WorkflowDispatchResult,
+          itemId: 'task-analysis',
+        }),
       ).rejects.toThrow();
     });
 
@@ -326,7 +392,12 @@ describe('Cross-engine boundary & failure-mode validation (Phase 013 Milestone 4
       const workflow = await orchestrator.orchestrate({ plan });
       const dispatchResult = await orchestrator.dispatchWorkflow({ workflow });
 
-      await expect(execution.execute({ dispatchResult, itemId: 'item-that-does-not-exist' })).rejects.toThrow();
+      await expect(
+        execution.execute({
+          dispatchResult,
+          itemId: 'item-that-does-not-exist',
+        }),
+      ).rejects.toThrow();
     });
 
     it('ValidationEngine.validate() throws for a malformed ValidationSubject crossing the Execution boundary', async () => {
@@ -346,7 +417,9 @@ describe('Cross-engine boundary & failure-mode validation (Phase 013 Milestone 4
     it('LearningEngine.analyzeCycle() throws instead of silently returning empty output for zero observations', async () => {
       const learning = new LearningEngine();
 
-      await expect(learning.analyzeCycle({ observations: [] })).rejects.toThrow();
+      await expect(
+        learning.analyzeCycle({ observations: [] }),
+      ).rejects.toThrow();
     });
   });
 });

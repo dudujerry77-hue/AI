@@ -298,7 +298,13 @@ describe('Orchestrator Engine Milestone 2 — domain model', () => {
   });
 
   it('constructs a valid WorkflowDependency value for every WorkflowDependencyType', () => {
-    const types: readonly WorkflowDependencyType[] = ['blocks', 'requires', 'related', 'sequential', 'parallel'];
+    const types: readonly WorkflowDependencyType[] = [
+      'blocks',
+      'requires',
+      'related',
+      'sequential',
+      'parallel',
+    ];
 
     for (const type of types) {
       const dependency: WorkflowDependency = {
@@ -313,9 +319,25 @@ describe('Orchestrator Engine Milestone 2 — domain model', () => {
   });
 
   it('constructs a valid Workflow aggregate for every WorkflowStatus, WorkflowPriority, and WorkflowExecutionMode', () => {
-    const statuses: readonly WorkflowStatus[] = ['pending', 'running', 'paused', 'completed', 'failed', 'cancelled'];
-    const priorities: readonly WorkflowPriority[] = ['low', 'medium', 'high', 'critical'];
-    const executionModes: readonly WorkflowExecutionMode[] = ['sequential', 'parallel', 'conditional'];
+    const statuses: readonly WorkflowStatus[] = [
+      'pending',
+      'running',
+      'paused',
+      'completed',
+      'failed',
+      'cancelled',
+    ];
+    const priorities: readonly WorkflowPriority[] = [
+      'low',
+      'medium',
+      'high',
+      'critical',
+    ];
+    const executionModes: readonly WorkflowExecutionMode[] = [
+      'sequential',
+      'parallel',
+      'conditional',
+    ];
 
     for (const status of statuses) {
       for (const priority of priorities) {
@@ -405,9 +427,18 @@ describe('Orchestrator Engine Milestone 3 — WorkflowBuilder', () => {
 
     const workflow = builder.build(plan);
 
-    expect(workflow.steps.map((step) => step.stepId)).toEqual(['step-1', 'step-2']);
-    expect(workflow.tasks.map((task) => task.taskId)).toEqual(['task-1', 'task-2', 'task-3']);
-    expect(workflow.dependencies.map((dependency) => dependency.dependencyId)).toEqual(['dep-1', 'dep-2']);
+    expect(workflow.steps.map((step) => step.stepId)).toEqual([
+      'step-1',
+      'step-2',
+    ]);
+    expect(workflow.tasks.map((task) => task.taskId)).toEqual([
+      'task-1',
+      'task-2',
+      'task-3',
+    ]);
+    expect(
+      workflow.dependencies.map((dependency) => dependency.dependencyId),
+    ).toEqual(['dep-1', 'dep-2']);
   });
 
   it('preserves step, task, and dependency ordering exactly as in the input Plan', () => {
@@ -416,11 +447,15 @@ describe('Orchestrator Engine Milestone 3 — WorkflowBuilder', () => {
 
     const workflow = builder.build(plan);
 
-    expect(workflow.steps.map((step) => step.stepId)).toEqual(plan.steps.map((step) => step.stepId));
-    expect(workflow.tasks.map((task) => task.taskId)).toEqual(plan.tasks.map((task) => task.taskId));
-    expect(workflow.dependencies.map((dependency) => dependency.dependencyId)).toEqual(
-      plan.dependencies.map((dependency) => dependency.dependencyId),
+    expect(workflow.steps.map((step) => step.stepId)).toEqual(
+      plan.steps.map((step) => step.stepId),
     );
+    expect(workflow.tasks.map((task) => task.taskId)).toEqual(
+      plan.tasks.map((task) => task.taskId),
+    );
+    expect(
+      workflow.dependencies.map((dependency) => dependency.dependencyId),
+    ).toEqual(plan.dependencies.map((dependency) => dependency.dependencyId));
   });
 
   it('preserves step dependsOnStepIds and dependency source/target relationships', () => {
@@ -432,12 +467,16 @@ describe('Orchestrator Engine Milestone 3 — WorkflowBuilder', () => {
     const step2 = workflow.steps.find((step) => step.stepId === 'step-2');
     expect(step2?.dependsOnStepIds).toEqual(['step-1']);
 
-    const dep1 = workflow.dependencies.find((dependency) => dependency.dependencyId === 'dep-1');
+    const dep1 = workflow.dependencies.find(
+      (dependency) => dependency.dependencyId === 'dep-1',
+    );
     expect(dep1?.sourceId).toBe('step-1');
     expect(dep1?.targetId).toBe('step-2');
     expect(dep1?.type).toBe('sequential');
 
-    const dep2 = workflow.dependencies.find((dependency) => dependency.dependencyId === 'dep-2');
+    const dep2 = workflow.dependencies.find(
+      (dependency) => dependency.dependencyId === 'dep-2',
+    );
     expect(dep2?.sourceId).toBe('task-3');
     expect(dep2?.targetId).toBe('task-1');
     expect(dep2?.type).toBe('requires');
@@ -445,7 +484,13 @@ describe('Orchestrator Engine Milestone 3 — WorkflowBuilder', () => {
 
   it('translates every Planner DependencyType into the identical WorkflowDependencyType', () => {
     const builder = new WorkflowBuilder();
-    const types: readonly WorkflowDependencyType[] = ['blocks', 'requires', 'related', 'sequential', 'parallel'];
+    const types: readonly WorkflowDependencyType[] = [
+      'blocks',
+      'requires',
+      'related',
+      'sequential',
+      'parallel',
+    ];
 
     const plan: Plan = {
       ...buildPlanFixture(),
@@ -459,7 +504,9 @@ describe('Orchestrator Engine Milestone 3 — WorkflowBuilder', () => {
 
     const workflow = builder.build(plan);
 
-    expect(workflow.dependencies.map((dependency) => dependency.type)).toEqual(types);
+    expect(workflow.dependencies.map((dependency) => dependency.type)).toEqual(
+      types,
+    );
   });
 
   it('produces deterministic output for identical input', () => {
@@ -485,8 +532,12 @@ describe('Orchestrator Engine Milestone 3 — WorkflowBuilder', () => {
   it('rejects a null or undefined Plan with OrchestratorValidationError', () => {
     const builder = new WorkflowBuilder();
 
-    expect(() => builder.build(null as unknown as Plan)).toThrow(OrchestratorValidationError);
-    expect(() => builder.build(undefined as unknown as Plan)).toThrow(OrchestratorValidationError);
+    expect(() => builder.build(null as unknown as Plan)).toThrow(
+      OrchestratorValidationError,
+    );
+    expect(() => builder.build(undefined as unknown as Plan)).toThrow(
+      OrchestratorValidationError,
+    );
   });
 
   it('rejects a Plan missing planId with OrchestratorValidationError', () => {
@@ -498,28 +549,40 @@ describe('Orchestrator Engine Milestone 3 — WorkflowBuilder', () => {
 
   it('rejects a Plan missing metadata with OrchestratorValidationError', () => {
     const builder = new WorkflowBuilder();
-    const plan = { ...buildPlanFixture(), metadata: undefined as unknown as Plan['metadata'] };
+    const plan = {
+      ...buildPlanFixture(),
+      metadata: undefined as unknown as Plan['metadata'],
+    };
 
     expect(() => builder.build(plan)).toThrow(OrchestratorValidationError);
   });
 
   it('rejects a Plan with a non-array steps field with OrchestratorValidationError', () => {
     const builder = new WorkflowBuilder();
-    const plan = { ...buildPlanFixture(), steps: undefined as unknown as Plan['steps'] };
+    const plan = {
+      ...buildPlanFixture(),
+      steps: undefined as unknown as Plan['steps'],
+    };
 
     expect(() => builder.build(plan)).toThrow(OrchestratorValidationError);
   });
 
   it('rejects a Plan with a non-array tasks field with OrchestratorValidationError', () => {
     const builder = new WorkflowBuilder();
-    const plan = { ...buildPlanFixture(), tasks: undefined as unknown as Plan['tasks'] };
+    const plan = {
+      ...buildPlanFixture(),
+      tasks: undefined as unknown as Plan['tasks'],
+    };
 
     expect(() => builder.build(plan)).toThrow(OrchestratorValidationError);
   });
 
   it('rejects a Plan with a non-array dependencies field with OrchestratorValidationError', () => {
     const builder = new WorkflowBuilder();
-    const plan = { ...buildPlanFixture(), dependencies: undefined as unknown as Plan['dependencies'] };
+    const plan = {
+      ...buildPlanFixture(),
+      dependencies: undefined as unknown as Plan['dependencies'],
+    };
 
     expect(() => builder.build(plan)).toThrow(OrchestratorValidationError);
   });
@@ -560,7 +623,9 @@ describe('Orchestrator Engine Milestone 3 — orchestrate()', () => {
     const engine = new OrchestratorEngine();
 
     await expect(
-      engine.orchestrate(null as unknown as Parameters<typeof engine.orchestrate>[0]),
+      engine.orchestrate(
+        null as unknown as Parameters<typeof engine.orchestrate>[0],
+      ),
     ).rejects.toBeInstanceOf(OrchestratorValidationError);
   });
 
@@ -594,15 +659,21 @@ describe('Orchestrator Engine Milestone 4 — WorkflowValidator', () => {
     const workflow = buildWorkflowFixture();
     const duplicated: Workflow = {
       ...workflow,
-      steps: [workflow.steps[0], { ...workflow.steps[1], stepId: workflow.steps[0].stepId }],
+      steps: [
+        workflow.steps[0],
+        { ...workflow.steps[1], stepId: workflow.steps[0].stepId },
+      ],
     };
 
     const result = validator.validate(duplicated);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.code === 'DUPLICATE_ID' && issue.field.includes('stepId'))).toBe(
-      true,
-    );
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.code === 'DUPLICATE_ID' && issue.field.includes('stepId'),
+      ),
+    ).toBe(true);
   });
 
   it('detects duplicate taskId values', () => {
@@ -618,9 +689,12 @@ describe('Orchestrator Engine Milestone 4 — WorkflowValidator', () => {
     const result = validator.validate(duplicated);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.code === 'DUPLICATE_ID' && issue.field.includes('taskId'))).toBe(
-      true,
-    );
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.code === 'DUPLICATE_ID' && issue.field.includes('taskId'),
+      ),
+    ).toBe(true);
   });
 
   it('detects invalid metadata (missing createdBy, non-numeric revision, bad timestamp)', () => {
@@ -639,9 +713,15 @@ describe('Orchestrator Engine Milestone 4 — WorkflowValidator', () => {
     const result = validator.validate(invalid);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.field === 'metadata.createdBy')).toBe(true);
-    expect(result.issues.some((issue) => issue.field === 'metadata.revision')).toBe(true);
-    expect(result.issues.some((issue) => issue.field === 'metadata.createdAt')).toBe(true);
+    expect(
+      result.issues.some((issue) => issue.field === 'metadata.createdBy'),
+    ).toBe(true);
+    expect(
+      result.issues.some((issue) => issue.field === 'metadata.revision'),
+    ).toBe(true);
+    expect(
+      result.issues.some((issue) => issue.field === 'metadata.createdAt'),
+    ).toBe(true);
   });
 
   it('detects invalid WorkflowStatus, WorkflowPriority, and WorkflowExecutionMode enum values', () => {
@@ -657,14 +737,24 @@ describe('Orchestrator Engine Milestone 4 — WorkflowValidator', () => {
     const result = validator.validate(invalid);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.field === 'status' && issue.code === 'INVALID_ENUM_VALUE')).toBe(
-      true,
-    );
-    expect(result.issues.some((issue) => issue.field === 'priority' && issue.code === 'INVALID_ENUM_VALUE')).toBe(
-      true,
-    );
     expect(
-      result.issues.some((issue) => issue.field === 'executionMode' && issue.code === 'INVALID_ENUM_VALUE'),
+      result.issues.some(
+        (issue) =>
+          issue.field === 'status' && issue.code === 'INVALID_ENUM_VALUE',
+      ),
+    ).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.field === 'priority' && issue.code === 'INVALID_ENUM_VALUE',
+      ),
+    ).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.field === 'executionMode' &&
+          issue.code === 'INVALID_ENUM_VALUE',
+      ),
     ).toBe(true);
   });
 
@@ -673,9 +763,18 @@ describe('Orchestrator Engine Milestone 4 — WorkflowValidator', () => {
     const workflow = buildWorkflowFixture();
     const invalid: Workflow = {
       ...workflow,
-      steps: [{ ...workflow.steps[0], status: 'not-a-status' as unknown as WorkflowStepStatus }, workflow.steps[1]],
+      steps: [
+        {
+          ...workflow.steps[0],
+          status: 'not-a-status' as unknown as WorkflowStepStatus,
+        },
+        workflow.steps[1],
+      ],
       tasks: [
-        { ...workflow.tasks[0], status: 'not-a-status' as unknown as WorkflowTaskStatus },
+        {
+          ...workflow.tasks[0],
+          status: 'not-a-status' as unknown as WorkflowTaskStatus,
+        },
         ...workflow.tasks.slice(1),
       ],
     };
@@ -683,8 +782,12 @@ describe('Orchestrator Engine Milestone 4 — WorkflowValidator', () => {
     const result = validator.validate(invalid);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.field === 'steps[0].status')).toBe(true);
-    expect(result.issues.some((issue) => issue.field === 'tasks[0].status')).toBe(true);
+    expect(
+      result.issues.some((issue) => issue.field === 'steps[0].status'),
+    ).toBe(true);
+    expect(
+      result.issues.some((issue) => issue.field === 'tasks[0].status'),
+    ).toBe(true);
   });
 
   it('detects duplicate dependencies (same type, sourceId, and targetId)', () => {
@@ -692,13 +795,18 @@ describe('Orchestrator Engine Milestone 4 — WorkflowValidator', () => {
     const workflow = buildWorkflowFixture();
     const duplicated: Workflow = {
       ...workflow,
-      dependencies: [...workflow.dependencies, { ...workflow.dependencies[0], dependencyId: 'dep-duplicate' }],
+      dependencies: [
+        ...workflow.dependencies,
+        { ...workflow.dependencies[0], dependencyId: 'dep-duplicate' },
+      ],
     };
 
     const result = validator.validate(duplicated);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.code === 'DUPLICATE_DEPENDENCY')).toBe(true);
+    expect(
+      result.issues.some((issue) => issue.code === 'DUPLICATE_DEPENDENCY'),
+    ).toBe(true);
   });
 
   it('detects self-dependencies', () => {
@@ -708,14 +816,21 @@ describe('Orchestrator Engine Milestone 4 — WorkflowValidator', () => {
       ...workflow,
       dependencies: [
         ...workflow.dependencies,
-        { dependencyId: 'dep-self', type: 'related', sourceId: 'step-1', targetId: 'step-1' },
+        {
+          dependencyId: 'dep-self',
+          type: 'related',
+          sourceId: 'step-1',
+          targetId: 'step-1',
+        },
       ],
     };
 
     const result = validator.validate(selfDependency);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.code === 'SELF_DEPENDENCY')).toBe(true);
+    expect(
+      result.issues.some((issue) => issue.code === 'SELF_DEPENDENCY'),
+    ).toBe(true);
   });
 
   it('detects dependencies referencing unknown step/task IDs', () => {
@@ -725,27 +840,46 @@ describe('Orchestrator Engine Milestone 4 — WorkflowValidator', () => {
       ...workflow,
       dependencies: [
         ...workflow.dependencies,
-        { dependencyId: 'dep-missing', type: 'related', sourceId: 'step-missing', targetId: 'task-missing' },
+        {
+          dependencyId: 'dep-missing',
+          type: 'related',
+          sourceId: 'step-missing',
+          targetId: 'task-missing',
+        },
       ],
     };
 
     const result = validator.validate(invalid);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.code === 'UNKNOWN_REFERENCE' && issue.field.includes('sourceId'))).toBe(
-      true,
-    );
-    expect(result.issues.some((issue) => issue.code === 'UNKNOWN_REFERENCE' && issue.field.includes('targetId'))).toBe(
-      true,
-    );
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.code === 'UNKNOWN_REFERENCE' &&
+          issue.field.includes('sourceId'),
+      ),
+    ).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.code === 'UNKNOWN_REFERENCE' &&
+          issue.field.includes('targetId'),
+      ),
+    ).toBe(true);
   });
 
   it('throws OrchestratorValidationError for malformed input (null, undefined, non-object)', () => {
     const validator = new WorkflowValidator();
 
-    expect(() => validator.validate(null as unknown as Workflow)).toThrow(OrchestratorValidationError);
-    expect(() => validator.validate(undefined as unknown as Workflow)).toThrow(OrchestratorValidationError);
-    expect(() => validator.validate('not-an-object' as unknown as Workflow)).toThrow(OrchestratorValidationError);
+    expect(() => validator.validate(null as unknown as Workflow)).toThrow(
+      OrchestratorValidationError,
+    );
+    expect(() => validator.validate(undefined as unknown as Workflow)).toThrow(
+      OrchestratorValidationError,
+    );
+    expect(() =>
+      validator.validate('not-an-object' as unknown as Workflow),
+    ).toThrow(OrchestratorValidationError);
   });
 
   it('produces deterministic output for identical input', () => {
@@ -793,7 +927,9 @@ describe('Orchestrator Engine Milestone 4 — executeWorkflow()', () => {
     const engine = new OrchestratorEngine();
 
     await expect(
-      engine.executeWorkflow(null as unknown as Parameters<typeof engine.executeWorkflow>[0]),
+      engine.executeWorkflow(
+        null as unknown as Parameters<typeof engine.executeWorkflow>[0],
+      ),
     ).rejects.toBeInstanceOf(OrchestratorValidationError);
   });
 
@@ -954,9 +1090,15 @@ describe('Orchestrator Engine Milestone 5 — WorkflowStatusTracker', () => {
   it('rejects malformed input (null, undefined, non-object) with OrchestratorValidationError', () => {
     const tracker = new WorkflowStatusTracker();
 
-    expect(() => tracker.summarize(null as unknown as Workflow)).toThrow(OrchestratorValidationError);
-    expect(() => tracker.summarize(undefined as unknown as Workflow)).toThrow(OrchestratorValidationError);
-    expect(() => tracker.summarize('not-an-object' as unknown as Workflow)).toThrow(OrchestratorValidationError);
+    expect(() => tracker.summarize(null as unknown as Workflow)).toThrow(
+      OrchestratorValidationError,
+    );
+    expect(() => tracker.summarize(undefined as unknown as Workflow)).toThrow(
+      OrchestratorValidationError,
+    );
+    expect(() =>
+      tracker.summarize('not-an-object' as unknown as Workflow),
+    ).toThrow(OrchestratorValidationError);
   });
 });
 
@@ -985,15 +1127,21 @@ describe('Orchestrator Engine Milestone 5 — getWorkflowStatus()', () => {
     const engine = new OrchestratorEngine();
 
     await expect(
-      engine.getWorkflowStatus(null as unknown as Parameters<typeof engine.getWorkflowStatus>[0]),
+      engine.getWorkflowStatus(
+        null as unknown as Parameters<typeof engine.getWorkflowStatus>[0],
+      ),
     ).rejects.toBeInstanceOf(OrchestratorValidationError);
   });
 
   it('produces deterministic output for identical input', async () => {
     const engine = new OrchestratorEngine();
 
-    const first = await engine.getWorkflowStatus({ workflow: buildStatusRichWorkflowFixture() });
-    const second = await engine.getWorkflowStatus({ workflow: buildStatusRichWorkflowFixture() });
+    const first = await engine.getWorkflowStatus({
+      workflow: buildStatusRichWorkflowFixture(),
+    });
+    const second = await engine.getWorkflowStatus({
+      workflow: buildStatusRichWorkflowFixture(),
+    });
 
     expect(first).toEqual(second);
   });
@@ -1053,7 +1201,13 @@ describe('Orchestrator Engine Milestone 6 — WorkflowLifecycleManager', () => {
       expect(result.metadata.revision).toBe(originalRevision + 1);
     });
 
-    it.each<WorkflowStatus>(['pending', 'paused', 'completed', 'failed', 'cancelled'])(
+    it.each<WorkflowStatus>([
+      'pending',
+      'paused',
+      'completed',
+      'failed',
+      'cancelled',
+    ])(
       'leaves status and revision unchanged when pausing a %s workflow',
       (status) => {
         const manager = new WorkflowLifecycleManager();
@@ -1112,9 +1266,15 @@ describe('Orchestrator Engine Milestone 6 — WorkflowLifecycleManager', () => {
     it('rejects malformed input (null, undefined, non-object) with OrchestratorValidationError', () => {
       const manager = new WorkflowLifecycleManager();
 
-      expect(() => manager.pause(null as unknown as Workflow)).toThrow(OrchestratorValidationError);
-      expect(() => manager.pause(undefined as unknown as Workflow)).toThrow(OrchestratorValidationError);
-      expect(() => manager.pause('not-an-object' as unknown as Workflow)).toThrow(OrchestratorValidationError);
+      expect(() => manager.pause(null as unknown as Workflow)).toThrow(
+        OrchestratorValidationError,
+      );
+      expect(() => manager.pause(undefined as unknown as Workflow)).toThrow(
+        OrchestratorValidationError,
+      );
+      expect(() =>
+        manager.pause('not-an-object' as unknown as Workflow),
+      ).toThrow(OrchestratorValidationError);
     });
   });
 
@@ -1138,7 +1298,13 @@ describe('Orchestrator Engine Milestone 6 — WorkflowLifecycleManager', () => {
       expect(result.metadata.revision).toBe(originalRevision + 1);
     });
 
-    it.each<WorkflowStatus>(['pending', 'running', 'completed', 'failed', 'cancelled'])(
+    it.each<WorkflowStatus>([
+      'pending',
+      'running',
+      'completed',
+      'failed',
+      'cancelled',
+    ])(
       'leaves status and revision unchanged when resuming a %s workflow',
       (status) => {
         const manager = new WorkflowLifecycleManager();
@@ -1197,9 +1363,15 @@ describe('Orchestrator Engine Milestone 6 — WorkflowLifecycleManager', () => {
     it('rejects malformed input (null, undefined, non-object) with OrchestratorValidationError', () => {
       const manager = new WorkflowLifecycleManager();
 
-      expect(() => manager.resume(null as unknown as Workflow)).toThrow(OrchestratorValidationError);
-      expect(() => manager.resume(undefined as unknown as Workflow)).toThrow(OrchestratorValidationError);
-      expect(() => manager.resume('not-an-object' as unknown as Workflow)).toThrow(OrchestratorValidationError);
+      expect(() => manager.resume(null as unknown as Workflow)).toThrow(
+        OrchestratorValidationError,
+      );
+      expect(() => manager.resume(undefined as unknown as Workflow)).toThrow(
+        OrchestratorValidationError,
+      );
+      expect(() =>
+        manager.resume('not-an-object' as unknown as Workflow),
+      ).toThrow(OrchestratorValidationError);
     });
   });
 
@@ -1295,9 +1467,15 @@ describe('Orchestrator Engine Milestone 6 — WorkflowLifecycleManager', () => {
     it('rejects malformed input (null, undefined, non-object) with OrchestratorValidationError', () => {
       const manager = new WorkflowLifecycleManager();
 
-      expect(() => manager.cancel(null as unknown as Workflow)).toThrow(OrchestratorValidationError);
-      expect(() => manager.cancel(undefined as unknown as Workflow)).toThrow(OrchestratorValidationError);
-      expect(() => manager.cancel('not-an-object' as unknown as Workflow)).toThrow(OrchestratorValidationError);
+      expect(() => manager.cancel(null as unknown as Workflow)).toThrow(
+        OrchestratorValidationError,
+      );
+      expect(() => manager.cancel(undefined as unknown as Workflow)).toThrow(
+        OrchestratorValidationError,
+      );
+      expect(() =>
+        manager.cancel('not-an-object' as unknown as Workflow),
+      ).toThrow(OrchestratorValidationError);
     });
   });
 });
@@ -1335,15 +1513,21 @@ describe('Orchestrator Engine Milestone 6 — pauseWorkflow()', () => {
     const engine = new OrchestratorEngine();
 
     await expect(
-      engine.pauseWorkflow(null as unknown as Parameters<typeof engine.pauseWorkflow>[0]),
+      engine.pauseWorkflow(
+        null as unknown as Parameters<typeof engine.pauseWorkflow>[0],
+      ),
     ).rejects.toBeInstanceOf(OrchestratorValidationError);
   });
 
   it('produces deterministic output for identical input', async () => {
     const engine = new OrchestratorEngine();
 
-    const first = await engine.pauseWorkflow({ workflow: buildWorkflowWithStatus('running') });
-    const second = await engine.pauseWorkflow({ workflow: buildWorkflowWithStatus('running') });
+    const first = await engine.pauseWorkflow({
+      workflow: buildWorkflowWithStatus('running'),
+    });
+    const second = await engine.pauseWorkflow({
+      workflow: buildWorkflowWithStatus('running'),
+    });
 
     expect(first).toEqual(second);
   });
@@ -1392,15 +1576,21 @@ describe('Orchestrator Engine Milestone 6 — resumeWorkflow()', () => {
     const engine = new OrchestratorEngine();
 
     await expect(
-      engine.resumeWorkflow(null as unknown as Parameters<typeof engine.resumeWorkflow>[0]),
+      engine.resumeWorkflow(
+        null as unknown as Parameters<typeof engine.resumeWorkflow>[0],
+      ),
     ).rejects.toBeInstanceOf(OrchestratorValidationError);
   });
 
   it('produces deterministic output for identical input', async () => {
     const engine = new OrchestratorEngine();
 
-    const first = await engine.resumeWorkflow({ workflow: buildWorkflowWithStatus('paused') });
-    const second = await engine.resumeWorkflow({ workflow: buildWorkflowWithStatus('paused') });
+    const first = await engine.resumeWorkflow({
+      workflow: buildWorkflowWithStatus('paused'),
+    });
+    const second = await engine.resumeWorkflow({
+      workflow: buildWorkflowWithStatus('paused'),
+    });
 
     expect(first).toEqual(second);
   });
@@ -1459,15 +1649,21 @@ describe('Orchestrator Engine Milestone 6 — cancelWorkflow()', () => {
     const engine = new OrchestratorEngine();
 
     await expect(
-      engine.cancelWorkflow(null as unknown as Parameters<typeof engine.cancelWorkflow>[0]),
+      engine.cancelWorkflow(
+        null as unknown as Parameters<typeof engine.cancelWorkflow>[0],
+      ),
     ).rejects.toBeInstanceOf(OrchestratorValidationError);
   });
 
   it('produces deterministic output for identical input', async () => {
     const engine = new OrchestratorEngine();
 
-    const first = await engine.cancelWorkflow({ workflow: buildWorkflowWithStatus('running') });
-    const second = await engine.cancelWorkflow({ workflow: buildWorkflowWithStatus('running') });
+    const first = await engine.cancelWorkflow({
+      workflow: buildWorkflowWithStatus('running'),
+    });
+    const second = await engine.cancelWorkflow({
+      workflow: buildWorkflowWithStatus('running'),
+    });
 
     expect(first).toEqual(second);
   });

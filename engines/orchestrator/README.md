@@ -117,15 +117,15 @@ full Titan runtime engine contract, unmodified since Milestone 1:
 
 ## Public API
 
-| Method | Behavior (Milestone 7) |
-|---|---|
-| `orchestrate(request)` | Unchanged from Milestone 3: validates the request, then returns `WorkflowBuilder.build(request.plan)`. |
-| `executeWorkflow(request)` | Unchanged from Milestone 4: validates the request, then returns `WorkflowValidator.validate(request.workflow)`. |
+| Method                       | Behavior (Milestone 7)                                                                                               |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `orchestrate(request)`       | Unchanged from Milestone 3: validates the request, then returns `WorkflowBuilder.build(request.plan)`.               |
+| `executeWorkflow(request)`   | Unchanged from Milestone 4: validates the request, then returns `WorkflowValidator.validate(request.workflow)`.      |
 | `getWorkflowStatus(request)` | Unchanged from Milestone 5: validates the request, then returns `WorkflowStatusTracker.summarize(request.workflow)`. |
-| `pauseWorkflow(request)` | Unchanged from Milestone 6: validates the request, then returns `WorkflowLifecycleManager.pause(request.workflow)`. |
-| `resumeWorkflow(request)` | Unchanged from Milestone 6: validates the request, then returns `WorkflowLifecycleManager.resume(request.workflow)`. |
-| `cancelWorkflow(request)` | Unchanged from Milestone 6: validates the request, then returns `WorkflowLifecycleManager.cancel(request.workflow)`. |
-| `dispatchWorkflow(request)` | Validates the request, then returns `WorkflowDispatcher.dispatch(request.workflow)`. |
+| `pauseWorkflow(request)`     | Unchanged from Milestone 6: validates the request, then returns `WorkflowLifecycleManager.pause(request.workflow)`.  |
+| `resumeWorkflow(request)`    | Unchanged from Milestone 6: validates the request, then returns `WorkflowLifecycleManager.resume(request.workflow)`. |
+| `cancelWorkflow(request)`    | Unchanged from Milestone 6: validates the request, then returns `WorkflowLifecycleManager.cancel(request.workflow)`. |
+| `dispatchWorkflow(request)`  | Validates the request, then returns `WorkflowDispatcher.dispatch(request.workflow)`.                                 |
 
 `dispatchWorkflow` throws `OrchestratorValidationError` if the request
 or its `workflow` field is missing or malformed; otherwise it always
@@ -140,7 +140,7 @@ and dispatch-readiness evaluation only. No orchestration execution
 behavior exists.** Specifically, Milestone 7 does **not** implement:
 
 - Workflow execution, running, or actual dispatch of any kind — only
-  *evaluation* of what would be dispatchable.
+  _evaluation_ of what would be dispatchable.
 - Scheduling algorithms of any kind.
 - Retries.
 - Concurrency or parallel execution.

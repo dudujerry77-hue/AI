@@ -1,5 +1,9 @@
 import { LearningRequestError } from '../errors/learning-errors';
-import type { LearningLesson, LearningLessonCategory, LearningObservation } from '../models/types';
+import type {
+  LearningLesson,
+  LearningLessonCategory,
+  LearningObservation,
+} from '../models/types';
 import type { ValidationVerdictStatus } from '../../../validation/src/models/types';
 
 /**
@@ -31,7 +35,9 @@ function isNonEmptyString(value: unknown): value is string {
  * pattern of deriving a classification field from a fixed lookup keyed
  * on an existing status field.
  */
-const LESSON_CATEGORY_BY_VERDICT_STATUS: Readonly<Record<ValidationVerdictStatus, LearningLessonCategory>> = {
+const LESSON_CATEGORY_BY_VERDICT_STATUS: Readonly<
+  Record<ValidationVerdictStatus, LearningLessonCategory>
+> = {
   pass: 'pattern-worked',
   fail: 'failure',
   partial: 'estimate-inaccuracy',
@@ -81,7 +87,10 @@ export class LearningLessonBuilder {
    * non-empty array, or if any entry is not a well-formed
    * `LearningObservation`-shaped object.
    */
-  build(observations: readonly LearningObservation[], timestamp?: string): readonly LearningLesson[] {
+  build(
+    observations: readonly LearningObservation[],
+    timestamp?: string,
+  ): readonly LearningLesson[] {
     this.validateObservations(observations);
 
     const resolvedTimestamp = timestamp ?? new Date().toISOString();
@@ -100,60 +109,93 @@ export class LearningLessonBuilder {
     });
   }
 
-  private validateObservations(observations: readonly LearningObservation[]): void {
-    if (observations === null || observations === undefined || !Array.isArray(observations)) {
-      throw new LearningRequestError('observations must be a non-empty array.', [
-        {
-          field: 'observations',
-          code: 'missing-observations',
-          message: 'observations must be a non-empty array.',
-        },
-      ]);
+  private validateObservations(
+    observations: readonly LearningObservation[],
+  ): void {
+    if (
+      observations === null ||
+      observations === undefined ||
+      !Array.isArray(observations)
+    ) {
+      throw new LearningRequestError(
+        'observations must be a non-empty array.',
+        [
+          {
+            field: 'observations',
+            code: 'missing-observations',
+            message: 'observations must be a non-empty array.',
+          },
+        ],
+      );
     }
 
     if (observations.length === 0) {
-      throw new LearningRequestError('observations must contain at least one entry.', [
-        {
-          field: 'observations',
-          code: 'empty-observations',
-          message: 'observations must contain at least one entry.',
-        },
-      ]);
+      throw new LearningRequestError(
+        'observations must contain at least one entry.',
+        [
+          {
+            field: 'observations',
+            code: 'empty-observations',
+            message: 'observations must contain at least one entry.',
+          },
+        ],
+      );
     }
 
     observations.forEach((observation, index) => {
       if (!isPlainObject(observation)) {
-        throw new LearningRequestError(`observations[${index}] must be a non-null object.`, [
-          {
-            field: `observations[${index}]`,
-            code: 'invalid-observation',
-            message: `observations[${index}] must be a non-null object.`,
-          },
-        ]);
+        throw new LearningRequestError(
+          `observations[${index}] must be a non-null object.`,
+          [
+            {
+              field: `observations[${index}]`,
+              code: 'invalid-observation',
+              message: `observations[${index}] must be a non-null object.`,
+            },
+          ],
+        );
       }
 
-      if (!isNonEmptyString((observation as unknown as Record<string, unknown>).observationId)) {
-        throw new LearningRequestError(`observations[${index}].observationId is required.`, [
-          {
-            field: `observations[${index}].observationId`,
-            code: 'missing-observation-id',
-            message: `observations[${index}].observationId must be a non-empty string.`,
-          },
-        ]);
+      if (
+        !isNonEmptyString(
+          (observation as unknown as Record<string, unknown>).observationId,
+        )
+      ) {
+        throw new LearningRequestError(
+          `observations[${index}].observationId is required.`,
+          [
+            {
+              field: `observations[${index}].observationId`,
+              code: 'missing-observation-id',
+              message: `observations[${index}].observationId must be a non-empty string.`,
+            },
+          ],
+        );
       }
 
-      const subject = (observation as unknown as Record<string, unknown>).subject;
-      const verdict = isPlainObject(subject) ? (subject as Record<string, unknown>).verdict : undefined;
-      const status = isPlainObject(verdict) ? (verdict as Record<string, unknown>).status : undefined;
+      const subject = (observation as unknown as Record<string, unknown>)
+        .subject;
+      const verdict = isPlainObject(subject)
+        ? (subject as Record<string, unknown>).verdict
+        : undefined;
+      const status = isPlainObject(verdict)
+        ? (verdict as Record<string, unknown>).status
+        : undefined;
 
-      if (typeof status !== 'string' || !(status in LESSON_CATEGORY_BY_VERDICT_STATUS)) {
-        throw new LearningRequestError(`observations[${index}].subject.verdict.status is required.`, [
-          {
-            field: `observations[${index}].subject.verdict.status`,
-            code: 'missing-verdict-status',
-            message: `observations[${index}].subject.verdict.status must be one of: ${Object.keys(LESSON_CATEGORY_BY_VERDICT_STATUS).join(', ')}.`,
-          },
-        ]);
+      if (
+        typeof status !== 'string' ||
+        !(status in LESSON_CATEGORY_BY_VERDICT_STATUS)
+      ) {
+        throw new LearningRequestError(
+          `observations[${index}].subject.verdict.status is required.`,
+          [
+            {
+              field: `observations[${index}].subject.verdict.status`,
+              code: 'missing-verdict-status',
+              message: `observations[${index}].subject.verdict.status must be one of: ${Object.keys(LESSON_CATEGORY_BY_VERDICT_STATUS).join(', ')}.`,
+            },
+          ],
+        );
       }
     });
   }

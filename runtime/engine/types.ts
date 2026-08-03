@@ -2,7 +2,10 @@ import type { HealthSnapshot } from '../health/health-monitor';
 import type { Logger } from '../logging/logger';
 import type { ConfigurationService } from '../config/configuration-service';
 import type { EventBus } from '../events/event-bus';
-import type { LifecycleManager, LifecycleState } from '../lifecycle/lifecycle-manager';
+import type {
+  LifecycleManager,
+  LifecycleState,
+} from '../lifecycle/lifecycle-manager';
 import type { Metrics } from '../metrics/metrics';
 import type { HealthMonitor } from '../health/health-monitor';
 import type {
@@ -36,7 +39,9 @@ export interface TitanEngine {
 }
 
 export interface LegacyTitanEngine {
-  readonly metadata: Omit<EngineMetadata, 'contractVersion'> & { readonly contractVersion?: string };
+  readonly metadata: Omit<EngineMetadata, 'contractVersion'> & {
+    readonly contractVersion?: string;
+  };
   initialize(): Promise<void>;
   start(): Promise<void>;
   stop(): Promise<void>;
@@ -57,7 +62,10 @@ export function resolveEngineMetadata(engine: EngineContract): EngineMetadata {
   const legacy = engine as LegacyTitanEngine;
   return {
     ...legacy.metadata,
-    contractVersion: legacy.metadata.contractVersion ?? legacy.contractVersion?.() ?? ENGINE_API_CONTRACT_VERSION,
+    contractVersion:
+      legacy.metadata.contractVersion ??
+      legacy.contractVersion?.() ??
+      ENGINE_API_CONTRACT_VERSION,
   };
 }
 

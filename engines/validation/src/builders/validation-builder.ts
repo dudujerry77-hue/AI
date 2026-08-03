@@ -84,7 +84,10 @@ export class ValidationBuilder {
    * both fields, so a single `build` call always produces a verdict
    * with `createdAt === updatedAt`.
    */
-  build(subject: ValidationSubject, timestamp?: string): ValidationPipelineResult {
+  build(
+    subject: ValidationSubject,
+    timestamp?: string,
+  ): ValidationPipelineResult {
     this.validateSubject(subject);
 
     const target = this.deriveTarget(subject);
@@ -123,53 +126,78 @@ export class ValidationBuilder {
 
   private validateSubject(subject: ValidationSubject): void {
     if (subject === null || subject === undefined || !isPlainObject(subject)) {
-      throw new ValidationRequestError('ValidationSubject must be a non-null object.', [
-        {
-          field: 'subject',
-          code: 'missing-subject',
-          message: 'ValidationSubject must be a non-null object.',
-        },
-      ]);
+      throw new ValidationRequestError(
+        'ValidationSubject must be a non-null object.',
+        [
+          {
+            field: 'subject',
+            code: 'missing-subject',
+            message: 'ValidationSubject must be a non-null object.',
+          },
+        ],
+      );
     }
 
     const record = (subject as unknown as Record<string, unknown>).record;
 
     if (record === null || record === undefined || !isPlainObject(record)) {
-      throw new ValidationRequestError('ValidationSubject.record must be a non-null object.', [
-        {
-          field: 'subject.record',
-          code: 'missing-record',
-          message: 'ValidationSubject.record must be a non-null object.',
-        },
-      ]);
+      throw new ValidationRequestError(
+        'ValidationSubject.record must be a non-null object.',
+        [
+          {
+            field: 'subject.record',
+            code: 'missing-record',
+            message: 'ValidationSubject.record must be a non-null object.',
+          },
+        ],
+      );
     }
 
     const recordTarget = (record as Record<string, unknown>).target;
-    const summary = (subject as unknown as Record<string, unknown>).summary as ExecutionSummary | undefined;
+    const summary = (subject as unknown as Record<string, unknown>).summary as
+      ExecutionSummary | undefined;
 
     if (summary === undefined) {
-      if (recordTarget === null || recordTarget === undefined || !isPlainObject(recordTarget)) {
-        throw new ValidationRequestError('ValidationSubject.record.target must be a non-null object.', [
-          {
-            field: 'subject.record.target',
-            code: 'missing-target',
-            message: 'ValidationSubject.record.target must be a non-null object.',
-          },
-        ]);
+      if (
+        recordTarget === null ||
+        recordTarget === undefined ||
+        !isPlainObject(recordTarget)
+      ) {
+        throw new ValidationRequestError(
+          'ValidationSubject.record.target must be a non-null object.',
+          [
+            {
+              field: 'subject.record.target',
+              code: 'missing-target',
+              message:
+                'ValidationSubject.record.target must be a non-null object.',
+            },
+          ],
+        );
       }
-    } else if (!isPlainObject(summary) || !isPlainObject((summary as unknown as Record<string, unknown>).target)) {
-      throw new ValidationRequestError('ValidationSubject.summary.target must be a non-null object.', [
-        {
-          field: 'subject.summary.target',
-          code: 'missing-target',
-          message: 'ValidationSubject.summary.target must be a non-null object.',
-        },
-      ]);
+    } else if (
+      !isPlainObject(summary) ||
+      !isPlainObject((summary as unknown as Record<string, unknown>).target)
+    ) {
+      throw new ValidationRequestError(
+        'ValidationSubject.summary.target must be a non-null object.',
+        [
+          {
+            field: 'subject.summary.target',
+            code: 'missing-target',
+            message:
+              'ValidationSubject.summary.target must be a non-null object.',
+          },
+        ],
+      );
     }
 
     const target = (summary?.target ?? recordTarget) as Record<string, unknown>;
 
-    if (typeof target.workflowId !== 'string' || target.workflowId.trim().length === 0) {
+    if (
+      typeof target.workflowId !== 'string' ||
+      target.workflowId.trim().length === 0
+    ) {
       throw new ValidationRequestError('The target workflowId is required.', [
         {
           field: 'target.workflowId',
@@ -179,7 +207,10 @@ export class ValidationBuilder {
       ]);
     }
 
-    if (typeof target.itemId !== 'string' || target.itemId.trim().length === 0) {
+    if (
+      typeof target.itemId !== 'string' ||
+      target.itemId.trim().length === 0
+    ) {
       throw new ValidationRequestError('The target itemId is required.', [
         {
           field: 'target.itemId',

@@ -1,5 +1,8 @@
 import { BaseEngine } from '../../../runtime/engine/base';
-import { ENGINE_API_CONTRACT_VERSION, type BaseEngineOptions } from '../../../runtime/engine/types';
+import {
+  ENGINE_API_CONTRACT_VERSION,
+  type BaseEngineOptions,
+} from '../../../runtime/engine/types';
 import type {
   Goal,
   Plan,
@@ -8,14 +11,22 @@ import type {
   PlanningContext,
   Constraint,
 } from './models/types';
-import { GoalAnalyzer, type GoalAnalysisResult } from './analysis/goal-analyzer';
+import {
+  GoalAnalyzer,
+  type GoalAnalysisResult,
+} from './analysis/goal-analyzer';
 import { GoalDecomposer } from './decomposition/goal-decomposer';
-import { PlanValidator, type PlanValidationResult } from './validation/plan-validator';
+import {
+  PlanValidator,
+  type PlanValidationResult,
+} from './validation/plan-validator';
 import { PlanOptimizer } from './optimization/plan-optimizer';
 import { PlanEstimator } from './estimation/plan-estimator';
 import { PlanExplainer } from './explanation/plan-explainer';
-import { NotImplementedError, PlanningValidationError } from './errors/planner-errors';
-
+import {
+  NotImplementedError,
+  PlanningValidationError,
+} from './errors/planner-errors';
 
 export type {
   Goal,
@@ -45,9 +56,15 @@ export type {
   PlanValidationStatus,
 } from './models/types';
 
-export { GoalAnalyzer, type GoalAnalysisResult } from './analysis/goal-analyzer';
+export {
+  GoalAnalyzer,
+  type GoalAnalysisResult,
+} from './analysis/goal-analyzer';
 export { GoalDecomposer } from './decomposition/goal-decomposer';
-export { PlanValidator, type PlanValidationResult } from './validation/plan-validator';
+export {
+  PlanValidator,
+  type PlanValidationResult,
+} from './validation/plan-validator';
 export { PlanOptimizer } from './optimization/plan-optimizer';
 export { PlanEstimator } from './estimation/plan-estimator';
 export { PlanExplainer } from './explanation/plan-explainer';
@@ -56,7 +73,6 @@ export {
   PlanningValidationError,
   type GoalValidationIssue,
 } from './errors/planner-errors';
-
 
 export interface PlannerCreatePlanRequest {
   readonly goal: Goal;
@@ -149,7 +165,9 @@ export class PlannerEngine extends BaseEngine {
    * AI, no optimization, no scheduling.
    */
   async createPlan(request: PlannerCreatePlanRequest): Promise<Plan> {
-    const analysis: GoalAnalysisResult = this.goalAnalyzer.analyze(request.goal);
+    const analysis: GoalAnalysisResult = this.goalAnalyzer.analyze(
+      request.goal,
+    );
 
     if (!analysis.valid) {
       throw new PlanningValidationError(
@@ -169,7 +187,9 @@ export class PlannerEngine extends BaseEngine {
    * traversal, no cycle detection, no optimization, no scheduling, no
    * execution, and no calls to any other engine.
    */
-  async validatePlan(request: PlannerValidatePlanRequest): Promise<PlanValidationResult> {
+  async validatePlan(
+    request: PlannerValidatePlanRequest,
+  ): Promise<PlanValidationResult> {
     return this.planValidator.validate(request.plan);
   }
 
@@ -185,7 +205,9 @@ export class PlannerEngine extends BaseEngine {
    * calls to any other engine.
    */
   async optimizePlan(request: PlannerOptimizePlanRequest): Promise<Plan> {
-    const validation: PlanValidationResult = this.planValidator.validate(request.plan);
+    const validation: PlanValidationResult = this.planValidator.validate(
+      request.plan,
+    );
 
     if (!validation.valid) {
       throw new PlanningValidationError(
@@ -207,8 +229,12 @@ export class PlannerEngine extends BaseEngine {
    * plan. No AI, no historical data, no machine learning, and no
    * external services.
    */
-  async estimatePlan(request: PlannerEstimatePlanRequest): Promise<PlanEstimate> {
-    const validation: PlanValidationResult = this.planValidator.validate(request.plan);
+  async estimatePlan(
+    request: PlannerEstimatePlanRequest,
+  ): Promise<PlanEstimate> {
+    const validation: PlanValidationResult = this.planValidator.validate(
+      request.plan,
+    );
 
     if (!validation.valid) {
       throw new PlanningValidationError(
@@ -230,8 +256,12 @@ export class PlannerEngine extends BaseEngine {
    * No AI-generated explanations and no inference of missing
    * information.
    */
-  async explainPlan(request: PlannerExplainPlanRequest): Promise<PlanExplanation> {
-    const validation: PlanValidationResult = this.planValidator.validate(request.plan);
+  async explainPlan(
+    request: PlannerExplainPlanRequest,
+  ): Promise<PlanExplanation> {
+    const validation: PlanValidationResult = this.planValidator.validate(
+      request.plan,
+    );
 
     if (!validation.valid) {
       throw new PlanningValidationError(
@@ -243,12 +273,19 @@ export class PlannerEngine extends BaseEngine {
     return this.planExplainer.explain(request.plan);
   }
 
-  async cancelPlan(_request: PlannerCancelPlanRequest): Promise<PlannerPlaceholderResult> {
-    throw new NotImplementedError('PlannerEngine.cancelPlan is not implemented in Milestone 6');
+  async cancelPlan(
+    _request: PlannerCancelPlanRequest,
+  ): Promise<PlannerPlaceholderResult> {
+    throw new NotImplementedError(
+      'PlannerEngine.cancelPlan is not implemented in Milestone 6',
+    );
   }
 }
 
-export interface PlannerEngineOptions extends Omit<BaseEngineOptions, 'id' | 'name' | 'version'> {
+export interface PlannerEngineOptions extends Omit<
+  BaseEngineOptions,
+  'id' | 'name' | 'version'
+> {
   readonly id?: string;
   readonly name?: string;
   readonly version?: string;

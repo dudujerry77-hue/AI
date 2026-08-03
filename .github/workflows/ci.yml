@@ -1,19 +1,31 @@
 name: CI
 
-# Runs the repository-defined quality gates from testing_strategy.md §6:
-# "CI must run and pass before merge: 1. Linting/formatting checks.
-# 2. Full unit test suite. 3. Integration test suite... 4. Dependency
-# vulnerability scan (see security_policy.md). 5. Coverage report
-# generated and checked against the thresholds in Section 2 (warn,
-# don't necessarily hard-block, on first pass...)."
+# Runs the repository-defined quality gates from testing_strategy.md §6
+# and deployment_strategy.md §2 (Release Pipeline):
+# "1. Commit/PR opened -> CI triggers automatically.
+#  2. Static checks: lint, format check, type check (if applicable).
+#  3. Unit tests: must pass at 100% (no skipped/ignored tests without
+#     explicit, reviewed justification).
+#  4. Integration tests: must pass.
+#  5. Security scan: dependency vulnerability scan per security_policy.md;
+#     secrets-scanning of the diff."
 #
-# Item 5's threshold check is intentionally NOT enforced as a hard gate
-# here: testing_strategy.md §2 defines coverage targets by folder name
-# (/domain, /application) that no engine package actually uses (see
-# Phase 014 Milestone 1's documented ambiguity), so no single numeric
-# threshold can be enforced without inventing an undocumented mapping.
-# This workflow generates the coverage report (satisfying "generated")
-# without gating on an invented number.
+# Item 5's "coverage thresholds" (testing_strategy.md §2/§6) are
+# intentionally NOT enforced as a hard gate here: testing_strategy.md §2
+# defines coverage targets by folder name (/domain, /application) that
+# no engine package actually uses (see Phase 014 Milestone 1's
+# documented ambiguity), so no single numeric threshold can be enforced
+# without inventing an undocumented mapping. This workflow generates the
+# coverage report (satisfying "generated") without gating on an
+# invented number.
+#
+# deployment_strategy.md §2 step 5's "secrets-scanning of the diff" is
+# NOT implemented here: no secrets-scanning tool exists anywhere in this
+# repository today, and introducing one is a new core dependency under
+# tech_stack.md §2's mandatory stack-selection process (evaluation +
+# ADR + tech_stack.md update) — out of scope for a CI-workflow-only
+# change. This gap is intentionally left unfilled rather than papered
+# over with an ungrounded tool choice (see Phase 015 planning notes).
 
 on:
   push:
@@ -40,6 +52,12 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Format check (deployment_strategy.md §2 step 2)
+        run: npm run format:check
+
+      - name: No skipped or ignored tests (deployment_strategy.md §2 step 3)
+        run: '! grep -rnE "\b(it|describe|test)\.(skip|only|todo)\(" tests --include=*.ts'
 
       - name: Unit and integration tests
         run: npm test

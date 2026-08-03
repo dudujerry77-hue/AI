@@ -1,5 +1,8 @@
 import { BaseEngine } from '../../../runtime/engine/base';
-import { ENGINE_API_CONTRACT_VERSION, type BaseEngineOptions } from '../../../runtime/engine/types';
+import {
+  ENGINE_API_CONTRACT_VERSION,
+  type BaseEngineOptions,
+} from '../../../runtime/engine/types';
 
 export interface VersionedContext {
   readonly version: string;
@@ -79,31 +82,45 @@ export interface ContextManager {
 
 const CONTEXT_VERSION = '1.0.0';
 
-function createVersionedContext<T extends Record<string, unknown>>(value: T): T {
+function createVersionedContext<T extends Record<string, unknown>>(
+  value: T,
+): T {
   return Object.freeze({ ...value, version: CONTEXT_VERSION }) as T;
 }
 
-export function createProjectContext(input: Omit<ProjectContext, 'version'>): ProjectContext {
+export function createProjectContext(
+  input: Omit<ProjectContext, 'version'>,
+): ProjectContext {
   return createVersionedContext({ ...input, version: CONTEXT_VERSION });
 }
 
-export function createSessionContext(input: Omit<SessionContext, 'version'>): SessionContext {
+export function createSessionContext(
+  input: Omit<SessionContext, 'version'>,
+): SessionContext {
   return createVersionedContext({ ...input, version: CONTEXT_VERSION });
 }
 
-export function createTaskContext(input: Omit<TaskContext, 'version'>): TaskContext {
+export function createTaskContext(
+  input: Omit<TaskContext, 'version'>,
+): TaskContext {
   return createVersionedContext({ ...input, version: CONTEXT_VERSION });
 }
 
-export function createPhaseContext(input: Omit<PhaseContext, 'version'>): PhaseContext {
+export function createPhaseContext(
+  input: Omit<PhaseContext, 'version'>,
+): PhaseContext {
   return createVersionedContext({ ...input, version: CONTEXT_VERSION });
 }
 
-export function createUserContext(input: Omit<UserContext, 'version'>): UserContext {
+export function createUserContext(
+  input: Omit<UserContext, 'version'>,
+): UserContext {
   return createVersionedContext({ ...input, version: CONTEXT_VERSION });
 }
 
-export function createEngineContext(input: Omit<EngineContext, 'version'>): EngineContext {
+export function createEngineContext(
+  input: Omit<EngineContext, 'version'>,
+): EngineContext {
   return createVersionedContext({ ...input, version: CONTEXT_VERSION });
 }
 
@@ -120,7 +137,9 @@ export function createInMemoryContextStorage(): ContextStorageAdapter {
   };
 }
 
-export function createContextManager(options: ContextManagerOptions = {}): ContextManager {
+export function createContextManager(
+  options: ContextManagerOptions = {},
+): ContextManager {
   let project: ProjectContext | undefined = options.project;
   let session: SessionContext | undefined = options.session;
   let task: TaskContext | undefined = options.task;
@@ -153,8 +172,12 @@ export function createContextManager(options: ContextManagerOptions = {}): Conte
       }
 
       const snapshot = JSON.parse(raw) as Partial<ContextSnapshot>;
-      project = snapshot.project ? (snapshot.project as ProjectContext) : undefined;
-      session = snapshot.session ? (snapshot.session as SessionContext) : undefined;
+      project = snapshot.project
+        ? (snapshot.project as ProjectContext)
+        : undefined;
+      session = snapshot.session
+        ? (snapshot.session as SessionContext)
+        : undefined;
       task = snapshot.task ? (snapshot.task as TaskContext) : undefined;
       phase = snapshot.phase ? (snapshot.phase as PhaseContext) : undefined;
       user = snapshot.user ? (snapshot.user as UserContext) : undefined;
@@ -181,7 +204,10 @@ export function createContextManager(options: ContextManagerOptions = {}): Conte
   };
 }
 
-export interface ContextEngineOptions extends Omit<BaseEngineOptions, 'id' | 'name' | 'version'> {
+export interface ContextEngineOptions extends Omit<
+  BaseEngineOptions,
+  'id' | 'name' | 'version'
+> {
   readonly id?: string;
   readonly name?: string;
   readonly version?: string;

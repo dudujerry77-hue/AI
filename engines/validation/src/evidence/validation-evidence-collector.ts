@@ -1,5 +1,9 @@
 import { ValidationRequestError } from '../errors/validation-errors';
-import type { ValidationEvidence, ValidationSubject, ValidationVerdict } from '../models/types';
+import type {
+  ValidationEvidence,
+  ValidationSubject,
+  ValidationVerdict,
+} from '../models/types';
 
 /**
  * Returns true when `value` looks like a plain object (not an array,
@@ -52,11 +56,17 @@ export class ValidationEvidenceCollector {
    * a well-formed, inspectable object (missing entirely, `null`, an
    * array, or — for `verdict` — missing its nested `target` object).
    */
-  collect(subject: ValidationSubject, verdict: ValidationVerdict, timestamp?: string): readonly ValidationEvidence[] {
+  collect(
+    subject: ValidationSubject,
+    verdict: ValidationVerdict,
+    timestamp?: string,
+  ): readonly ValidationEvidence[] {
     this.validateShape(subject, verdict);
 
-    const source = subject.summary === undefined ? 'execution-record' : 'execution-summary';
-    const sourceLabel = source === 'execution-summary' ? 'ExecutionSummary' : 'ExecutionRecord';
+    const source =
+      subject.summary === undefined ? 'execution-record' : 'execution-summary';
+    const sourceLabel =
+      source === 'execution-summary' ? 'ExecutionSummary' : 'ExecutionRecord';
     const resolvedTimestamp = timestamp ?? new Date().toISOString();
 
     const evidence: ValidationEvidence = {
@@ -75,37 +85,49 @@ export class ValidationEvidenceCollector {
    * inspectable object with a nested `target` object. This is the
    * only condition under which `collect` throws.
    */
-  private validateShape(subject: ValidationSubject, verdict: ValidationVerdict): void {
+  private validateShape(
+    subject: ValidationSubject,
+    verdict: ValidationVerdict,
+  ): void {
     if (subject === null || subject === undefined || !isPlainObject(subject)) {
-      throw new ValidationRequestError('ValidationSubject must be a non-null object.', [
-        {
-          field: 'subject',
-          code: 'missing-subject',
-          message: 'ValidationSubject must be a non-null object.',
-        },
-      ]);
+      throw new ValidationRequestError(
+        'ValidationSubject must be a non-null object.',
+        [
+          {
+            field: 'subject',
+            code: 'missing-subject',
+            message: 'ValidationSubject must be a non-null object.',
+          },
+        ],
+      );
     }
 
     if (verdict === null || verdict === undefined || !isPlainObject(verdict)) {
-      throw new ValidationRequestError('ValidationVerdict must be a non-null object.', [
-        {
-          field: 'verdict',
-          code: 'missing-verdict',
-          message: 'ValidationVerdict must be a non-null object.',
-        },
-      ]);
+      throw new ValidationRequestError(
+        'ValidationVerdict must be a non-null object.',
+        [
+          {
+            field: 'verdict',
+            code: 'missing-verdict',
+            message: 'ValidationVerdict must be a non-null object.',
+          },
+        ],
+      );
     }
 
     const target = (verdict as unknown as Record<string, unknown>).target;
 
     if (target === null || target === undefined || !isPlainObject(target)) {
-      throw new ValidationRequestError('ValidationVerdict.target must be a non-null object.', [
-        {
-          field: 'verdict.target',
-          code: 'missing-target',
-          message: 'ValidationVerdict.target must be a non-null object.',
-        },
-      ]);
+      throw new ValidationRequestError(
+        'ValidationVerdict.target must be a non-null object.',
+        [
+          {
+            field: 'verdict.target',
+            code: 'missing-target',
+            message: 'ValidationVerdict.target must be a non-null object.',
+          },
+        ],
+      );
     }
   }
 }

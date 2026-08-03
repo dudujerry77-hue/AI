@@ -1,6 +1,14 @@
-import type { WorkflowDispatchDecision, WorkflowDispatchResult } from '../../../orchestrator/src/models/types';
+import type {
+  WorkflowDispatchDecision,
+  WorkflowDispatchResult,
+} from '../../../orchestrator/src/models/types';
 import { ExecutionValidationError } from '../errors/execution-errors';
-import type { ExecutionBuildRequest, ExecutionRecord, ExecutionStatus, ExecutionTarget } from '../models/types';
+import type {
+  ExecutionBuildRequest,
+  ExecutionRecord,
+  ExecutionStatus,
+  ExecutionTarget,
+} from '../models/types';
 
 /**
  * Returns true when `value` looks like a plain object (not an array,
@@ -108,8 +116,13 @@ export class ExecutionBuilder {
     };
   }
 
-  private findDecision(dispatchResult: WorkflowDispatchResult, itemId: string): WorkflowDispatchDecision {
-    const decision = dispatchResult.decisions.find((candidate) => candidate.itemId === itemId);
+  private findDecision(
+    dispatchResult: WorkflowDispatchResult,
+    itemId: string,
+  ): WorkflowDispatchDecision {
+    const decision = dispatchResult.decisions.find(
+      (candidate) => candidate.itemId === itemId,
+    );
 
     if (decision === undefined) {
       throw new ExecutionValidationError(
@@ -129,55 +142,83 @@ export class ExecutionBuilder {
 
   private validateRequest(request: ExecutionBuildRequest): void {
     if (request === null || request === undefined || !isPlainObject(request)) {
-      throw new ExecutionValidationError('ExecutionBuildRequest must be a non-null object.', [
-        {
-          field: 'request',
-          code: 'missing-request',
-          message: 'ExecutionBuildRequest must be a non-null object.',
-        },
-      ]);
+      throw new ExecutionValidationError(
+        'ExecutionBuildRequest must be a non-null object.',
+        [
+          {
+            field: 'request',
+            code: 'missing-request',
+            message: 'ExecutionBuildRequest must be a non-null object.',
+          },
+        ],
+      );
     }
 
     const dispatchResult = request.dispatchResult;
 
-    if (dispatchResult === null || dispatchResult === undefined || !isPlainObject(dispatchResult)) {
-      throw new ExecutionValidationError('ExecutionBuildRequest.dispatchResult must be a non-null object.', [
-        {
-          field: 'request.dispatchResult',
-          code: 'missing-dispatch-result',
-          message: 'ExecutionBuildRequest.dispatchResult must be a non-null object.',
-        },
-      ]);
+    if (
+      dispatchResult === null ||
+      dispatchResult === undefined ||
+      !isPlainObject(dispatchResult)
+    ) {
+      throw new ExecutionValidationError(
+        'ExecutionBuildRequest.dispatchResult must be a non-null object.',
+        [
+          {
+            field: 'request.dispatchResult',
+            code: 'missing-dispatch-result',
+            message:
+              'ExecutionBuildRequest.dispatchResult must be a non-null object.',
+          },
+        ],
+      );
     }
 
-    if (typeof dispatchResult.workflowId !== 'string' || dispatchResult.workflowId.trim().length === 0) {
-      throw new ExecutionValidationError('ExecutionBuildRequest.dispatchResult.workflowId is required.', [
-        {
-          field: 'request.dispatchResult.workflowId',
-          code: 'missing-workflow-id',
-          message: 'ExecutionBuildRequest.dispatchResult.workflowId is required.',
-        },
-      ]);
+    if (
+      typeof dispatchResult.workflowId !== 'string' ||
+      dispatchResult.workflowId.trim().length === 0
+    ) {
+      throw new ExecutionValidationError(
+        'ExecutionBuildRequest.dispatchResult.workflowId is required.',
+        [
+          {
+            field: 'request.dispatchResult.workflowId',
+            code: 'missing-workflow-id',
+            message:
+              'ExecutionBuildRequest.dispatchResult.workflowId is required.',
+          },
+        ],
+      );
     }
 
     if (!Array.isArray(dispatchResult.decisions)) {
-      throw new ExecutionValidationError('ExecutionBuildRequest.dispatchResult.decisions must be an array.', [
-        {
-          field: 'request.dispatchResult.decisions',
-          code: 'invalid-decisions',
-          message: 'ExecutionBuildRequest.dispatchResult.decisions must be an array.',
-        },
-      ]);
+      throw new ExecutionValidationError(
+        'ExecutionBuildRequest.dispatchResult.decisions must be an array.',
+        [
+          {
+            field: 'request.dispatchResult.decisions',
+            code: 'invalid-decisions',
+            message:
+              'ExecutionBuildRequest.dispatchResult.decisions must be an array.',
+          },
+        ],
+      );
     }
 
-    if (typeof request.itemId !== 'string' || request.itemId.trim().length === 0) {
-      throw new ExecutionValidationError('ExecutionBuildRequest.itemId is required.', [
-        {
-          field: 'request.itemId',
-          code: 'missing-item-id',
-          message: 'ExecutionBuildRequest.itemId is required.',
-        },
-      ]);
+    if (
+      typeof request.itemId !== 'string' ||
+      request.itemId.trim().length === 0
+    ) {
+      throw new ExecutionValidationError(
+        'ExecutionBuildRequest.itemId is required.',
+        [
+          {
+            field: 'request.itemId',
+            code: 'missing-item-id',
+            message: 'ExecutionBuildRequest.itemId is required.',
+          },
+        ],
+      );
     }
   }
 }

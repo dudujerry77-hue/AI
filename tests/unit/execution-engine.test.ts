@@ -20,7 +20,9 @@ const EXPECTED_CAPABILITIES = [
   'execution.report-result',
 ];
 
-function buildDispatchResult(overrides: Partial<WorkflowDispatchResult> = {}): WorkflowDispatchResult {
+function buildDispatchResult(
+  overrides: Partial<WorkflowDispatchResult> = {},
+): WorkflowDispatchResult {
   return {
     workflowId: 'workflow-1',
     dispatchable: ['step-1'],
@@ -43,7 +45,9 @@ function buildDispatchResult(overrides: Partial<WorkflowDispatchResult> = {}): W
   };
 }
 
-function buildValidRecord(overrides: Partial<ExecutionRecord> = {}): ExecutionRecord {
+function buildValidRecord(
+  overrides: Partial<ExecutionRecord> = {},
+): ExecutionRecord {
   return {
     executionId: 'execution-workflow-1-step-1',
     target: { workflowId: 'workflow-1', itemId: 'step-1', itemType: 'step' },
@@ -164,7 +168,11 @@ describe('ExecutionEngine — Milestone 5 (Structural Execution Status Reporting
 
       expect(record).toEqual({
         executionId: 'execution-workflow-1-step-1',
-        target: { workflowId: 'workflow-1', itemId: 'step-1', itemType: 'step' },
+        target: {
+          workflowId: 'workflow-1',
+          itemId: 'step-1',
+          itemType: 'step',
+        },
         status: 'pending',
         createdAt: record.createdAt,
         updatedAt: record.createdAt,
@@ -175,18 +183,22 @@ describe('ExecutionEngine — Milestone 5 (Structural Execution Status Reporting
       const engine = new ExecutionEngine();
 
       // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.execute(null)).rejects.toBeInstanceOf(ExecutionValidationError);
+      await expect(engine.execute(null)).rejects.toBeInstanceOf(
+        ExecutionValidationError,
+      );
       // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.execute(undefined)).rejects.toBeInstanceOf(ExecutionValidationError);
+      await expect(engine.execute(undefined)).rejects.toBeInstanceOf(
+        ExecutionValidationError,
+      );
     });
 
     it('propagates ExecutionValidationError from ExecutionBuilder for an unknown itemId', async () => {
       const engine = new ExecutionEngine();
       const dispatchResult = buildDispatchResult();
 
-      await expect(engine.execute({ dispatchResult, itemId: 'nonexistent' })).rejects.toBeInstanceOf(
-        ExecutionValidationError,
-      );
+      await expect(
+        engine.execute({ dispatchResult, itemId: 'nonexistent' }),
+      ).rejects.toBeInstanceOf(ExecutionValidationError);
     });
   });
 
@@ -206,14 +218,18 @@ describe('ExecutionEngine — Milestone 5 (Structural Execution Status Reporting
       const engine = new ExecutionEngine();
 
       // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.getExecutionStatus(null)).rejects.toBeInstanceOf(ExecutionValidationError);
+      await expect(engine.getExecutionStatus(null)).rejects.toBeInstanceOf(
+        ExecutionValidationError,
+      );
     });
 
     it('propagates ExecutionValidationError from ExecutionValidator when record itself is malformed', async () => {
       const engine = new ExecutionEngine();
 
-      // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.getExecutionStatus({ record: null })).rejects.toBeInstanceOf(ExecutionValidationError);
+      await expect(
+        // @ts-expect-error — intentionally malformed for the test
+        engine.getExecutionStatus({ record: null }),
+      ).rejects.toBeInstanceOf(ExecutionValidationError);
     });
   });
 
@@ -227,7 +243,11 @@ describe('ExecutionEngine — Milestone 5 (Structural Execution Status Reporting
       expect(summary).toEqual({
         executionId: 'execution-workflow-1-step-1',
         status: 'pending',
-        target: { workflowId: 'workflow-1', itemId: 'step-1', itemType: 'step' },
+        target: {
+          workflowId: 'workflow-1',
+          itemId: 'step-1',
+          itemType: 'step',
+        },
         createdAt: '2026-07-24T00:00:00.000Z',
         updatedAt: '2026-07-24T00:00:00.000Z',
         durationMs: 0,
@@ -250,7 +270,11 @@ describe('ExecutionEngine — Milestone 5 (Structural Execution Status Reporting
     it('ignores the optional handoff field entirely (no reporting occurs)', async () => {
       const engine = new ExecutionEngine();
       const record = buildValidRecord();
-      const target = { workflowId: 'workflow-1', itemId: 'step-1', itemType: 'step' as const };
+      const target = {
+        workflowId: 'workflow-1',
+        itemId: 'step-1',
+        itemType: 'step' as const,
+      };
 
       const withHandoff = await engine.reportResult({
         record,
@@ -270,25 +294,35 @@ describe('ExecutionEngine — Milestone 5 (Structural Execution Status Reporting
       const engine = new ExecutionEngine();
 
       // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.reportResult(null)).rejects.toBeInstanceOf(ExecutionValidationError);
+      await expect(engine.reportResult(null)).rejects.toBeInstanceOf(
+        ExecutionValidationError,
+      );
       // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.reportResult(undefined)).rejects.toBeInstanceOf(ExecutionValidationError);
+      await expect(engine.reportResult(undefined)).rejects.toBeInstanceOf(
+        ExecutionValidationError,
+      );
     });
 
     it('rejects with ExecutionValidationError for a non-object request', async () => {
       const engine = new ExecutionEngine();
 
       // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.reportResult('not-an-object')).rejects.toBeInstanceOf(ExecutionValidationError);
+      await expect(engine.reportResult('not-an-object')).rejects.toBeInstanceOf(
+        ExecutionValidationError,
+      );
       // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.reportResult(['array'])).rejects.toBeInstanceOf(ExecutionValidationError);
+      await expect(engine.reportResult(['array'])).rejects.toBeInstanceOf(
+        ExecutionValidationError,
+      );
     });
 
     it('propagates ExecutionValidationError from ExecutionStatusTracker when record itself is malformed', async () => {
       const engine = new ExecutionEngine();
 
-      // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.reportResult({ record: null })).rejects.toBeInstanceOf(ExecutionValidationError);
+      await expect(
+        // @ts-expect-error — intentionally malformed for the test
+        engine.reportResult({ record: null }),
+      ).rejects.toBeInstanceOf(ExecutionValidationError);
       await expect(
         // @ts-expect-error — intentionally malformed for the test
         engine.reportResult({ record: { executionId: 'x' } }),
@@ -309,9 +343,9 @@ describe('ExecutionEngine — Milestone 5 (Structural Execution Status Reporting
   describe('NotImplementedError behavior — cancelExecution still throws', () => {
     it('cancelExecution() always throws NotImplementedError', async () => {
       const engine = new ExecutionEngine();
-      await expect(engine.cancelExecution({ executionId: 'execution-1' })).rejects.toBeInstanceOf(
-        NotImplementedError,
-      );
+      await expect(
+        engine.cancelExecution({ executionId: 'execution-1' }),
+      ).rejects.toBeInstanceOf(NotImplementedError);
     });
 
     it('NotImplementedError instances carry a descriptive message', async () => {
@@ -322,7 +356,9 @@ describe('ExecutionEngine — Milestone 5 (Structural Execution Status Reporting
         expect.unreachable('cancelExecution() must throw');
       } catch (error) {
         expect(error).toBeInstanceOf(NotImplementedError);
-        expect((error as Error).message).toContain('ExecutionEngine.cancelExecution');
+        expect((error as Error).message).toContain(
+          'ExecutionEngine.cancelExecution',
+        );
         expect((error as Error).name).toBe('NotImplementedError');
       }
     });
@@ -332,14 +368,14 @@ describe('ExecutionEngine — Milestone 5 (Structural Execution Status Reporting
       await engine.initialize();
       await engine.start();
 
-      await expect(engine.cancelExecution({ executionId: 'execution-1' })).rejects.toBeInstanceOf(
-        NotImplementedError,
-      );
+      await expect(
+        engine.cancelExecution({ executionId: 'execution-1' }),
+      ).rejects.toBeInstanceOf(NotImplementedError);
 
       await engine.stop();
-      await expect(engine.cancelExecution({ executionId: 'execution-1' })).rejects.toBeInstanceOf(
-        NotImplementedError,
-      );
+      await expect(
+        engine.cancelExecution({ executionId: 'execution-1' }),
+      ).rejects.toBeInstanceOf(NotImplementedError);
     });
 
     it('cancelExecution() no longer performs any state transition of any kind', async () => {
@@ -347,9 +383,9 @@ describe('ExecutionEngine — Milestone 5 (Structural Execution Status Reporting
       await engine.initialize();
       await engine.start();
 
-      await expect(engine.cancelExecution({ executionId: 'execution-1' })).rejects.toBeInstanceOf(
-        NotImplementedError,
-      );
+      await expect(
+        engine.cancelExecution({ executionId: 'execution-1' }),
+      ).rejects.toBeInstanceOf(NotImplementedError);
 
       expect(engine.getState()).toBe('running');
     });
@@ -362,11 +398,18 @@ describe('ExecutionBuilder — Milestone 3 (unchanged in Milestone 5)', () => {
       const builder = new ExecutionBuilder();
       const dispatchResult = buildDispatchResult();
 
-      const record = builder.build({ dispatchResult, itemId: 'step-1' }, '2026-07-24T00:00:00.000Z');
+      const record = builder.build(
+        { dispatchResult, itemId: 'step-1' },
+        '2026-07-24T00:00:00.000Z',
+      );
 
       expect(record).toEqual({
         executionId: 'execution-workflow-1-step-1',
-        target: { workflowId: 'workflow-1', itemId: 'step-1', itemType: 'step' },
+        target: {
+          workflowId: 'workflow-1',
+          itemId: 'step-1',
+          itemType: 'step',
+        },
         status: 'pending',
         createdAt: '2026-07-24T00:00:00.000Z',
         updatedAt: '2026-07-24T00:00:00.000Z',
@@ -378,7 +421,10 @@ describe('ExecutionBuilder — Milestone 3 (unchanged in Milestone 5)', () => {
     it('produces identical output for identical input and timestamp', () => {
       const builder = new ExecutionBuilder();
       const dispatchResult = buildDispatchResult();
-      const request: ExecutionBuildRequest = { dispatchResult, itemId: 'step-1' };
+      const request: ExecutionBuildRequest = {
+        dispatchResult,
+        itemId: 'step-1',
+      };
 
       const first = builder.build(request, '2026-07-24T00:00:00.000Z');
       const second = builder.build(request, '2026-07-24T00:00:00.000Z');
@@ -399,7 +445,9 @@ describe('ExecutionBuilder — Milestone 3 (unchanged in Milestone 5)', () => {
       const builder = new ExecutionBuilder();
       const dispatchResult = buildDispatchResult();
 
-      expect(() => builder.build({ dispatchResult, itemId: 'unknown-item' })).toThrow(ExecutionValidationError);
+      expect(() =>
+        builder.build({ dispatchResult, itemId: 'unknown-item' }),
+      ).toThrow(ExecutionValidationError);
     });
   });
 
@@ -441,7 +489,9 @@ describe('ExecutionValidator — Milestone 4 (unchanged in Milestone 5)', () => 
 
       const result = validator.validate(record);
 
-      expect(result.issues.some((issue) => issue.code === 'INVALID_STATUS')).toBe(true);
+      expect(
+        result.issues.some((issue) => issue.code === 'INVALID_STATUS'),
+      ).toBe(true);
     });
   });
 
@@ -478,7 +528,11 @@ describe('ExecutionStatusTracker — Milestone 5', () => {
       expect(summary).toEqual({
         executionId: 'execution-workflow-1-step-1',
         status: 'pending',
-        target: { workflowId: 'workflow-1', itemId: 'step-1', itemType: 'step' },
+        target: {
+          workflowId: 'workflow-1',
+          itemId: 'step-1',
+          itemType: 'step',
+        },
         createdAt: '2026-07-24T00:00:00.000Z',
         updatedAt: '2026-07-24T00:00:00.000Z',
         durationMs: 0,
@@ -499,12 +553,20 @@ describe('ExecutionStatusTracker — Milestone 5', () => {
     it('preserves the target object structurally (workflowId, itemId, itemType)', () => {
       const tracker = new ExecutionStatusTracker();
       const record = buildValidRecord({
-        target: { workflowId: 'workflow-custom', itemId: 'task-custom', itemType: 'task' },
+        target: {
+          workflowId: 'workflow-custom',
+          itemId: 'task-custom',
+          itemType: 'task',
+        },
       });
 
       const summary = tracker.summarize(record);
 
-      expect(summary.target).toEqual({ workflowId: 'workflow-custom', itemId: 'task-custom', itemType: 'task' });
+      expect(summary.target).toEqual({
+        workflowId: 'workflow-custom',
+        itemId: 'task-custom',
+        itemType: 'task',
+      });
     });
 
     it('preserves createdAt and updatedAt verbatim', () => {
@@ -576,7 +638,9 @@ describe('ExecutionStatusTracker — Milestone 5', () => {
   describe('every ExecutionStatus value', () => {
     it('classifies pending as non-terminal, non-cancelled', () => {
       const tracker = new ExecutionStatusTracker();
-      const summary = tracker.summarize(buildValidRecord({ status: 'pending' }));
+      const summary = tracker.summarize(
+        buildValidRecord({ status: 'pending' }),
+      );
 
       expect(summary.status).toBe('pending');
       expect(summary.isTerminal).toBe(false);
@@ -585,7 +649,9 @@ describe('ExecutionStatusTracker — Milestone 5', () => {
 
     it('classifies running as non-terminal, non-cancelled', () => {
       const tracker = new ExecutionStatusTracker();
-      const summary = tracker.summarize(buildValidRecord({ status: 'running' }));
+      const summary = tracker.summarize(
+        buildValidRecord({ status: 'running' }),
+      );
 
       expect(summary.status).toBe('running');
       expect(summary.isTerminal).toBe(false);
@@ -594,7 +660,9 @@ describe('ExecutionStatusTracker — Milestone 5', () => {
 
     it('classifies completed as terminal, non-cancelled', () => {
       const tracker = new ExecutionStatusTracker();
-      const summary = tracker.summarize(buildValidRecord({ status: 'completed' }));
+      const summary = tracker.summarize(
+        buildValidRecord({ status: 'completed' }),
+      );
 
       expect(summary.status).toBe('completed');
       expect(summary.isTerminal).toBe(true);
@@ -612,7 +680,9 @@ describe('ExecutionStatusTracker — Milestone 5', () => {
 
     it('classifies cancelled as terminal and cancelled', () => {
       const tracker = new ExecutionStatusTracker();
-      const summary = tracker.summarize(buildValidRecord({ status: 'cancelled' }));
+      const summary = tracker.summarize(
+        buildValidRecord({ status: 'cancelled' }),
+      );
 
       expect(summary.status).toBe('cancelled');
       expect(summary.isTerminal).toBe(true);
@@ -689,16 +759,22 @@ describe('ExecutionStatusTracker — Milestone 5', () => {
       // @ts-expect-error — intentionally malformed for the test
       expect(() => tracker.summarize(null)).toThrow(ExecutionValidationError);
       // @ts-expect-error — intentionally malformed for the test
-      expect(() => tracker.summarize(undefined)).toThrow(ExecutionValidationError);
+      expect(() => tracker.summarize(undefined)).toThrow(
+        ExecutionValidationError,
+      );
     });
 
     it('throws ExecutionValidationError for a non-object record', () => {
       const tracker = new ExecutionStatusTracker();
 
       // @ts-expect-error — intentionally malformed for the test
-      expect(() => tracker.summarize('not-an-object')).toThrow(ExecutionValidationError);
+      expect(() => tracker.summarize('not-an-object')).toThrow(
+        ExecutionValidationError,
+      );
       // @ts-expect-error — intentionally malformed for the test
-      expect(() => tracker.summarize(['array'])).toThrow(ExecutionValidationError);
+      expect(() => tracker.summarize(['array'])).toThrow(
+        ExecutionValidationError,
+      );
     });
 
     it('throws ExecutionValidationError when target is missing entirely', () => {
@@ -706,7 +782,12 @@ describe('ExecutionStatusTracker — Milestone 5', () => {
 
       expect(() =>
         // @ts-expect-error — intentionally malformed for the test
-        tracker.summarize({ executionId: 'x', status: 'pending', createdAt: 'a', updatedAt: 'a' }),
+        tracker.summarize({
+          executionId: 'x',
+          status: 'pending',
+          createdAt: 'a',
+          updatedAt: 'a',
+        }),
       ).toThrow(ExecutionValidationError);
     });
 
@@ -714,8 +795,14 @@ describe('ExecutionStatusTracker — Milestone 5', () => {
       const tracker = new ExecutionStatusTracker();
 
       expect(() =>
-        // @ts-expect-error — intentionally malformed for the test
-        tracker.summarize({ executionId: 'x', target: null, status: 'pending', createdAt: 'a', updatedAt: 'a' }),
+        tracker.summarize({
+          executionId: 'x',
+          // @ts-expect-error — intentionally malformed for the test
+          target: null,
+          status: 'pending',
+          createdAt: 'a',
+          updatedAt: 'a',
+        }),
       ).toThrow(ExecutionValidationError);
     });
 
@@ -742,7 +829,16 @@ describe('ExecutionStatusTracker — Milestone 5', () => {
       const summary = tracker.summarize(record);
 
       expect(Object.keys(summary).sort()).toEqual(
-        ['createdAt', 'durationMs', 'executionId', 'isCancelled', 'isTerminal', 'status', 'target', 'updatedAt'].sort(),
+        [
+          'createdAt',
+          'durationMs',
+          'executionId',
+          'isCancelled',
+          'isTerminal',
+          'status',
+          'target',
+          'updatedAt',
+        ].sort(),
       );
     });
   });

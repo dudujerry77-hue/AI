@@ -85,12 +85,12 @@ Titan runtime engine contract without any override:
 
 ## Public API (Milestone 6)
 
-| Method | Behavior |
-|---|---|
-| `observeCycle(request)` | Delegates entirely to `LearningObservationBuilder.build(request.subject)`. Returns a `LearningObservation`. |
-| `generateProposal(request)` | Delegates entirely to `LearningProposalBuilder.build(request.observations)`. Returns a `LearningKnowledgeUpdateProposal` (`lessonIds: []`, `updateType: 'new-precedent'` — this direct entry point does not supply lessons/prior proposals). |
-| `prepareKnowledgeHandoff(request)` | Delegates entirely to `LearningKnowledgeHandoffBuilder.build(request.proposal)`. Returns a `LearningKnowledgeHandoff`. |
-| `analyzeCycle(request)` | Delegates entirely to `LearningPipelineBuilder.run(request.observations, request.priorProposals ?? [])`. Returns a full `LearningPipelineResult`: `lessons`, one aggregate `knowledgeUpdateProposal` (with real `lessonIds` and structurally detected `updateType`), `flaggedRisks`, and `proposedAdrs`. |
+| Method                             | Behavior                                                                                                                                                                                                                                                                                                 |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `observeCycle(request)`            | Delegates entirely to `LearningObservationBuilder.build(request.subject)`. Returns a `LearningObservation`.                                                                                                                                                                                              |
+| `generateProposal(request)`        | Delegates entirely to `LearningProposalBuilder.build(request.observations)`. Returns a `LearningKnowledgeUpdateProposal` (`lessonIds: []`, `updateType: 'new-precedent'` — this direct entry point does not supply lessons/prior proposals).                                                             |
+| `prepareKnowledgeHandoff(request)` | Delegates entirely to `LearningKnowledgeHandoffBuilder.build(request.proposal)`. Returns a `LearningKnowledgeHandoff`.                                                                                                                                                                                   |
+| `analyzeCycle(request)`            | Delegates entirely to `LearningPipelineBuilder.run(request.observations, request.priorProposals ?? [])`. Returns a full `LearningPipelineResult`: `lessons`, one aggregate `knowledgeUpdateProposal` (with real `lessonIds` and structurally detected `updateType`), `flaggedRisks`, and `proposedAdrs`. |
 
 All four methods throw `LearningRequestError` for a malformed request
 or input. No other public method exists.

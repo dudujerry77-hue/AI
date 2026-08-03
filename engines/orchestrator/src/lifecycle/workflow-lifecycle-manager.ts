@@ -16,13 +16,16 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  */
 function requireWorkflowObject(workflow: Workflow): Workflow {
   if (workflow === null || workflow === undefined || !isPlainObject(workflow)) {
-    throw new OrchestratorValidationError('Workflow must be a non-null object.', [
-      {
-        field: 'workflow',
-        code: 'MALFORMED_INPUT',
-        message: 'workflow must be a non-null object.',
-      },
-    ]);
+    throw new OrchestratorValidationError(
+      'Workflow must be a non-null object.',
+      [
+        {
+          field: 'workflow',
+          code: 'MALFORMED_INPUT',
+          message: 'workflow must be a non-null object.',
+        },
+      ],
+    );
   }
 
   return workflow;
@@ -38,7 +41,10 @@ function requireWorkflowObject(workflow: Workflow): Workflow {
  * preserved unchanged by reference. The input `workflow` is never
  * mutated.
  */
-function withTransition(workflow: Workflow, nextStatus: Workflow['status']): Workflow {
+function withTransition(
+  workflow: Workflow,
+  nextStatus: Workflow['status'],
+): Workflow {
   return {
     ...workflow,
     status: nextStatus,

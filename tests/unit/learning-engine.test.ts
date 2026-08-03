@@ -27,7 +27,9 @@ const EXPECTED_CAPABILITIES = [
   'learning.analyze-cycle',
 ];
 
-function buildWorkflowResult(overrides: Partial<WorkflowResult> = {}): WorkflowResult {
+function buildWorkflowResult(
+  overrides: Partial<WorkflowResult> = {},
+): WorkflowResult {
   return {
     workflowId: 'workflow-1',
     status: 'completed',
@@ -37,7 +39,9 @@ function buildWorkflowResult(overrides: Partial<WorkflowResult> = {}): WorkflowR
   };
 }
 
-function buildValidationVerdict(overrides: Partial<ValidationVerdict> = {}): ValidationVerdict {
+function buildValidationVerdict(
+  overrides: Partial<ValidationVerdict> = {},
+): ValidationVerdict {
   return {
     validationId: 'validation-workflow-1-step-1',
     target: {
@@ -54,7 +58,9 @@ function buildValidationVerdict(overrides: Partial<ValidationVerdict> = {}): Val
   };
 }
 
-function buildSubject(overrides: Partial<LearningSubject> = {}): LearningSubject {
+function buildSubject(
+  overrides: Partial<LearningSubject> = {},
+): LearningSubject {
   return {
     outcome: buildWorkflowResult(),
     verdict: buildValidationVerdict(),
@@ -62,7 +68,9 @@ function buildSubject(overrides: Partial<LearningSubject> = {}): LearningSubject
   };
 }
 
-function buildObservation(overrides: Partial<LearningObservation> = {}): LearningObservation {
+function buildObservation(
+  overrides: Partial<LearningObservation> = {},
+): LearningObservation {
   return {
     observationId: 'observation-workflow-1-validation-workflow-1-step-1',
     subject: buildSubject(),
@@ -72,12 +80,15 @@ function buildObservation(overrides: Partial<LearningObservation> = {}): Learnin
   };
 }
 
-function buildProposal(overrides: Partial<LearningKnowledgeUpdateProposal> = {}): LearningKnowledgeUpdateProposal {
+function buildProposal(
+  overrides: Partial<LearningKnowledgeUpdateProposal> = {},
+): LearningKnowledgeUpdateProposal {
   return {
     proposalId: 'proposal-observation-workflow-1-validation-workflow-1-step-1',
     updateType: 'new-precedent',
     lessonIds: [],
-    description: 'Structural knowledge-update proposal composed from 1 observation(s): observation-1.',
+    description:
+      'Structural knowledge-update proposal composed from 1 observation(s): observation-1.',
     status: 'proposed',
     proposedAt: '2026-07-29T00:00:00.000Z',
     ...overrides,
@@ -96,11 +107,16 @@ function buildLesson(overrides: Partial<LearningLesson> = {}): LearningLesson {
   };
 }
 
-function buildRisk(overrides: Partial<LearningFlaggedRisk> = {}): LearningFlaggedRisk {
+function buildRisk(
+  overrides: Partial<LearningFlaggedRisk> = {},
+): LearningFlaggedRisk {
   return {
     riskId: 'risk-lesson-observation-workflow-1-validation-workflow-1-step-1',
-    description: 'Flagged risk derived from lesson lesson-observation-workflow-1-validation-workflow-1-step-1 (category: failure).',
-    relatedLessonIds: ['lesson-observation-workflow-1-validation-workflow-1-step-1'],
+    description:
+      'Flagged risk derived from lesson lesson-observation-workflow-1-validation-workflow-1-step-1 (category: failure).',
+    relatedLessonIds: [
+      'lesson-observation-workflow-1-validation-workflow-1-step-1',
+    ],
     flaggedAt: '2026-07-29T00:00:00.000Z',
     ...overrides,
   };
@@ -184,7 +200,11 @@ describe('LearningEngine — Milestone 6 (Structural Lessons, Risks, ADRs, and P
     });
 
     it('allows overriding id, name, and version via options', () => {
-      const engine = new LearningEngine({ id: 'custom-id', name: 'Custom Name', version: '2.0.0' });
+      const engine = new LearningEngine({
+        id: 'custom-id',
+        name: 'Custom Name',
+        version: '2.0.0',
+      });
       const metadata = engine.metadata();
 
       expect(metadata.id).toBe('custom-id');
@@ -229,11 +249,21 @@ describe('LearningEngine — Milestone 6 (Structural Lessons, Risks, ADRs, and P
       // Any of these existing would indicate a business method was
       // added without explicit grounding in architecture.md or the
       // Phase 012 specification.
-      expect((engine as unknown as Record<string, unknown>).distillLesson).toBeUndefined();
-      expect((engine as unknown as Record<string, unknown>).proposeAdr).toBeUndefined();
-      expect((engine as unknown as Record<string, unknown>).flagRisk).toBeUndefined();
-      expect((engine as unknown as Record<string, unknown>).getLearningStatus).toBeUndefined();
-      expect((engine as unknown as Record<string, unknown>).applyLearning).toBeUndefined();
+      expect(
+        (engine as unknown as Record<string, unknown>).distillLesson,
+      ).toBeUndefined();
+      expect(
+        (engine as unknown as Record<string, unknown>).proposeAdr,
+      ).toBeUndefined();
+      expect(
+        (engine as unknown as Record<string, unknown>).flagRisk,
+      ).toBeUndefined();
+      expect(
+        (engine as unknown as Record<string, unknown>).getLearningStatus,
+      ).toBeUndefined();
+      expect(
+        (engine as unknown as Record<string, unknown>).applyLearning,
+      ).toBeUndefined();
     });
   });
 
@@ -256,23 +286,31 @@ describe('LearningEngine — Milestone 6 (Structural Lessons, Risks, ADRs, and P
       const engine = new LearningEngine();
 
       // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.observeCycle(null)).rejects.toBeInstanceOf(LearningRequestError);
+      await expect(engine.observeCycle(null)).rejects.toBeInstanceOf(
+        LearningRequestError,
+      );
       // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.observeCycle(undefined)).rejects.toBeInstanceOf(LearningRequestError);
+      await expect(engine.observeCycle(undefined)).rejects.toBeInstanceOf(
+        LearningRequestError,
+      );
     });
 
     it('rejects with LearningRequestError for a non-object request', async () => {
       const engine = new LearningEngine();
 
       // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.observeCycle('not-an-object')).rejects.toBeInstanceOf(LearningRequestError);
+      await expect(engine.observeCycle('not-an-object')).rejects.toBeInstanceOf(
+        LearningRequestError,
+      );
     });
 
     it('propagates LearningRequestError from LearningObservationBuilder when subject itself is malformed', async () => {
       const engine = new LearningEngine();
 
-      // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.observeCycle({ subject: null })).rejects.toBeInstanceOf(LearningRequestError);
+      await expect(
+        // @ts-expect-error — intentionally malformed for the test
+        engine.observeCycle({ subject: null }),
+      ).rejects.toBeInstanceOf(LearningRequestError);
     });
 
     it('does not mutate the subject passed to observeCycle()', async () => {
@@ -294,7 +332,8 @@ describe('LearningEngine — Milestone 6 (Structural Lessons, Risks, ADRs, and P
       const result = await engine.generateProposal({ observations });
 
       expect(result).toEqual({
-        proposalId: 'proposal-observation-workflow-1-validation-workflow-1-step-1',
+        proposalId:
+          'proposal-observation-workflow-1-validation-workflow-1-step-1',
         updateType: 'new-precedent',
         lessonIds: [],
         description:
@@ -308,13 +347,17 @@ describe('LearningEngine — Milestone 6 (Structural Lessons, Risks, ADRs, and P
       const engine = new LearningEngine();
 
       // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.generateProposal(null)).rejects.toBeInstanceOf(LearningRequestError);
+      await expect(engine.generateProposal(null)).rejects.toBeInstanceOf(
+        LearningRequestError,
+      );
     });
 
     it('propagates LearningRequestError from LearningProposalBuilder when observations is empty', async () => {
       const engine = new LearningEngine();
 
-      await expect(engine.generateProposal({ observations: [] })).rejects.toBeInstanceOf(LearningRequestError);
+      await expect(
+        engine.generateProposal({ observations: [] }),
+      ).rejects.toBeInstanceOf(LearningRequestError);
     });
 
     it('does not mutate the observations passed to generateProposal()', async () => {
@@ -336,7 +379,8 @@ describe('LearningEngine — Milestone 6 (Structural Lessons, Risks, ADRs, and P
       const result = await engine.prepareKnowledgeHandoff({ proposal });
 
       expect(result).toEqual({
-        handoffId: 'handoff-proposal-observation-workflow-1-validation-workflow-1-step-1',
+        handoffId:
+          'handoff-proposal-observation-workflow-1-validation-workflow-1-step-1',
         proposal,
         preparedAt: result.preparedAt,
       });
@@ -346,23 +390,31 @@ describe('LearningEngine — Milestone 6 (Structural Lessons, Risks, ADRs, and P
       const engine = new LearningEngine();
 
       // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.prepareKnowledgeHandoff(null)).rejects.toBeInstanceOf(LearningRequestError);
-      // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.prepareKnowledgeHandoff(undefined)).rejects.toBeInstanceOf(LearningRequestError);
+      await expect(engine.prepareKnowledgeHandoff(null)).rejects.toBeInstanceOf(
+        LearningRequestError,
+      );
+      await expect(
+        // @ts-expect-error — intentionally malformed for the test
+        engine.prepareKnowledgeHandoff(undefined),
+      ).rejects.toBeInstanceOf(LearningRequestError);
     });
 
     it('rejects with LearningRequestError for a non-object request', async () => {
       const engine = new LearningEngine();
 
-      // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.prepareKnowledgeHandoff('not-an-object')).rejects.toBeInstanceOf(LearningRequestError);
+      await expect(
+        // @ts-expect-error — intentionally malformed for the test
+        engine.prepareKnowledgeHandoff('not-an-object'),
+      ).rejects.toBeInstanceOf(LearningRequestError);
     });
 
     it('propagates LearningRequestError from LearningKnowledgeHandoffBuilder when proposal itself is malformed', async () => {
       const engine = new LearningEngine();
 
-      // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.prepareKnowledgeHandoff({ proposal: null })).rejects.toBeInstanceOf(LearningRequestError);
+      await expect(
+        // @ts-expect-error — intentionally malformed for the test
+        engine.prepareKnowledgeHandoff({ proposal: null }),
+      ).rejects.toBeInstanceOf(LearningRequestError);
     });
 
     it('does not mutate the proposal passed to prepareKnowledgeHandoff()', async () => {
@@ -381,9 +433,13 @@ describe('LearningEngine — Milestone 6 (Structural Lessons, Risks, ADRs, and P
       // it did, this file's own import list (checked above) would need
       // one. This test documents that expectation explicitly.
       const engine = new LearningEngine();
-      const result = await engine.prepareKnowledgeHandoff({ proposal: buildProposal() });
+      const result = await engine.prepareKnowledgeHandoff({
+        proposal: buildProposal(),
+      });
 
-      expect(Object.keys(result).sort()).toEqual(['handoffId', 'preparedAt', 'proposal'].sort());
+      expect(Object.keys(result).sort()).toEqual(
+        ['handoffId', 'preparedAt', 'proposal'].sort(),
+      );
     });
   });
 
@@ -397,7 +453,9 @@ describe('LearningEngine — Milestone 6 (Structural Lessons, Risks, ADRs, and P
       expect(result.lessons).toHaveLength(1);
       expect(result.lessons[0].category).toBe('pattern-worked');
       expect(result.knowledgeUpdateProposals).toHaveLength(1);
-      expect(result.knowledgeUpdateProposals[0].lessonIds).toEqual([result.lessons[0].lessonId]);
+      expect(result.knowledgeUpdateProposals[0].lessonIds).toEqual([
+        result.lessons[0].lessonId,
+      ]);
       expect(result.flaggedRisks).toEqual([]);
       expect(result.proposedAdrs).toEqual([]);
     });
@@ -405,7 +463,11 @@ describe('LearningEngine — Milestone 6 (Structural Lessons, Risks, ADRs, and P
     it('populates flaggedRisks and proposedAdrs for a failing observation', async () => {
       const engine = new LearningEngine();
       const observations = [
-        buildObservation({ subject: buildSubject({ verdict: buildValidationVerdict({ status: 'fail' }) }) }),
+        buildObservation({
+          subject: buildSubject({
+            verdict: buildValidationVerdict({ status: 'fail' }),
+          }),
+        }),
       ];
 
       const result = await engine.analyzeCycle({ observations });
@@ -413,7 +475,9 @@ describe('LearningEngine — Milestone 6 (Structural Lessons, Risks, ADRs, and P
       expect(result.lessons[0].category).toBe('failure');
       expect(result.flaggedRisks).toHaveLength(1);
       expect(result.proposedAdrs).toHaveLength(1);
-      expect(result.proposedAdrs[0].relatedLessonIds).toEqual(result.flaggedRisks[0].relatedLessonIds);
+      expect(result.proposedAdrs[0].relatedLessonIds).toEqual(
+        result.flaggedRisks[0].relatedLessonIds,
+      );
     });
 
     it('detects refined-heuristic when priorProposals overlap the new lessonIds', async () => {
@@ -422,22 +486,31 @@ describe('LearningEngine — Milestone 6 (Structural Lessons, Risks, ADRs, and P
       const first = await engine.analyzeCycle({ observations });
       const priorProposals = first.knowledgeUpdateProposals;
 
-      const second = await engine.analyzeCycle({ observations, priorProposals });
+      const second = await engine.analyzeCycle({
+        observations,
+        priorProposals,
+      });
 
-      expect(second.knowledgeUpdateProposals[0].updateType).toBe('refined-heuristic');
+      expect(second.knowledgeUpdateProposals[0].updateType).toBe(
+        'refined-heuristic',
+      );
     });
 
     it('rejects with LearningRequestError for a null/undefined request', async () => {
       const engine = new LearningEngine();
 
       // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.analyzeCycle(null)).rejects.toBeInstanceOf(LearningRequestError);
+      await expect(engine.analyzeCycle(null)).rejects.toBeInstanceOf(
+        LearningRequestError,
+      );
     });
 
     it('propagates LearningRequestError from LearningPipelineBuilder when observations is empty', async () => {
       const engine = new LearningEngine();
 
-      await expect(engine.analyzeCycle({ observations: [] })).rejects.toBeInstanceOf(LearningRequestError);
+      await expect(
+        engine.analyzeCycle({ observations: [] }),
+      ).rejects.toBeInstanceOf(LearningRequestError);
     });
 
     it('does not mutate the observations passed to analyzeCycle()', async () => {
@@ -453,13 +526,23 @@ describe('LearningEngine — Milestone 6 (Structural Lessons, Risks, ADRs, and P
     it('never imports or calls the Knowledge Engine runtime and never sets an accepted/rejected status', async () => {
       const engine = new LearningEngine();
       const observations = [
-        buildObservation({ subject: buildSubject({ verdict: buildValidationVerdict({ status: 'fail' }) }) }),
+        buildObservation({
+          subject: buildSubject({
+            verdict: buildValidationVerdict({ status: 'fail' }),
+          }),
+        }),
       ];
 
       const result = await engine.analyzeCycle({ observations });
 
-      expect(result.knowledgeUpdateProposals.every((proposal) => proposal.status === 'proposed')).toBe(true);
-      expect(result.proposedAdrs.every((adr) => adr.status === 'proposed')).toBe(true);
+      expect(
+        result.knowledgeUpdateProposals.every(
+          (proposal) => proposal.status === 'proposed',
+        ),
+      ).toBe(true);
+      expect(
+        result.proposedAdrs.every((adr) => adr.status === 'proposed'),
+      ).toBe(true);
     });
   });
 });
@@ -514,8 +597,14 @@ describe('LearningObservationBuilder — Milestone 3', () => {
     it('produces identical output across separate builder instances', () => {
       const subject = buildSubject();
 
-      const first = new LearningObservationBuilder().build(subject, '2026-07-29T00:00:00.000Z');
-      const second = new LearningObservationBuilder().build(subject, '2026-07-29T00:00:00.000Z');
+      const first = new LearningObservationBuilder().build(
+        subject,
+        '2026-07-29T00:00:00.000Z',
+      );
+      const second = new LearningObservationBuilder().build(
+        subject,
+        '2026-07-29T00:00:00.000Z',
+      );
 
       expect(first).toEqual(second);
     });
@@ -541,8 +630,10 @@ describe('LearningObservationBuilder — Milestone 3', () => {
     it('rejects a subject missing outcome entirely', () => {
       const builder = new LearningObservationBuilder();
 
-      // @ts-expect-error — intentionally malformed for the test
-      expect(() => builder.build({ verdict: buildValidationVerdict() })).toThrow(LearningRequestError);
+      expect(() =>
+        // @ts-expect-error — intentionally malformed for the test
+        builder.build({ verdict: buildValidationVerdict() }),
+      ).toThrow(LearningRequestError);
     });
 
     it('rejects a subject whose outcome has no workflowId', () => {
@@ -561,7 +652,9 @@ describe('LearningObservationBuilder — Milestone 3', () => {
       const builder = new LearningObservationBuilder();
 
       // @ts-expect-error — intentionally malformed for the test
-      expect(() => builder.build({ outcome: buildWorkflowResult() })).toThrow(LearningRequestError);
+      expect(() => builder.build({ outcome: buildWorkflowResult() })).toThrow(
+        LearningRequestError,
+      );
     });
 
     it('rejects a subject whose verdict has no validationId', () => {
@@ -585,7 +678,9 @@ describe('LearningObservationBuilder — Milestone 3', () => {
         expect.unreachable('build() must throw');
       } catch (error) {
         expect(error).toBeInstanceOf(LearningRequestError);
-        expect((error as LearningRequestError).issues.length).toBeGreaterThan(0);
+        expect((error as LearningRequestError).issues.length).toBeGreaterThan(
+          0,
+        );
       }
     });
   });
@@ -622,7 +717,8 @@ describe('LearningProposalBuilder — Milestone 4', () => {
       const result = builder.build(observations, '2026-07-29T00:00:00.000Z');
 
       expect(result).toEqual({
-        proposalId: 'proposal-observation-workflow-1-validation-workflow-1-step-1',
+        proposalId:
+          'proposal-observation-workflow-1-validation-workflow-1-step-1',
         updateType: 'new-precedent',
         lessonIds: [],
         description:
@@ -709,15 +805,19 @@ describe('LearningProposalBuilder — Milestone 4', () => {
       const builder = new LearningProposalBuilder();
 
       // @ts-expect-error — intentionally malformed for the test
-      expect(() => builder.build([{ notAnObservation: true }])).toThrow(LearningRequestError);
+      expect(() => builder.build([{ notAnObservation: true }])).toThrow(
+        LearningRequestError,
+      );
     });
 
     it('rejects an observation missing observationId', () => {
       const builder = new LearningProposalBuilder();
 
       expect(() =>
-        // @ts-expect-error — intentionally malformed for the test
-        builder.build([{ subject: buildSubject(), stage: 'outcome', observedAt: 'x' }]),
+        builder.build([
+          // @ts-expect-error — intentionally malformed for the test
+          { subject: buildSubject(), stage: 'outcome', observedAt: 'x' },
+        ]),
       ).toThrow(LearningRequestError);
     });
 
@@ -729,7 +829,9 @@ describe('LearningProposalBuilder — Milestone 4', () => {
         expect.unreachable('build() must throw');
       } catch (error) {
         expect(error).toBeInstanceOf(LearningRequestError);
-        expect((error as LearningRequestError).issues.length).toBeGreaterThan(0);
+        expect((error as LearningRequestError).issues.length).toBeGreaterThan(
+          0,
+        );
       }
     });
   });
@@ -762,7 +864,11 @@ describe('LearningProposalBuilder — Milestone 4', () => {
       const observations = [buildObservation()];
       const lessons = [buildLesson()];
 
-      const result = builder.build(observations, '2026-07-29T00:00:00.000Z', lessons);
+      const result = builder.build(
+        observations,
+        '2026-07-29T00:00:00.000Z',
+        lessons,
+      );
 
       expect(result.lessonIds).toEqual([lessons[0].lessonId]);
     });
@@ -771,9 +877,16 @@ describe('LearningProposalBuilder — Milestone 4', () => {
       const builder = new LearningProposalBuilder();
       const observations = [buildObservation()];
       const lessons = [buildLesson()];
-      const priorProposals = [buildProposal({ lessonIds: [lessons[0].lessonId] })];
+      const priorProposals = [
+        buildProposal({ lessonIds: [lessons[0].lessonId] }),
+      ];
 
-      const result = builder.build(observations, '2026-07-29T00:00:00.000Z', lessons, priorProposals);
+      const result = builder.build(
+        observations,
+        '2026-07-29T00:00:00.000Z',
+        lessons,
+        priorProposals,
+      );
 
       expect(result.updateType).toBe('refined-heuristic');
     });
@@ -782,9 +895,16 @@ describe('LearningProposalBuilder — Milestone 4', () => {
       const builder = new LearningProposalBuilder();
       const observations = [buildObservation()];
       const lessons = [buildLesson()];
-      const priorProposals = [buildProposal({ lessonIds: ['lesson-unrelated'] })];
+      const priorProposals = [
+        buildProposal({ lessonIds: ['lesson-unrelated'] }),
+      ];
 
-      const result = builder.build(observations, '2026-07-29T00:00:00.000Z', lessons, priorProposals);
+      const result = builder.build(
+        observations,
+        '2026-07-29T00:00:00.000Z',
+        lessons,
+        priorProposals,
+      );
 
       expect(result.updateType).toBe('new-precedent');
     });
@@ -800,7 +920,8 @@ describe('LearningKnowledgeHandoffBuilder — Milestone 5', () => {
       const result = builder.build(proposal, '2026-07-29T00:00:00.000Z');
 
       expect(result).toEqual({
-        handoffId: 'handoff-proposal-observation-workflow-1-validation-workflow-1-step-1',
+        handoffId:
+          'handoff-proposal-observation-workflow-1-validation-workflow-1-step-1',
         proposal,
         preparedAt: '2026-07-29T00:00:00.000Z',
       });
@@ -822,7 +943,9 @@ describe('LearningKnowledgeHandoffBuilder — Milestone 5', () => {
       const result = builder.build(proposal);
 
       expect(result.proposal.status).toBe('proposed');
-      expect(Object.keys(result).sort()).toEqual(['handoffId', 'preparedAt', 'proposal'].sort());
+      expect(Object.keys(result).sort()).toEqual(
+        ['handoffId', 'preparedAt', 'proposal'].sort(),
+      );
     });
   });
 
@@ -840,8 +963,14 @@ describe('LearningKnowledgeHandoffBuilder — Milestone 5', () => {
     it('produces identical output across separate builder instances', () => {
       const proposal = buildProposal();
 
-      const first = new LearningKnowledgeHandoffBuilder().build(proposal, '2026-07-29T00:00:00.000Z');
-      const second = new LearningKnowledgeHandoffBuilder().build(proposal, '2026-07-29T00:00:00.000Z');
+      const first = new LearningKnowledgeHandoffBuilder().build(
+        proposal,
+        '2026-07-29T00:00:00.000Z',
+      );
+      const second = new LearningKnowledgeHandoffBuilder().build(
+        proposal,
+        '2026-07-29T00:00:00.000Z',
+      );
 
       expect(first).toEqual(second);
     });
@@ -868,7 +997,9 @@ describe('LearningKnowledgeHandoffBuilder — Milestone 5', () => {
       const builder = new LearningKnowledgeHandoffBuilder();
 
       // @ts-expect-error — intentionally malformed for the test
-      expect(() => builder.build('not-an-object')).toThrow(LearningRequestError);
+      expect(() => builder.build('not-an-object')).toThrow(
+        LearningRequestError,
+      );
     });
 
     it('rejects a proposal missing proposalId', () => {
@@ -876,7 +1007,11 @@ describe('LearningKnowledgeHandoffBuilder — Milestone 5', () => {
 
       expect(() =>
         // @ts-expect-error — intentionally malformed for the test
-        builder.build({ updateType: 'new-precedent', lessonIds: [], status: 'proposed' }),
+        builder.build({
+          updateType: 'new-precedent',
+          lessonIds: [],
+          status: 'proposed',
+        }),
       ).toThrow(LearningRequestError);
     });
 
@@ -898,7 +1033,9 @@ describe('LearningKnowledgeHandoffBuilder — Milestone 5', () => {
         expect.unreachable('build() must throw');
       } catch (error) {
         expect(error).toBeInstanceOf(LearningRequestError);
-        expect((error as LearningRequestError).issues.length).toBeGreaterThan(0);
+        expect((error as LearningRequestError).issues.length).toBeGreaterThan(
+          0,
+        );
       }
     });
   });
@@ -952,8 +1089,11 @@ describe('LearningLessonBuilder — Milestone 6', () => {
 
       expect(result).toEqual([
         {
-          lessonId: 'lesson-observation-workflow-1-validation-workflow-1-step-1',
-          observationIds: ['observation-workflow-1-validation-workflow-1-step-1'],
+          lessonId:
+            'lesson-observation-workflow-1-validation-workflow-1-step-1',
+          observationIds: [
+            'observation-workflow-1-validation-workflow-1-step-1',
+          ],
           category: 'pattern-worked',
           description:
             'Lesson distilled from observation observation-workflow-1-validation-workflow-1-step-1: Validation Engine verdict status was "pass".',
@@ -965,7 +1105,11 @@ describe('LearningLessonBuilder — Milestone 6', () => {
     it('distills a "fail" observation into a failure lesson', () => {
       const builder = new LearningLessonBuilder();
       const observations = [
-        buildObservation({ subject: buildSubject({ verdict: buildValidationVerdict({ status: 'fail' }) }) }),
+        buildObservation({
+          subject: buildSubject({
+            verdict: buildValidationVerdict({ status: 'fail' }),
+          }),
+        }),
       ];
 
       const result = builder.build(observations);
@@ -976,7 +1120,11 @@ describe('LearningLessonBuilder — Milestone 6', () => {
     it('distills a "partial" observation into an estimate-inaccuracy lesson', () => {
       const builder = new LearningLessonBuilder();
       const observations = [
-        buildObservation({ subject: buildSubject({ verdict: buildValidationVerdict({ status: 'partial' }) }) }),
+        buildObservation({
+          subject: buildSubject({
+            verdict: buildValidationVerdict({ status: 'partial' }),
+          }),
+        }),
       ];
 
       const result = builder.build(observations);
@@ -1049,8 +1197,11 @@ describe('LearningLessonBuilder — Milestone 6', () => {
       expect(() =>
         builder.build([
           buildObservation({
-            // @ts-expect-error — intentionally malformed for the test
-            subject: { outcome: buildWorkflowResult(), verdict: { validationId: 'x', status: 'bogus' } },
+            subject: {
+              outcome: buildWorkflowResult(),
+              // @ts-expect-error — intentionally malformed for the test
+              verdict: { validationId: 'x', status: 'bogus' },
+            },
           }),
         ]),
       ).toThrow(LearningRequestError);
@@ -1064,7 +1215,9 @@ describe('LearningLessonBuilder — Milestone 6', () => {
         expect.unreachable('build() must throw');
       } catch (error) {
         expect(error).toBeInstanceOf(LearningRequestError);
-        expect((error as LearningRequestError).issues.length).toBeGreaterThan(0);
+        expect((error as LearningRequestError).issues.length).toBeGreaterThan(
+          0,
+        );
       }
     });
   });
@@ -1101,10 +1254,13 @@ describe('LearningFlaggedRiskBuilder — Milestone 6', () => {
 
       expect(result).toEqual([
         {
-          riskId: 'risk-lesson-observation-workflow-1-validation-workflow-1-step-1',
+          riskId:
+            'risk-lesson-observation-workflow-1-validation-workflow-1-step-1',
           description:
             'Flagged risk derived from lesson lesson-observation-workflow-1-validation-workflow-1-step-1 (category: failure).',
-          relatedLessonIds: ['lesson-observation-workflow-1-validation-workflow-1-step-1'],
+          relatedLessonIds: [
+            'lesson-observation-workflow-1-validation-workflow-1-step-1',
+          ],
           flaggedAt: '2026-07-29T00:00:00.000Z',
         },
       ]);
@@ -1129,7 +1285,9 @@ describe('LearningFlaggedRiskBuilder — Milestone 6', () => {
 
       const result = builder.build(lessons);
 
-      expect(result.map((risk) => risk.riskId).sort()).toEqual(['risk-lesson-b', 'risk-lesson-c'].sort());
+      expect(result.map((risk) => risk.riskId).sort()).toEqual(
+        ['risk-lesson-b', 'risk-lesson-c'].sort(),
+      );
     });
   });
 
@@ -1192,7 +1350,9 @@ describe('LearningFlaggedRiskBuilder — Milestone 6', () => {
         expect.unreachable('build() must throw');
       } catch (error) {
         expect(error).toBeInstanceOf(LearningRequestError);
-        expect((error as LearningRequestError).issues.length).toBeGreaterThan(0);
+        expect((error as LearningRequestError).issues.length).toBeGreaterThan(
+          0,
+        );
       }
     });
   });
@@ -1220,8 +1380,10 @@ describe('LearningProposedAdrBuilder — Milestone 6', () => {
 
       expect(result).toEqual([
         {
-          adrId: 'adr-risk-lesson-observation-workflow-1-validation-workflow-1-step-1',
-          title: 'Proposed ADR for flagged risk risk-lesson-observation-workflow-1-validation-workflow-1-step-1',
+          adrId:
+            'adr-risk-lesson-observation-workflow-1-validation-workflow-1-step-1',
+          title:
+            'Proposed ADR for flagged risk risk-lesson-observation-workflow-1-validation-workflow-1-step-1',
           status: 'proposed',
           context: risks[0].description,
           decision:
@@ -1237,7 +1399,10 @@ describe('LearningProposedAdrBuilder — Milestone 6', () => {
 
     it('translates multiple risks into multiple ADRs, one-to-one', () => {
       const builder = new LearningProposedAdrBuilder();
-      const risks = [buildRisk({ riskId: 'risk-a' }), buildRisk({ riskId: 'risk-b' })];
+      const risks = [
+        buildRisk({ riskId: 'risk-a' }),
+        buildRisk({ riskId: 'risk-b' }),
+      ];
 
       const result = builder.build(risks);
 
@@ -1320,7 +1485,9 @@ describe('LearningProposedAdrBuilder — Milestone 6', () => {
         expect.unreachable('build() must throw');
       } catch (error) {
         expect(error).toBeInstanceOf(LearningRequestError);
-        expect((error as LearningRequestError).issues.length).toBeGreaterThan(0);
+        expect((error as LearningRequestError).issues.length).toBeGreaterThan(
+          0,
+        );
       }
     });
   });
@@ -1350,7 +1517,10 @@ describe('LearningProposedAdrBuilder — Milestone 6', () => {
   describe('no decision-making behavior', () => {
     it('never assigns a status other than "proposed"', () => {
       const builder = new LearningProposedAdrBuilder();
-      const results = builder.build([buildRisk({ riskId: 'risk-a' }), buildRisk({ riskId: 'risk-b' })]);
+      const results = builder.build([
+        buildRisk({ riskId: 'risk-a' }),
+        buildRisk({ riskId: 'risk-b' }),
+      ]);
 
       expect(results.every((adr) => adr.status === 'proposed')).toBe(true);
     });
@@ -1368,8 +1538,12 @@ describe('LearningPipelineBuilder — Milestone 6', () => {
       expect(result.lessons).toHaveLength(1);
       expect(result.lessons[0].category).toBe('pattern-worked');
       expect(result.knowledgeUpdateProposals).toHaveLength(1);
-      expect(result.knowledgeUpdateProposals[0].lessonIds).toEqual([result.lessons[0].lessonId]);
-      expect(result.knowledgeUpdateProposals[0].updateType).toBe('new-precedent');
+      expect(result.knowledgeUpdateProposals[0].lessonIds).toEqual([
+        result.lessons[0].lessonId,
+      ]);
+      expect(result.knowledgeUpdateProposals[0].updateType).toBe(
+        'new-precedent',
+      );
       expect(result.flaggedRisks).toEqual([]);
       expect(result.proposedAdrs).toEqual([]);
     });
@@ -1377,14 +1551,20 @@ describe('LearningPipelineBuilder — Milestone 6', () => {
     it('assembles flaggedRisks and proposedAdrs from a failing observation', () => {
       const builder = new LearningPipelineBuilder();
       const observations = [
-        buildObservation({ subject: buildSubject({ verdict: buildValidationVerdict({ status: 'fail' }) }) }),
+        buildObservation({
+          subject: buildSubject({
+            verdict: buildValidationVerdict({ status: 'fail' }),
+          }),
+        }),
       ];
 
       const result = builder.run(observations);
 
       expect(result.flaggedRisks).toHaveLength(1);
       expect(result.proposedAdrs).toHaveLength(1);
-      expect(result.proposedAdrs[0].relatedLessonIds).toEqual(result.flaggedRisks[0].relatedLessonIds);
+      expect(result.proposedAdrs[0].relatedLessonIds).toEqual(
+        result.flaggedRisks[0].relatedLessonIds,
+      );
     });
 
     it('detects refined-heuristic via priorProposals overlap', () => {
@@ -1392,23 +1572,37 @@ describe('LearningPipelineBuilder — Milestone 6', () => {
       const observations = [buildObservation()];
 
       const first = builder.run(observations, [], '2026-07-29T00:00:00.000Z');
-      const second = builder.run(observations, first.knowledgeUpdateProposals, '2026-07-29T00:01:00.000Z');
+      const second = builder.run(
+        observations,
+        first.knowledgeUpdateProposals,
+        '2026-07-29T00:01:00.000Z',
+      );
 
-      expect(second.knowledgeUpdateProposals[0].updateType).toBe('refined-heuristic');
+      expect(second.knowledgeUpdateProposals[0].updateType).toBe(
+        'refined-heuristic',
+      );
     });
 
     it('shares one resolved timestamp across every produced artifact', () => {
       const builder = new LearningPipelineBuilder();
       const observations = [
-        buildObservation({ subject: buildSubject({ verdict: buildValidationVerdict({ status: 'fail' }) }) }),
+        buildObservation({
+          subject: buildSubject({
+            verdict: buildValidationVerdict({ status: 'fail' }),
+          }),
+        }),
       ];
 
       const result = builder.run(observations, [], '2026-07-29T00:00:00.000Z');
 
       expect(result.lessons[0].createdAt).toBe('2026-07-29T00:00:00.000Z');
-      expect(result.knowledgeUpdateProposals[0].proposedAt).toBe('2026-07-29T00:00:00.000Z');
+      expect(result.knowledgeUpdateProposals[0].proposedAt).toBe(
+        '2026-07-29T00:00:00.000Z',
+      );
       expect(result.flaggedRisks[0].flaggedAt).toBe('2026-07-29T00:00:00.000Z');
-      expect(result.proposedAdrs[0].proposedAt).toBe('2026-07-29T00:00:00.000Z');
+      expect(result.proposedAdrs[0].proposedAt).toBe(
+        '2026-07-29T00:00:00.000Z',
+      );
     });
   });
 
@@ -1442,7 +1636,9 @@ describe('LearningPipelineBuilder — Milestone 6', () => {
       const builder = new LearningPipelineBuilder();
 
       // @ts-expect-error — intentionally malformed for the test
-      expect(() => builder.run([{ notAnObservation: true }])).toThrow(LearningRequestError);
+      expect(() => builder.run([{ notAnObservation: true }])).toThrow(
+        LearningRequestError,
+      );
     });
   });
 

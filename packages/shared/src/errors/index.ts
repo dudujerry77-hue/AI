@@ -8,6 +8,9 @@ export class TitanError extends Error {
   }
 }
 
-export function createTitanError(message: string, code = 'titan.error'): TitanError {
+export function createTitanError(
+  message: string,
+  code = 'titan.error',
+): TitanError {
   return new TitanError(message, code);
 }

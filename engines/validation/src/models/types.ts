@@ -26,7 +26,10 @@
  * import, instantiate, or call the Execution Engine's runtime.
  */
 
-import type { ExecutionRecord, ExecutionSummary } from '../../../execution/src/models/types';
+import type {
+  ExecutionRecord,
+  ExecutionSummary,
+} from '../../../execution/src/models/types';
 
 /**
  * Structured outcome classification for a single validation verdict.
@@ -39,7 +42,8 @@ export type ValidationVerdictStatus = 'pass' | 'fail' | 'partial';
  * Kind of check contributing to a validation verdict. Pure
  * classification only.
  */
-export type ValidationCheckType = 'testing' | 'quality' | 'policy' | 'security' | 'governance';
+export type ValidationCheckType =
+  'testing' | 'quality' | 'policy' | 'security' | 'governance';
 
 /**
  * Immutable identifier of the Execution Engine output under review by

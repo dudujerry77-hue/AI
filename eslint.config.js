@@ -5,7 +5,14 @@ import eslintConfigPrettier from 'eslint-config-prettier';
 
 export default [
   {
-    ignores: ['dist/**', '**/dist/**', 'node_modules/**', '**/node_modules/**', 'coverage/**', '**/coverage/**'],
+    ignores: [
+      'dist/**',
+      '**/dist/**',
+      'node_modules/**',
+      '**/node_modules/**',
+      'coverage/**',
+      '**/coverage/**',
+    ],
   },
 
   js.configs.recommended,
@@ -28,7 +35,10 @@ export default [
     },
     rules: {
       ...tsPlugin.configs.recommended.rules,
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_' },
+      ],
     },
   },
   eslintConfigPrettier,

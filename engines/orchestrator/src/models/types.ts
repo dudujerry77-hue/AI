@@ -16,12 +16,7 @@
  * Runtime status for a workflow aggregate.
  */
 export type WorkflowStatus =
-  | 'pending'
-  | 'running'
-  | 'paused'
-  | 'completed'
-  | 'failed'
-  | 'cancelled';
+  'pending' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
 
 /**
  * Runtime status for a single workflow step.
@@ -51,7 +46,8 @@ export type WorkflowTaskStatus =
 /**
  * Relationship types between workflow steps or tasks.
  */
-export type WorkflowDependencyType = 'blocks' | 'requires' | 'related' | 'sequential' | 'parallel';
+export type WorkflowDependencyType =
+  'blocks' | 'requires' | 'related' | 'sequential' | 'parallel';
 
 /**
  * Execution mode describing how a workflow's steps are intended to be
@@ -230,7 +226,8 @@ export interface WorkflowDispatchDecision {
  * condition already present on the `Workflow`; they never represent
  * an inferred, notified, or externally-acted-upon outcome.
  */
-export type WorkflowEscalationReason = 'blocked-status' | 'critical-priority-not-progressing';
+export type WorkflowEscalationReason =
+  'blocked-status' | 'critical-priority-not-progressing';
 
 /**
  * A single deterministic escalation decision for one workflow step or

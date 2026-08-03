@@ -20,10 +20,11 @@ import {
 } from '../../engines/planner/src';
 import { ENGINE_API_CONTRACT_VERSION } from '../../runtime/engine/types';
 
-
 type IsEqual<A, B> =
-  (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2)
-    ? ((<T>() => T extends B ? 1 : 2) extends (<T>() => T extends A ? 1 : 2) ? true : false)
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
+    ? (<T>() => T extends B ? 1 : 2) extends <T>() => T extends A ? 1 : 2
+      ? true
+      : false
     : false;
 
 type Expect<T extends true> = T;
@@ -186,16 +187,28 @@ describe('Planner Engine Milestone 1', () => {
 
   it('uses domain model-based method signatures for planner APIs', () => {
     const createSignatureCheck: Expect<
-      IsEqual<Parameters<PlannerEngine['createPlan']>[0], PlannerCreatePlanRequest>
+      IsEqual<
+        Parameters<PlannerEngine['createPlan']>[0],
+        PlannerCreatePlanRequest
+      >
     > = true;
     const validateSignatureCheck: Expect<
-      IsEqual<Parameters<PlannerEngine['validatePlan']>[0], PlannerValidatePlanRequest>
+      IsEqual<
+        Parameters<PlannerEngine['validatePlan']>[0],
+        PlannerValidatePlanRequest
+      >
     > = true;
     const estimateSignatureCheck: Expect<
-      IsEqual<Parameters<PlannerEngine['estimatePlan']>[0], PlannerEstimatePlanRequest>
+      IsEqual<
+        Parameters<PlannerEngine['estimatePlan']>[0],
+        PlannerEstimatePlanRequest
+      >
     > = true;
     const explainSignatureCheck: Expect<
-      IsEqual<Parameters<PlannerEngine['explainPlan']>[0], PlannerExplainPlanRequest>
+      IsEqual<
+        Parameters<PlannerEngine['explainPlan']>[0],
+        PlannerExplainPlanRequest
+      >
     > = true;
 
     expect(createSignatureCheck).toBe(true);
@@ -207,7 +220,9 @@ describe('Planner Engine Milestone 1', () => {
   it('returns stub behavior by throwing NotImplementedError for cancelPlan', async () => {
     const engine = new PlannerEngine();
 
-    await expect(engine.cancelPlan({ planId: 'plan-1', reason: 'test' })).rejects.toBeInstanceOf(NotImplementedError);
+    await expect(
+      engine.cancelPlan({ planId: 'plan-1', reason: 'test' }),
+    ).rejects.toBeInstanceOf(NotImplementedError);
   });
 });
 
@@ -240,8 +255,18 @@ describe('GoalAnalyzer (Milestone 3)', () => {
     const result = analyzer.analyze(invalidGoal);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.field === 'goalId' && issue.code === 'REQUIRED_FIELD_MISSING')).toBe(true);
-    expect(result.issues.some((issue) => issue.field === 'title' && issue.code === 'REQUIRED_FIELD_MISSING')).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.field === 'goalId' && issue.code === 'REQUIRED_FIELD_MISSING',
+      ),
+    ).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.field === 'title' && issue.code === 'REQUIRED_FIELD_MISSING',
+      ),
+    ).toBe(true);
   });
 
   it('reports invalid-enum-value issues for bad type/priority/status', () => {
@@ -256,9 +281,24 @@ describe('GoalAnalyzer (Milestone 3)', () => {
     const result = analyzer.analyze(invalidGoal);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.field === 'type' && issue.code === 'INVALID_ENUM_VALUE')).toBe(true);
-    expect(result.issues.some((issue) => issue.field === 'priority' && issue.code === 'INVALID_ENUM_VALUE')).toBe(true);
-    expect(result.issues.some((issue) => issue.field === 'status' && issue.code === 'INVALID_ENUM_VALUE')).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.field === 'type' && issue.code === 'INVALID_ENUM_VALUE',
+      ),
+    ).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.field === 'priority' && issue.code === 'INVALID_ENUM_VALUE',
+      ),
+    ).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.field === 'status' && issue.code === 'INVALID_ENUM_VALUE',
+      ),
+    ).toBe(true);
   });
 
   it('reports invalid-timestamp issues for malformed createdAt/updatedAt', () => {
@@ -272,8 +312,18 @@ describe('GoalAnalyzer (Milestone 3)', () => {
     const result = analyzer.analyze(invalidGoal);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.field === 'createdAt' && issue.code === 'INVALID_TIMESTAMP')).toBe(true);
-    expect(result.issues.some((issue) => issue.field === 'updatedAt' && issue.code === 'INVALID_TIMESTAMP')).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.field === 'createdAt' && issue.code === 'INVALID_TIMESTAMP',
+      ),
+    ).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.field === 'updatedAt' && issue.code === 'INVALID_TIMESTAMP',
+      ),
+    ).toBe(true);
   });
 
   it('reports a timestamp-order issue when updatedAt precedes createdAt', () => {
@@ -287,7 +337,13 @@ describe('GoalAnalyzer (Milestone 3)', () => {
     const result = analyzer.analyze(invalidGoal);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.field === 'updatedAt' && issue.code === 'TIMESTAMP_ORDER_INVALID')).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.field === 'updatedAt' &&
+          issue.code === 'TIMESTAMP_ORDER_INVALID',
+      ),
+    ).toBe(true);
   });
 });
 
@@ -320,8 +376,12 @@ describe('GoalDecomposer (Milestone 3)', () => {
     const decomposer = new GoalDecomposer();
     const plan = decomposer.decompose(sampleGoal);
 
-    const sequentialDeps = plan.dependencies.filter((dependency) => dependency.type === 'sequential');
-    const requiresDeps = plan.dependencies.filter((dependency) => dependency.type === 'requires');
+    const sequentialDeps = plan.dependencies.filter(
+      (dependency) => dependency.type === 'sequential',
+    );
+    const requiresDeps = plan.dependencies.filter(
+      (dependency) => dependency.type === 'requires',
+    );
 
     expect(sequentialDeps).toHaveLength(4);
     expect(requiresDeps).toHaveLength(5);
@@ -352,7 +412,10 @@ describe('PlannerEngine.createPlan (Milestone 3)', () => {
   it('returns a deterministic Plan for a valid goal', async () => {
     const engine = new PlannerEngine();
 
-    const plan = await engine.createPlan({ goal: sampleGoal, context: sampleContext });
+    const plan = await engine.createPlan({
+      goal: sampleGoal,
+      context: sampleContext,
+    });
 
     expect(plan.goalId).toBe(sampleGoal.goalId);
     expect(plan.steps).toHaveLength(5);
@@ -362,8 +425,14 @@ describe('PlannerEngine.createPlan (Milestone 3)', () => {
   it('produces the same Plan shape across repeated calls for the same goal', async () => {
     const engine = new PlannerEngine();
 
-    const first = await engine.createPlan({ goal: sampleGoal, context: sampleContext });
-    const second = await engine.createPlan({ goal: sampleGoal, context: sampleContext });
+    const first = await engine.createPlan({
+      goal: sampleGoal,
+      context: sampleContext,
+    });
+    const second = await engine.createPlan({
+      goal: sampleGoal,
+      context: sampleContext,
+    });
 
     expect(second).toEqual(first);
   });
@@ -376,9 +445,9 @@ describe('PlannerEngine.createPlan (Milestone 3)', () => {
       type: 'not-a-real-type',
     } as unknown as Goal;
 
-    await expect(engine.createPlan({ goal: invalidGoal, context: sampleContext })).rejects.toBeInstanceOf(
-      PlanningValidationError,
-    );
+    await expect(
+      engine.createPlan({ goal: invalidGoal, context: sampleContext }),
+    ).rejects.toBeInstanceOf(PlanningValidationError);
   });
 });
 
@@ -399,7 +468,12 @@ describe('PlanValidator (Milestone 4)', () => {
     const result = validator.validate(invalidPlan);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.field === 'planId' && issue.code === 'REQUIRED_FIELD_MISSING')).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.field === 'planId' && issue.code === 'REQUIRED_FIELD_MISSING',
+      ),
+    ).toBe(true);
   });
 
   it('reports a missing goalId', () => {
@@ -409,17 +483,30 @@ describe('PlanValidator (Milestone 4)', () => {
     const result = validator.validate(invalidPlan);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.field === 'goalId' && issue.code === 'REQUIRED_FIELD_MISSING')).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.field === 'goalId' && issue.code === 'REQUIRED_FIELD_MISSING',
+      ),
+    ).toBe(true);
   });
 
   it('reports an invalid plan status', () => {
     const validator = new PlanValidator();
-    const invalidPlan = { ...samplePlan, status: 'not-a-real-status' } as unknown as Plan;
+    const invalidPlan = {
+      ...samplePlan,
+      status: 'not-a-real-status',
+    } as unknown as Plan;
 
     const result = validator.validate(invalidPlan);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.field === 'status' && issue.code === 'INVALID_ENUM_VALUE')).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.field === 'status' && issue.code === 'INVALID_ENUM_VALUE',
+      ),
+    ).toBe(true);
   });
 
   it('reports duplicate step IDs', () => {
@@ -432,7 +519,12 @@ describe('PlanValidator (Milestone 4)', () => {
     const result = validator.validate(invalidPlan);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.code === 'DUPLICATE_ID' && issue.field.startsWith('steps['))).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.code === 'DUPLICATE_ID' && issue.field.startsWith('steps['),
+      ),
+    ).toBe(true);
   });
 
   it('reports duplicate task IDs', () => {
@@ -445,7 +537,12 @@ describe('PlanValidator (Milestone 4)', () => {
     const result = validator.validate(invalidPlan);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.code === 'DUPLICATE_ID' && issue.field.startsWith('tasks['))).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.code === 'DUPLICATE_ID' && issue.field.startsWith('tasks['),
+      ),
+    ).toBe(true);
   });
 
   it('reports invalid metadata', () => {
@@ -463,9 +560,27 @@ describe('PlanValidator (Milestone 4)', () => {
     const result = validator.validate(invalidPlan);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.field === 'metadata.createdAt' && issue.code === 'INVALID_TIMESTAMP')).toBe(true);
-    expect(result.issues.some((issue) => issue.field === 'metadata.createdBy' && issue.code === 'REQUIRED_FIELD_MISSING')).toBe(true);
-    expect(result.issues.some((issue) => issue.field === 'metadata.revision' && issue.code === 'INVALID_FIELD_VALUE')).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.field === 'metadata.createdAt' &&
+          issue.code === 'INVALID_TIMESTAMP',
+      ),
+    ).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.field === 'metadata.createdBy' &&
+          issue.code === 'REQUIRED_FIELD_MISSING',
+      ),
+    ).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.field === 'metadata.revision' &&
+          issue.code === 'INVALID_FIELD_VALUE',
+      ),
+    ).toBe(true);
   });
 
   it('reports a dependency referencing unknown IDs', () => {
@@ -485,8 +600,20 @@ describe('PlanValidator (Milestone 4)', () => {
     const result = validator.validate(invalidPlan);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.field === 'dependencies[0].sourceId' && issue.code === 'UNKNOWN_REFERENCE')).toBe(true);
-    expect(result.issues.some((issue) => issue.field === 'dependencies[0].targetId' && issue.code === 'UNKNOWN_REFERENCE')).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.field === 'dependencies[0].sourceId' &&
+          issue.code === 'UNKNOWN_REFERENCE',
+      ),
+    ).toBe(true);
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.field === 'dependencies[0].targetId' &&
+          issue.code === 'UNKNOWN_REFERENCE',
+      ),
+    ).toBe(true);
   });
 
   it('reports a duplicate dependency', () => {
@@ -507,7 +634,9 @@ describe('PlanValidator (Milestone 4)', () => {
     const result = validator.validate(invalidPlan);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.code === 'DUPLICATE_DEPENDENCY')).toBe(true);
+    expect(
+      result.issues.some((issue) => issue.code === 'DUPLICATE_DEPENDENCY'),
+    ).toBe(true);
   });
 
   it('rejects a self-dependency', () => {
@@ -527,15 +656,23 @@ describe('PlanValidator (Milestone 4)', () => {
     const result = validator.validate(invalidPlan);
 
     expect(result.valid).toBe(false);
-    expect(result.issues.some((issue) => issue.code === 'SELF_DEPENDENCY')).toBe(true);
+    expect(
+      result.issues.some((issue) => issue.code === 'SELF_DEPENDENCY'),
+    ).toBe(true);
   });
 
   it('throws PlanningValidationError for malformed input (null, undefined, non-object)', () => {
     const validator = new PlanValidator();
 
-    expect(() => validator.validate(null as unknown as Plan)).toThrow(PlanningValidationError);
-    expect(() => validator.validate(undefined as unknown as Plan)).toThrow(PlanningValidationError);
-    expect(() => validator.validate('not-an-object' as unknown as Plan)).toThrow(PlanningValidationError);
+    expect(() => validator.validate(null as unknown as Plan)).toThrow(
+      PlanningValidationError,
+    );
+    expect(() => validator.validate(undefined as unknown as Plan)).toThrow(
+      PlanningValidationError,
+    );
+    expect(() =>
+      validator.validate('not-an-object' as unknown as Plan),
+    ).toThrow(PlanningValidationError);
   });
 
   it('is deterministic: validating the same plan repeatedly yields the same result', () => {
@@ -551,7 +688,10 @@ describe('PlannerEngine.validatePlan (Milestone 4)', () => {
   it('delegates to PlanValidator and returns a valid PlanValidationResult for a valid plan', async () => {
     const engine = new PlannerEngine();
 
-    const result = await engine.validatePlan({ plan: samplePlan, context: sampleContext });
+    const result = await engine.validatePlan({
+      plan: samplePlan,
+      context: sampleContext,
+    });
 
     expect(result.valid).toBe(true);
     expect(result.issues).toEqual([]);
@@ -562,7 +702,10 @@ describe('PlannerEngine.validatePlan (Milestone 4)', () => {
     const engine = new PlannerEngine();
     const invalidPlan = { ...samplePlan, planId: '' } as Plan;
 
-    const result = await engine.validatePlan({ plan: invalidPlan, context: sampleContext });
+    const result = await engine.validatePlan({
+      plan: invalidPlan,
+      context: sampleContext,
+    });
 
     expect(result.valid).toBe(false);
     expect(result.issues.length).toBeGreaterThan(0);
@@ -571,7 +714,10 @@ describe('PlannerEngine.validatePlan (Milestone 4)', () => {
   it('still allows createPlan to work unchanged', async () => {
     const engine = new PlannerEngine();
 
-    const plan = await engine.createPlan({ goal: sampleGoal, context: sampleContext });
+    const plan = await engine.createPlan({
+      goal: sampleGoal,
+      context: sampleContext,
+    });
 
     expect(plan.goalId).toBe(sampleGoal.goalId);
     expect(plan.steps).toHaveLength(5);
@@ -693,12 +839,20 @@ describe('PlanOptimizer (Milestone 5)', () => {
     const optimizer = new PlanOptimizer();
     const optimized = optimizer.optimize(unorderedPlan);
 
-    const originalStepIds = new Set(unorderedPlan.steps.map((step) => step.stepId));
-    const optimizedStepIds = new Set(optimized.steps.map((step) => step.stepId));
+    const originalStepIds = new Set(
+      unorderedPlan.steps.map((step) => step.stepId),
+    );
+    const optimizedStepIds = new Set(
+      optimized.steps.map((step) => step.stepId),
+    );
     expect(optimizedStepIds).toEqual(originalStepIds);
 
-    const originalTaskIds = new Set(unorderedPlan.tasks.map((task) => task.taskId));
-    const optimizedTaskIds = new Set(optimized.tasks.map((task) => task.taskId));
+    const originalTaskIds = new Set(
+      unorderedPlan.tasks.map((task) => task.taskId),
+    );
+    const optimizedTaskIds = new Set(
+      optimized.tasks.map((task) => task.taskId),
+    );
     expect(optimizedTaskIds).toEqual(originalTaskIds);
   });
 
@@ -708,7 +862,9 @@ describe('PlanOptimizer (Milestone 5)', () => {
 
     const sequentialAtoB = optimized.dependencies.filter(
       (dependency) =>
-        dependency.type === 'sequential' && dependency.sourceId === 'step-a' && dependency.targetId === 'step-b',
+        dependency.type === 'sequential' &&
+        dependency.sourceId === 'step-a' &&
+        dependency.targetId === 'step-b',
     );
 
     expect(sequentialAtoB).toHaveLength(1);
@@ -719,10 +875,9 @@ describe('PlanOptimizer (Milestone 5)', () => {
     const optimizer = new PlanOptimizer();
     const optimized = optimizer.optimize(unorderedPlan);
 
-    expect(optimized.dependencies.map((dependency) => dependency.dependencyId)).toEqual([
-      'dep-2',
-      'dep-1',
-    ]);
+    expect(
+      optimized.dependencies.map((dependency) => dependency.dependencyId),
+    ).toEqual(['dep-2', 'dep-1']);
   });
 
   it('is deterministic and produces a validator-passing Plan for the deduplicated dependency case', () => {
@@ -738,14 +893,21 @@ describe('PlanOptimizer (Milestone 5)', () => {
     const optimizer = new PlanOptimizer();
     const optimized = optimizer.optimize(unorderedPlan);
 
-    expect(optimized.steps.map((step) => step.stepId)).toEqual(['step-a', 'step-b']);
+    expect(optimized.steps.map((step) => step.stepId)).toEqual([
+      'step-a',
+      'step-b',
+    ]);
   });
 
   it('normalizes task ordering deterministically by taskId', () => {
     const optimizer = new PlanOptimizer();
     const optimized = optimizer.optimize(unorderedPlan);
 
-    expect(optimized.tasks.map((task) => task.taskId)).toEqual(['task-a1', 'task-b1', 'task-b2']);
+    expect(optimized.tasks.map((task) => task.taskId)).toEqual([
+      'task-a1',
+      'task-b1',
+      'task-b2',
+    ]);
   });
 
   it('deduplicates and sorts taskIds within a step', () => {
@@ -782,8 +944,15 @@ describe('PlannerEngine.optimizePlan (Milestone 5)', () => {
 
     const optimized = await engine.optimizePlan({ plan: unorderedPlan });
 
-    expect(optimized.steps.map((step) => step.stepId)).toEqual(['step-a', 'step-b']);
-    expect(optimized.tasks.map((task) => task.taskId)).toEqual(['task-a1', 'task-b1', 'task-b2']);
+    expect(optimized.steps.map((step) => step.stepId)).toEqual([
+      'step-a',
+      'step-b',
+    ]);
+    expect(optimized.tasks.map((task) => task.taskId)).toEqual([
+      'task-a1',
+      'task-b1',
+      'task-b2',
+    ]);
     expect(optimized.dependencies).toHaveLength(2);
   });
 
@@ -791,7 +960,9 @@ describe('PlannerEngine.optimizePlan (Milestone 5)', () => {
     const engine = new PlannerEngine();
     const invalidPlan = { ...samplePlan, planId: '' } as Plan;
 
-    await expect(engine.optimizePlan({ plan: invalidPlan })).rejects.toBeInstanceOf(PlanningValidationError);
+    await expect(
+      engine.optimizePlan({ plan: invalidPlan }),
+    ).rejects.toBeInstanceOf(PlanningValidationError);
   });
 
   it('is deterministic: optimizing the same plan repeatedly yields the same result', async () => {
@@ -806,7 +977,10 @@ describe('PlannerEngine.optimizePlan (Milestone 5)', () => {
   it('still allows createPlan to work unchanged', async () => {
     const engine = new PlannerEngine();
 
-    const plan = await engine.createPlan({ goal: sampleGoal, context: sampleContext });
+    const plan = await engine.createPlan({
+      goal: sampleGoal,
+      context: sampleContext,
+    });
 
     expect(plan.goalId).toBe(sampleGoal.goalId);
     expect(plan.steps).toHaveLength(5);
@@ -816,7 +990,10 @@ describe('PlannerEngine.optimizePlan (Milestone 5)', () => {
   it('still allows validatePlan to work unchanged', async () => {
     const engine = new PlannerEngine();
 
-    const result = await engine.validatePlan({ plan: samplePlan, context: sampleContext });
+    const result = await engine.validatePlan({
+      plan: samplePlan,
+      context: sampleContext,
+    });
 
     expect(result.valid).toBe(true);
     expect(result.issues).toEqual([]);
@@ -885,7 +1062,9 @@ describe('PlanEstimator (Milestone 6)', () => {
 
     const largeEstimate = estimator.estimate(largePlan);
 
-    expect(largeEstimate.totalSteps).toBeGreaterThan(smallEstimate.totalSteps ?? 0);
+    expect(largeEstimate.totalSteps).toBeGreaterThan(
+      smallEstimate.totalSteps ?? 0,
+    );
     expect(largeEstimate.complexityLevel).not.toBe('low');
   });
 });
@@ -898,8 +1077,12 @@ describe('PlanExplainer (Milestone 6)', () => {
     expect(explanation.planId).toBe(samplePlan.planId);
     expect(explanation.stepCount).toBe(samplePlan.steps.length);
     expect(explanation.taskCount).toBe(samplePlan.tasks.length);
-    expect(explanation.executionOrder).toEqual(samplePlan.steps.map((step) => step.stepId));
-    expect(explanation.dependencySummary?.total).toBe(samplePlan.dependencies.length);
+    expect(explanation.executionOrder).toEqual(
+      samplePlan.steps.map((step) => step.stepId),
+    );
+    expect(explanation.dependencySummary?.total).toBe(
+      samplePlan.dependencies.length,
+    );
     expect(explanation.validationStatus?.valid).toBe(true);
     expect(explanation.validationStatus?.issueCount).toBe(0);
   });
@@ -925,7 +1108,9 @@ describe('PlanExplainer (Milestone 6)', () => {
     const explainer = new PlanExplainer();
     const explanation = explainer.explain(unorderedPlan);
 
-    expect(explanation.dependencySummary?.total).toBe(unorderedPlan.dependencies.length);
+    expect(explanation.dependencySummary?.total).toBe(
+      unorderedPlan.dependencies.length,
+    );
     expect(explanation.dependencySummary?.byType.sequential).toBe(1);
     expect(explanation.dependencySummary?.byType.requires).toBe(1);
     expect(explanation.dependencySummary?.byType.blocks).toBe(0);
@@ -946,7 +1131,10 @@ describe('PlannerEngine.estimatePlan (Milestone 6)', () => {
   it('validates the plan, then delegates to PlanEstimator and returns the PlanEstimate', async () => {
     const engine = new PlannerEngine();
 
-    const estimate = await engine.estimatePlan({ plan: samplePlan, context: sampleContext });
+    const estimate = await engine.estimatePlan({
+      plan: samplePlan,
+      context: sampleContext,
+    });
 
     expect(estimate.totalSteps).toBe(samplePlan.steps.length);
     expect(estimate.totalTasks).toBe(samplePlan.tasks.length);
@@ -957,7 +1145,9 @@ describe('PlannerEngine.estimatePlan (Milestone 6)', () => {
     const engine = new PlannerEngine();
     const invalidPlan = { ...samplePlan, planId: '' } as Plan;
 
-    await expect(engine.estimatePlan({ plan: invalidPlan })).rejects.toBeInstanceOf(PlanningValidationError);
+    await expect(
+      engine.estimatePlan({ plan: invalidPlan }),
+    ).rejects.toBeInstanceOf(PlanningValidationError);
   });
 
   it('is deterministic: estimating the same plan repeatedly yields the same result', async () => {
@@ -974,7 +1164,10 @@ describe('PlannerEngine.explainPlan (Milestone 6)', () => {
   it('validates the plan, then delegates to PlanExplainer and returns the PlanExplanation', async () => {
     const engine = new PlannerEngine();
 
-    const explanation = await engine.explainPlan({ plan: samplePlan, context: sampleContext });
+    const explanation = await engine.explainPlan({
+      plan: samplePlan,
+      context: sampleContext,
+    });
 
     expect(explanation.planId).toBe(samplePlan.planId);
     expect(explanation.stepCount).toBe(samplePlan.steps.length);
@@ -986,7 +1179,9 @@ describe('PlannerEngine.explainPlan (Milestone 6)', () => {
     const engine = new PlannerEngine();
     const invalidPlan = { ...samplePlan, planId: '' } as Plan;
 
-    await expect(engine.explainPlan({ plan: invalidPlan })).rejects.toBeInstanceOf(PlanningValidationError);
+    await expect(
+      engine.explainPlan({ plan: invalidPlan }),
+    ).rejects.toBeInstanceOf(PlanningValidationError);
   });
 
   it('is deterministic: explaining the same plan repeatedly yields the same result', async () => {
@@ -1003,7 +1198,10 @@ describe('PlannerEngine Milestone 6 regression checks', () => {
   it('still allows createPlan to work unchanged', async () => {
     const engine = new PlannerEngine();
 
-    const plan = await engine.createPlan({ goal: sampleGoal, context: sampleContext });
+    const plan = await engine.createPlan({
+      goal: sampleGoal,
+      context: sampleContext,
+    });
 
     expect(plan.goalId).toBe(sampleGoal.goalId);
     expect(plan.steps).toHaveLength(5);
@@ -1013,7 +1211,10 @@ describe('PlannerEngine Milestone 6 regression checks', () => {
   it('still allows validatePlan to work unchanged', async () => {
     const engine = new PlannerEngine();
 
-    const result = await engine.validatePlan({ plan: samplePlan, context: sampleContext });
+    const result = await engine.validatePlan({
+      plan: samplePlan,
+      context: sampleContext,
+    });
 
     expect(result.valid).toBe(true);
     expect(result.issues).toEqual([]);
@@ -1024,13 +1225,22 @@ describe('PlannerEngine Milestone 6 regression checks', () => {
 
     const optimized = await engine.optimizePlan({ plan: unorderedPlan });
 
-    expect(optimized.steps.map((step) => step.stepId)).toEqual(['step-a', 'step-b']);
-    expect(optimized.tasks.map((task) => task.taskId)).toEqual(['task-a1', 'task-b1', 'task-b2']);
+    expect(optimized.steps.map((step) => step.stepId)).toEqual([
+      'step-a',
+      'step-b',
+    ]);
+    expect(optimized.tasks.map((task) => task.taskId)).toEqual([
+      'task-a1',
+      'task-b1',
+      'task-b2',
+    ]);
   });
 
   it('still throws NotImplementedError for cancelPlan', async () => {
     const engine = new PlannerEngine();
 
-    await expect(engine.cancelPlan({ planId: 'plan-1', reason: 'test' })).rejects.toBeInstanceOf(NotImplementedError);
+    await expect(
+      engine.cancelPlan({ planId: 'plan-1', reason: 'test' }),
+    ).rejects.toBeInstanceOf(NotImplementedError);
   });
 });

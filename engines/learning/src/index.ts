@@ -1,5 +1,8 @@
 import { BaseEngine } from '../../../runtime/engine/base';
-import { ENGINE_API_CONTRACT_VERSION, type BaseEngineOptions } from '../../../runtime/engine/types';
+import {
+  ENGINE_API_CONTRACT_VERSION,
+  type BaseEngineOptions,
+} from '../../../runtime/engine/types';
 import { LearningObservationBuilder } from './builders/learning-observation-builder';
 import { LearningProposalBuilder } from './builders/learning-proposal-builder';
 import { LearningRequestError } from './errors/learning-errors';
@@ -83,7 +86,10 @@ export interface LearningAnalyzeCycleRequest {
   readonly priorProposals?: readonly LearningKnowledgeUpdateProposal[];
 }
 
-export interface LearningEngineOptions extends Omit<BaseEngineOptions, 'id' | 'name' | 'version'> {
+export interface LearningEngineOptions extends Omit<
+  BaseEngineOptions,
+  'id' | 'name' | 'version'
+> {
   readonly id?: string;
   readonly name?: string;
   readonly version?: string;
@@ -185,7 +191,8 @@ export class LearningEngine extends BaseEngine {
 
     this.learningObservationBuilder = new LearningObservationBuilder();
     this.learningProposalBuilder = new LearningProposalBuilder();
-    this.learningKnowledgeHandoffBuilder = new LearningKnowledgeHandoffBuilder();
+    this.learningKnowledgeHandoffBuilder =
+      new LearningKnowledgeHandoffBuilder();
     this.learningPipelineBuilder = new LearningPipelineBuilder();
   }
 
@@ -201,15 +208,25 @@ export class LearningEngine extends BaseEngine {
    * proposal generation, no knowledge writes, no scoring, no AI
    * logic, and calls no other Titan engine's runtime.
    */
-  async observeCycle(request: LearningObserveCycleRequest): Promise<LearningObservation> {
-    if (request === null || request === undefined || typeof request !== 'object' || Array.isArray(request)) {
-      throw new LearningRequestError('LearningObserveCycleRequest must be a non-null object.', [
-        {
-          field: 'request',
-          code: 'missing-request',
-          message: 'LearningObserveCycleRequest must be a non-null object.',
-        },
-      ]);
+  async observeCycle(
+    request: LearningObserveCycleRequest,
+  ): Promise<LearningObservation> {
+    if (
+      request === null ||
+      request === undefined ||
+      typeof request !== 'object' ||
+      Array.isArray(request)
+    ) {
+      throw new LearningRequestError(
+        'LearningObserveCycleRequest must be a non-null object.',
+        [
+          {
+            field: 'request',
+            code: 'missing-request',
+            message: 'LearningObserveCycleRequest must be a non-null object.',
+          },
+        ],
+      );
     }
 
     return this.learningObservationBuilder.build(request.subject);
@@ -227,15 +244,26 @@ export class LearningEngine extends BaseEngine {
    * lesson distillation, no knowledge writes, no scoring, no ranking,
    * no AI logic, and calls no other Titan engine's runtime.
    */
-  async generateProposal(request: LearningGenerateProposalRequest): Promise<LearningKnowledgeUpdateProposal> {
-    if (request === null || request === undefined || typeof request !== 'object' || Array.isArray(request)) {
-      throw new LearningRequestError('LearningGenerateProposalRequest must be a non-null object.', [
-        {
-          field: 'request',
-          code: 'missing-request',
-          message: 'LearningGenerateProposalRequest must be a non-null object.',
-        },
-      ]);
+  async generateProposal(
+    request: LearningGenerateProposalRequest,
+  ): Promise<LearningKnowledgeUpdateProposal> {
+    if (
+      request === null ||
+      request === undefined ||
+      typeof request !== 'object' ||
+      Array.isArray(request)
+    ) {
+      throw new LearningRequestError(
+        'LearningGenerateProposalRequest must be a non-null object.',
+        [
+          {
+            field: 'request',
+            code: 'missing-request',
+            message:
+              'LearningGenerateProposalRequest must be a non-null object.',
+          },
+        ],
+      );
     }
 
     return this.learningProposalBuilder.build(request.observations);
@@ -258,14 +286,23 @@ export class LearningEngine extends BaseEngine {
   async prepareKnowledgeHandoff(
     request: LearningPrepareKnowledgeHandoffRequest,
   ): Promise<LearningKnowledgeHandoff> {
-    if (request === null || request === undefined || typeof request !== 'object' || Array.isArray(request)) {
-      throw new LearningRequestError('LearningPrepareKnowledgeHandoffRequest must be a non-null object.', [
-        {
-          field: 'request',
-          code: 'missing-request',
-          message: 'LearningPrepareKnowledgeHandoffRequest must be a non-null object.',
-        },
-      ]);
+    if (
+      request === null ||
+      request === undefined ||
+      typeof request !== 'object' ||
+      Array.isArray(request)
+    ) {
+      throw new LearningRequestError(
+        'LearningPrepareKnowledgeHandoffRequest must be a non-null object.',
+        [
+          {
+            field: 'request',
+            code: 'missing-request',
+            message:
+              'LearningPrepareKnowledgeHandoffRequest must be a non-null object.',
+          },
+        ],
+      );
     }
 
     return this.learningKnowledgeHandoffBuilder.build(request.proposal);
@@ -287,18 +324,31 @@ export class LearningEngine extends BaseEngine {
    * Titan engine's runtime — in particular, it never imports,
    * instantiates, or calls the Knowledge Engine's runtime.
    */
-  async analyzeCycle(request: LearningAnalyzeCycleRequest): Promise<LearningPipelineResult> {
-    if (request === null || request === undefined || typeof request !== 'object' || Array.isArray(request)) {
-      throw new LearningRequestError('LearningAnalyzeCycleRequest must be a non-null object.', [
-        {
-          field: 'request',
-          code: 'missing-request',
-          message: 'LearningAnalyzeCycleRequest must be a non-null object.',
-        },
-      ]);
+  async analyzeCycle(
+    request: LearningAnalyzeCycleRequest,
+  ): Promise<LearningPipelineResult> {
+    if (
+      request === null ||
+      request === undefined ||
+      typeof request !== 'object' ||
+      Array.isArray(request)
+    ) {
+      throw new LearningRequestError(
+        'LearningAnalyzeCycleRequest must be a non-null object.',
+        [
+          {
+            field: 'request',
+            code: 'missing-request',
+            message: 'LearningAnalyzeCycleRequest must be a non-null object.',
+          },
+        ],
+      );
     }
 
-    return this.learningPipelineBuilder.run(request.observations, request.priorProposals ?? []);
+    return this.learningPipelineBuilder.run(
+      request.observations,
+      request.priorProposals ?? [],
+    );
   }
 }
 

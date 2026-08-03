@@ -45,7 +45,8 @@ export type LearningCycleStage = 'plan' | 'execute' | 'validate' | 'outcome';
  * what patterns worked, what failed and why, what estimates were
  * wrong."
  */
-export type LearningLessonCategory = 'pattern-worked' | 'failure' | 'estimate-inaccuracy';
+export type LearningLessonCategory =
+  'pattern-worked' | 'failure' | 'estimate-inaccuracy';
 
 /**
  * Form of Knowledge Engine update the Learning Engine produces, per
@@ -68,7 +69,8 @@ export type LearningKnowledgeUpdateType = 'new-precedent' | 'refined-heuristic';
  * observes and proposes; it does not decide or execute." No value of
  * this type is assigned by anything in this package in Milestone 2.
  */
-export type LearningProposalStatus = 'proposed' | 'accepted' | 'rejected' | 'superseded';
+export type LearningProposalStatus =
+  'proposed' | 'accepted' | 'rejected' | 'superseded';
 
 /**
  * Input shape describing the (future) upstream data the Learning

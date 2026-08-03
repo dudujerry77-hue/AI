@@ -145,7 +145,12 @@ describe('Orchestrator Engine Milestone 7 — WorkflowDispatcher', () => {
 
     expect(result.dispatchable).toEqual(['step-1']);
     expect(result.decisions).toEqual([
-      { itemId: 'step-1', itemType: 'step', ready: true, reasons: ['status-ready', 'dependencies-satisfied'] },
+      {
+        itemId: 'step-1',
+        itemType: 'step',
+        ready: true,
+        reasons: ['status-ready', 'dependencies-satisfied'],
+      },
     ]);
   });
 
@@ -167,71 +172,104 @@ describe('Orchestrator Engine Milestone 7 — WorkflowDispatcher', () => {
 
     expect(result.dispatchable).toEqual(['task-1']);
     expect(result.decisions).toEqual([
-      { itemId: 'task-1', itemType: 'task', ready: true, reasons: ['status-ready', 'dependencies-satisfied'] },
+      {
+        itemId: 'task-1',
+        itemType: 'task',
+        ready: true,
+        reasons: ['status-ready', 'dependencies-satisfied'],
+      },
     ]);
   });
 
-  it.each(['in-progress', 'blocked', 'completed', 'failed', 'skipped', 'cancelled'] as const)(
-    'marks a step with status %s as not dispatch-ready',
-    (status) => {
-      const dispatcher = new WorkflowDispatcher();
-      const workflow = buildCustomWorkflow({
-        steps: [
-          {
-            stepId: 'step-1',
-            title: 'Step 1',
-            description: 'Step 1',
-            status,
-            taskIds: [],
-          },
-        ],
-      });
+  it.each([
+    'in-progress',
+    'blocked',
+    'completed',
+    'failed',
+    'skipped',
+    'cancelled',
+  ] as const)('marks a step with status %s as not dispatch-ready', (status) => {
+    const dispatcher = new WorkflowDispatcher();
+    const workflow = buildCustomWorkflow({
+      steps: [
+        {
+          stepId: 'step-1',
+          title: 'Step 1',
+          description: 'Step 1',
+          status,
+          taskIds: [],
+        },
+      ],
+    });
 
-      const result = dispatcher.dispatch(workflow);
+    const result = dispatcher.dispatch(workflow);
 
-      expect(result.dispatchable).toEqual([]);
-      expect(result.decisions[0].ready).toBe(false);
-      expect(result.decisions[0].reasons).toContain('status-not-ready');
-    },
-  );
+    expect(result.dispatchable).toEqual([]);
+    expect(result.decisions[0].ready).toBe(false);
+    expect(result.decisions[0].reasons).toContain('status-not-ready');
+  });
 
-  it.each(['in-progress', 'blocked', 'completed', 'failed', 'cancelled'] as const)(
-    'marks a task with status %s as not dispatch-ready',
-    (status) => {
-      const dispatcher = new WorkflowDispatcher();
-      const workflow = buildCustomWorkflow({
-        tasks: [
-          {
-            taskId: 'task-1',
-            stepId: 'step-1',
-            title: 'Task 1',
-            description: 'Task 1',
-            status,
-          },
-        ],
-      });
+  it.each([
+    'in-progress',
+    'blocked',
+    'completed',
+    'failed',
+    'cancelled',
+  ] as const)('marks a task with status %s as not dispatch-ready', (status) => {
+    const dispatcher = new WorkflowDispatcher();
+    const workflow = buildCustomWorkflow({
+      tasks: [
+        {
+          taskId: 'task-1',
+          stepId: 'step-1',
+          title: 'Task 1',
+          description: 'Task 1',
+          status,
+        },
+      ],
+    });
 
-      const result = dispatcher.dispatch(workflow);
+    const result = dispatcher.dispatch(workflow);
 
-      expect(result.dispatchable).toEqual([]);
-      expect(result.decisions[0].ready).toBe(false);
-      expect(result.decisions[0].reasons).toContain('status-not-ready');
-    },
-  );
+    expect(result.dispatchable).toEqual([]);
+    expect(result.decisions[0].ready).toBe(false);
+    expect(result.decisions[0].reasons).toContain('status-not-ready');
+  });
 
   it('marks a pending step blocked by an incomplete "blocks" dependency as not dispatch-ready', () => {
     const dispatcher = new WorkflowDispatcher();
     const workflow = buildCustomWorkflow({
       steps: [
-        { stepId: 'step-1', title: 'Step 1', description: 'Step 1', status: 'in-progress', taskIds: [] },
-        { stepId: 'step-2', title: 'Step 2', description: 'Step 2', status: 'pending', taskIds: [] },
+        {
+          stepId: 'step-1',
+          title: 'Step 1',
+          description: 'Step 1',
+          status: 'in-progress',
+          taskIds: [],
+        },
+        {
+          stepId: 'step-2',
+          title: 'Step 2',
+          description: 'Step 2',
+          status: 'pending',
+          taskIds: [],
+        },
       ],
-      dependencies: [{ dependencyId: 'dep-1', type: 'blocks', sourceId: 'step-1', targetId: 'step-2' }],
+      dependencies: [
+        {
+          dependencyId: 'dep-1',
+          type: 'blocks',
+          sourceId: 'step-1',
+          targetId: 'step-2',
+        },
+      ],
     });
 
     const result = dispatcher.dispatch(workflow);
 
-    const step2Decision = result.decisions.find((decision) => decision.itemId === 'step-2');
+    const step2Decision = result.decisions.find(
+      (decision) => decision.itemId === 'step-2',
+    );
     expect(step2Decision?.ready).toBe(false);
     expect(step2Decision?.reasons).toContain('dependencies-unsatisfied');
     expect(result.dispatchable).not.toContain('step-2');
@@ -241,17 +279,41 @@ describe('Orchestrator Engine Milestone 7 — WorkflowDispatcher', () => {
     const dispatcher = new WorkflowDispatcher();
     const workflow = buildCustomWorkflow({
       steps: [
-        { stepId: 'step-1', title: 'Step 1', description: 'Step 1', status: 'completed', taskIds: [] },
-        { stepId: 'step-2', title: 'Step 2', description: 'Step 2', status: 'pending', taskIds: [] },
+        {
+          stepId: 'step-1',
+          title: 'Step 1',
+          description: 'Step 1',
+          status: 'completed',
+          taskIds: [],
+        },
+        {
+          stepId: 'step-2',
+          title: 'Step 2',
+          description: 'Step 2',
+          status: 'pending',
+          taskIds: [],
+        },
       ],
-      dependencies: [{ dependencyId: 'dep-1', type: 'blocks', sourceId: 'step-1', targetId: 'step-2' }],
+      dependencies: [
+        {
+          dependencyId: 'dep-1',
+          type: 'blocks',
+          sourceId: 'step-1',
+          targetId: 'step-2',
+        },
+      ],
     });
 
     const result = dispatcher.dispatch(workflow);
 
-    const step2Decision = result.decisions.find((decision) => decision.itemId === 'step-2');
+    const step2Decision = result.decisions.find(
+      (decision) => decision.itemId === 'step-2',
+    );
     expect(step2Decision?.ready).toBe(true);
-    expect(step2Decision?.reasons).toEqual(['status-ready', 'dependencies-satisfied']);
+    expect(step2Decision?.reasons).toEqual([
+      'status-ready',
+      'dependencies-satisfied',
+    ]);
     expect(result.dispatchable).toContain('step-2');
   });
 
@@ -259,15 +321,36 @@ describe('Orchestrator Engine Milestone 7 — WorkflowDispatcher', () => {
     const dispatcher = new WorkflowDispatcher();
     const workflow = buildCustomWorkflow({
       steps: [
-        { stepId: 'step-1', title: 'Step 1', description: 'Step 1', status: 'skipped', taskIds: [] },
-        { stepId: 'step-2', title: 'Step 2', description: 'Step 2', status: 'pending', taskIds: [] },
+        {
+          stepId: 'step-1',
+          title: 'Step 1',
+          description: 'Step 1',
+          status: 'skipped',
+          taskIds: [],
+        },
+        {
+          stepId: 'step-2',
+          title: 'Step 2',
+          description: 'Step 2',
+          status: 'pending',
+          taskIds: [],
+        },
       ],
-      dependencies: [{ dependencyId: 'dep-1', type: 'requires', sourceId: 'step-1', targetId: 'step-2' }],
+      dependencies: [
+        {
+          dependencyId: 'dep-1',
+          type: 'requires',
+          sourceId: 'step-1',
+          targetId: 'step-2',
+        },
+      ],
     });
 
     const result = dispatcher.dispatch(workflow);
 
-    const step2Decision = result.decisions.find((decision) => decision.itemId === 'step-2');
+    const step2Decision = result.decisions.find(
+      (decision) => decision.itemId === 'step-2',
+    );
     expect(step2Decision?.ready).toBe(true);
   });
 
@@ -275,15 +358,36 @@ describe('Orchestrator Engine Milestone 7 — WorkflowDispatcher', () => {
     const dispatcher = new WorkflowDispatcher();
     const workflow = buildCustomWorkflow({
       tasks: [
-        { taskId: 'task-1', stepId: 'step-1', title: 'Task 1', description: 'Task 1', status: 'completed' },
-        { taskId: 'task-2', stepId: 'step-1', title: 'Task 2', description: 'Task 2', status: 'pending' },
+        {
+          taskId: 'task-1',
+          stepId: 'step-1',
+          title: 'Task 1',
+          description: 'Task 1',
+          status: 'completed',
+        },
+        {
+          taskId: 'task-2',
+          stepId: 'step-1',
+          title: 'Task 2',
+          description: 'Task 2',
+          status: 'pending',
+        },
       ],
-      dependencies: [{ dependencyId: 'dep-1', type: 'requires', sourceId: 'task-1', targetId: 'task-2' }],
+      dependencies: [
+        {
+          dependencyId: 'dep-1',
+          type: 'requires',
+          sourceId: 'task-1',
+          targetId: 'task-2',
+        },
+      ],
     });
 
     const result = dispatcher.dispatch(workflow);
 
-    const task2Decision = result.decisions.find((decision) => decision.itemId === 'task-2');
+    const task2Decision = result.decisions.find(
+      (decision) => decision.itemId === 'task-2',
+    );
     expect(task2Decision?.ready).toBe(true);
   });
 
@@ -291,20 +395,47 @@ describe('Orchestrator Engine Milestone 7 — WorkflowDispatcher', () => {
     const dispatcher = new WorkflowDispatcher();
     const workflow = buildCustomWorkflow({
       steps: [
-        { stepId: 'step-1', title: 'Step 1', description: 'Step 1', status: 'in-progress', taskIds: [] },
-        { stepId: 'step-2', title: 'Step 2', description: 'Step 2', status: 'pending', taskIds: [] },
+        {
+          stepId: 'step-1',
+          title: 'Step 1',
+          description: 'Step 1',
+          status: 'in-progress',
+          taskIds: [],
+        },
+        {
+          stepId: 'step-2',
+          title: 'Step 2',
+          description: 'Step 2',
+          status: 'pending',
+          taskIds: [],
+        },
       ],
       dependencies: [
-        { dependencyId: 'dep-1', type: 'related', sourceId: 'step-1', targetId: 'step-2' },
-        { dependencyId: 'dep-2', type: 'parallel', sourceId: 'step-1', targetId: 'step-2' },
+        {
+          dependencyId: 'dep-1',
+          type: 'related',
+          sourceId: 'step-1',
+          targetId: 'step-2',
+        },
+        {
+          dependencyId: 'dep-2',
+          type: 'parallel',
+          sourceId: 'step-1',
+          targetId: 'step-2',
+        },
       ],
     });
 
     const result = dispatcher.dispatch(workflow);
 
-    const step2Decision = result.decisions.find((decision) => decision.itemId === 'step-2');
+    const step2Decision = result.decisions.find(
+      (decision) => decision.itemId === 'step-2',
+    );
     expect(step2Decision?.ready).toBe(true);
-    expect(step2Decision?.reasons).toEqual(['status-ready', 'dependencies-satisfied']);
+    expect(step2Decision?.reasons).toEqual([
+      'status-ready',
+      'dependencies-satisfied',
+    ]);
   });
 
   it('produces a dispatch decision for every step and every task on the Workflow', () => {
@@ -313,7 +444,9 @@ describe('Orchestrator Engine Milestone 7 — WorkflowDispatcher', () => {
 
     const result = dispatcher.dispatch(workflow);
 
-    expect(result.decisions).toHaveLength(workflow.steps.length + workflow.tasks.length);
+    expect(result.decisions).toHaveLength(
+      workflow.steps.length + workflow.tasks.length,
+    );
     const decisionIds = result.decisions.map((decision) => decision.itemId);
     for (const step of workflow.steps) {
       expect(decisionIds).toContain(step.stepId);
@@ -327,25 +460,47 @@ describe('Orchestrator Engine Milestone 7 — WorkflowDispatcher', () => {
     const dispatcher = new WorkflowDispatcher();
     const workflow = buildCustomWorkflow({
       priority: 'low',
-      steps: [{ stepId: 'step-1', title: 'Step 1', description: 'Step 1', status: 'blocked', taskIds: [] }],
+      steps: [
+        {
+          stepId: 'step-1',
+          title: 'Step 1',
+          description: 'Step 1',
+          status: 'blocked',
+          taskIds: [],
+        },
+      ],
     });
 
     const result = dispatcher.dispatch(workflow);
 
-    expect(result.escalations).toEqual([{ itemId: 'step-1', itemType: 'step', reason: 'blocked-status' }]);
+    expect(result.escalations).toEqual([
+      { itemId: 'step-1', itemType: 'step', reason: 'blocked-status' },
+    ]);
   });
 
   it('escalates a non-terminal item on a critical-priority workflow', () => {
     const dispatcher = new WorkflowDispatcher();
     const workflow = buildCustomWorkflow({
       priority: 'critical',
-      tasks: [{ taskId: 'task-1', stepId: 'step-1', title: 'Task 1', description: 'Task 1', status: 'in-progress' }],
+      tasks: [
+        {
+          taskId: 'task-1',
+          stepId: 'step-1',
+          title: 'Task 1',
+          description: 'Task 1',
+          status: 'in-progress',
+        },
+      ],
     });
 
     const result = dispatcher.dispatch(workflow);
 
     expect(result.escalations).toEqual([
-      { itemId: 'task-1', itemType: 'task', reason: 'critical-priority-not-progressing' },
+      {
+        itemId: 'task-1',
+        itemType: 'task',
+        reason: 'critical-priority-not-progressing',
+      },
     ]);
   });
 
@@ -355,7 +510,15 @@ describe('Orchestrator Engine Milestone 7 — WorkflowDispatcher', () => {
       const dispatcher = new WorkflowDispatcher();
       const workflow = buildCustomWorkflow({
         priority: 'critical',
-        steps: [{ stepId: 'step-1', title: 'Step 1', description: 'Step 1', status, taskIds: [] }],
+        steps: [
+          {
+            stepId: 'step-1',
+            title: 'Step 1',
+            description: 'Step 1',
+            status,
+            taskIds: [],
+          },
+        ],
       });
 
       const result = dispatcher.dispatch(workflow);
@@ -370,7 +533,15 @@ describe('Orchestrator Engine Milestone 7 — WorkflowDispatcher', () => {
       const dispatcher = new WorkflowDispatcher();
       const workflow = buildCustomWorkflow({
         priority,
-        steps: [{ stepId: 'step-1', title: 'Step 1', description: 'Step 1', status: 'in-progress', taskIds: [] }],
+        steps: [
+          {
+            stepId: 'step-1',
+            title: 'Step 1',
+            description: 'Step 1',
+            status: 'in-progress',
+            taskIds: [],
+          },
+        ],
       });
 
       const result = dispatcher.dispatch(workflow);
@@ -383,12 +554,22 @@ describe('Orchestrator Engine Milestone 7 — WorkflowDispatcher', () => {
     const dispatcher = new WorkflowDispatcher();
     const workflow = buildCustomWorkflow({
       priority: 'critical',
-      steps: [{ stepId: 'step-1', title: 'Step 1', description: 'Step 1', status: 'blocked', taskIds: [] }],
+      steps: [
+        {
+          stepId: 'step-1',
+          title: 'Step 1',
+          description: 'Step 1',
+          status: 'blocked',
+          taskIds: [],
+        },
+      ],
     });
 
     const result = dispatcher.dispatch(workflow);
 
-    expect(result.escalations).toEqual([{ itemId: 'step-1', itemType: 'step', reason: 'blocked-status' }]);
+    expect(result.escalations).toEqual([
+      { itemId: 'step-1', itemType: 'step', reason: 'blocked-status' },
+    ]);
   });
 
   it('sets workflowId on the result to match the input Workflow', () => {
@@ -422,9 +603,15 @@ describe('Orchestrator Engine Milestone 7 — WorkflowDispatcher', () => {
   it('rejects malformed input (null, undefined, non-object) with OrchestratorValidationError', () => {
     const dispatcher = new WorkflowDispatcher();
 
-    expect(() => dispatcher.dispatch(null as unknown as Workflow)).toThrow(OrchestratorValidationError);
-    expect(() => dispatcher.dispatch(undefined as unknown as Workflow)).toThrow(OrchestratorValidationError);
-    expect(() => dispatcher.dispatch('not-an-object' as unknown as Workflow)).toThrow(OrchestratorValidationError);
+    expect(() => dispatcher.dispatch(null as unknown as Workflow)).toThrow(
+      OrchestratorValidationError,
+    );
+    expect(() => dispatcher.dispatch(undefined as unknown as Workflow)).toThrow(
+      OrchestratorValidationError,
+    );
+    expect(() =>
+      dispatcher.dispatch('not-an-object' as unknown as Workflow),
+    ).toThrow(OrchestratorValidationError);
   });
 });
 
@@ -436,7 +623,9 @@ describe('Orchestrator Engine Milestone 7 — dispatchWorkflow()', () => {
     const result = await engine.dispatchWorkflow({ workflow });
 
     expect(result.workflowId).toBe(workflow.workflowId);
-    expect(result.decisions).toHaveLength(workflow.steps.length + workflow.tasks.length);
+    expect(result.decisions).toHaveLength(
+      workflow.steps.length + workflow.tasks.length,
+    );
   });
 
   it('rejects a malformed request (missing workflow) with OrchestratorValidationError', async () => {
@@ -451,15 +640,21 @@ describe('Orchestrator Engine Milestone 7 — dispatchWorkflow()', () => {
     const engine = new OrchestratorEngine();
 
     await expect(
-      engine.dispatchWorkflow(null as unknown as Parameters<typeof engine.dispatchWorkflow>[0]),
+      engine.dispatchWorkflow(
+        null as unknown as Parameters<typeof engine.dispatchWorkflow>[0],
+      ),
     ).rejects.toBeInstanceOf(OrchestratorValidationError);
   });
 
   it('produces deterministic output for identical input', async () => {
     const engine = new OrchestratorEngine();
 
-    const first = await engine.dispatchWorkflow({ workflow: buildWorkflowFixture() });
-    const second = await engine.dispatchWorkflow({ workflow: buildWorkflowFixture() });
+    const first = await engine.dispatchWorkflow({
+      workflow: buildWorkflowFixture(),
+    });
+    const second = await engine.dispatchWorkflow({
+      workflow: buildWorkflowFixture(),
+    });
 
     expect(first).toEqual(second);
   });
@@ -487,7 +682,9 @@ describe('Orchestrator Engine Milestone 7 — dispatchWorkflow()', () => {
     const summary = await engine.getWorkflowStatus({ workflow });
     expect(summary.workflowId).toBe(workflow.workflowId);
 
-    const paused = await engine.pauseWorkflow({ workflow: { ...workflow, status: 'running' } });
+    const paused = await engine.pauseWorkflow({
+      workflow: { ...workflow, status: 'running' },
+    });
     expect(paused.status).toBe('paused');
   });
 

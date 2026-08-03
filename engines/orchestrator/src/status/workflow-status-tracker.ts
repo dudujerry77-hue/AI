@@ -1,4 +1,9 @@
-import type { Workflow, WorkflowStepStatus, WorkflowSummary, WorkflowTaskStatus } from '../models/types';
+import type {
+  Workflow,
+  WorkflowStepStatus,
+  WorkflowSummary,
+  WorkflowTaskStatus,
+} from '../models/types';
 import { OrchestratorValidationError } from '../errors/orchestrator-errors';
 
 /**
@@ -48,19 +53,28 @@ export class WorkflowStatusTracker {
    * `null`, `undefined`, or a non-object value.
    */
   summarize(workflow: Workflow): WorkflowSummary {
-    if (workflow === null || workflow === undefined || !isPlainObject(workflow)) {
-      throw new OrchestratorValidationError('Workflow must be a non-null object.', [
-        {
-          field: 'workflow',
-          code: 'MALFORMED_INPUT',
-          message: 'workflow must be a non-null object.',
-        },
-      ]);
+    if (
+      workflow === null ||
+      workflow === undefined ||
+      !isPlainObject(workflow)
+    ) {
+      throw new OrchestratorValidationError(
+        'Workflow must be a non-null object.',
+        [
+          {
+            field: 'workflow',
+            code: 'MALFORMED_INPUT',
+            message: 'workflow must be a non-null object.',
+          },
+        ],
+      );
     }
 
     const steps = Array.isArray(workflow.steps) ? workflow.steps : [];
     const tasks = Array.isArray(workflow.tasks) ? workflow.tasks : [];
-    const dependencies = Array.isArray(workflow.dependencies) ? workflow.dependencies : [];
+    const dependencies = Array.isArray(workflow.dependencies)
+      ? workflow.dependencies
+      : [];
 
     let completedSteps = 0;
     let pendingSteps = 0;
@@ -122,7 +136,8 @@ export class WorkflowStatusTracker {
     }
 
     return {
-      workflowId: typeof workflow.workflowId === 'string' ? workflow.workflowId : '',
+      workflowId:
+        typeof workflow.workflowId === 'string' ? workflow.workflowId : '',
       status: workflow.status,
       totalSteps: steps.length,
       completedSteps,

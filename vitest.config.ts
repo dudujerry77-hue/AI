@@ -10,8 +10,17 @@ export default defineConfig({
       reporter: ['text', 'html', 'lcov'],
       reportsDirectory: './coverage',
       all: true,
-      include: ['apps/**/src/**/*.ts', 'engines/**/src/**/*.ts', 'runtime/**/*.ts'],
-      exclude: ['**/*.d.ts', '**/dist/**', '**/*.config.ts', '**/node_modules/**']
-    }
-  }
+      include: [
+        'apps/**/src/**/*.ts',
+        'engines/**/src/**/*.ts',
+        'runtime/**/*.ts',
+      ],
+      exclude: [
+        '**/*.d.ts',
+        '**/dist/**',
+        '**/*.config.ts',
+        '**/node_modules/**',
+      ],
+    },
+  },
 });

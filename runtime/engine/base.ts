@@ -48,7 +48,10 @@ export class BaseEngine implements TitanEngine {
     this.eventBus = options.eventBus ?? new EventBus();
     this.logger = options.logger ?? new Logger({ service: options.name });
     this.config = options.config ?? new ConfigurationService();
-    this.metrics = options.metrics instanceof MetricsCollector ? options.metrics : new MetricsCollector();
+    this.metrics =
+      options.metrics instanceof MetricsCollector
+        ? options.metrics
+        : new MetricsCollector();
     this.healthMonitor = options.healthMonitor ?? new HealthMonitor();
     this.authenticationProvider = options.authenticationProvider;
     this.authorizationProvider = options.authorizationProvider;
@@ -72,8 +75,14 @@ export class BaseEngine implements TitanEngine {
       this.logger.info('engine.initialized', { engineId: this.metadata().id });
     } catch (error) {
       this.healthMonitor.markFailed('initialization failed', error);
-      this.lifecycleManager.markFailed(error instanceof Error ? error : new InitializationError('Initialization failed'));
-      throw error instanceof Error ? error : new InitializationError('Initialization failed');
+      this.lifecycleManager.markFailed(
+        error instanceof Error
+          ? error
+          : new InitializationError('Initialization failed'),
+      );
+      throw error instanceof Error
+        ? error
+        : new InitializationError('Initialization failed');
     }
   }
 
@@ -92,8 +101,14 @@ export class BaseEngine implements TitanEngine {
       );
     } catch (error) {
       this.healthMonitor.markFailed('start failed', error);
-      this.lifecycleManager.markFailed(error instanceof Error ? error : new InitializationError('Start failed'));
-      throw error instanceof Error ? error : new InitializationError('Start failed');
+      this.lifecycleManager.markFailed(
+        error instanceof Error
+          ? error
+          : new InitializationError('Start failed'),
+      );
+      throw error instanceof Error
+        ? error
+        : new InitializationError('Start failed');
     }
   }
 
@@ -112,7 +127,9 @@ export class BaseEngine implements TitanEngine {
       this.logger.info('engine.stopped', { engineId: this.metadata().id });
     } catch (error) {
       this.healthMonitor.markFailed('shutdown failed', error);
-      throw error instanceof Error ? error : new ShutdownError('Shutdown failed');
+      throw error instanceof Error
+        ? error
+        : new ShutdownError('Shutdown failed');
     }
   }
 

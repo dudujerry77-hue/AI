@@ -28,8 +28,14 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * `completed`, `failed`, `cancelled`, `skipped`, `blocked`) is not
  * eligible.
  */
-const DISPATCH_ELIGIBLE_STEP_STATUSES: readonly WorkflowStepStatus[] = ['pending', 'ready'];
-const DISPATCH_ELIGIBLE_TASK_STATUSES: readonly WorkflowTaskStatus[] = ['pending', 'ready'];
+const DISPATCH_ELIGIBLE_STEP_STATUSES: readonly WorkflowStepStatus[] = [
+  'pending',
+  'ready',
+];
+const DISPATCH_ELIGIBLE_TASK_STATUSES: readonly WorkflowTaskStatus[] = [
+  'pending',
+  'ready',
+];
 
 /**
  * `WorkflowDependency` types treated as dispatch preconditions: an
@@ -37,18 +43,21 @@ const DISPATCH_ELIGIBLE_TASK_STATUSES: readonly WorkflowTaskStatus[] = ['pending
  * only dispatch-ready once the referenced `sourceId` item's status
  * indicates the precondition is satisfied.
  */
-const DISPATCH_PRECONDITION_DEPENDENCY_TYPES: ReadonlySet<WorkflowDependency['type']> = new Set([
-  'blocks',
-  'requires',
-  'sequential',
-]);
+const DISPATCH_PRECONDITION_DEPENDENCY_TYPES: ReadonlySet<
+  WorkflowDependency['type']
+> = new Set(['blocks', 'requires', 'sequential']);
 
 /**
  * Statuses that indicate a source item has satisfied a dispatch
  * precondition it participates in.
  */
-const SATISFYING_STEP_STATUSES: ReadonlySet<WorkflowStepStatus> = new Set(['completed', 'skipped']);
-const SATISFYING_TASK_STATUSES: ReadonlySet<WorkflowTaskStatus> = new Set(['completed']);
+const SATISFYING_STEP_STATUSES: ReadonlySet<WorkflowStepStatus> = new Set([
+  'completed',
+  'skipped',
+]);
+const SATISFYING_TASK_STATUSES: ReadonlySet<WorkflowTaskStatus> = new Set([
+  'completed',
+]);
 
 /**
  * Throws `OrchestratorValidationError` for malformed input: `null`,
@@ -57,13 +66,16 @@ const SATISFYING_TASK_STATUSES: ReadonlySet<WorkflowTaskStatus> = new Set(['comp
  */
 function requireWorkflowObject(workflow: Workflow): Workflow {
   if (workflow === null || workflow === undefined || !isPlainObject(workflow)) {
-    throw new OrchestratorValidationError('Workflow must be a non-null object.', [
-      {
-        field: 'workflow',
-        code: 'MALFORMED_INPUT',
-        message: 'workflow must be a non-null object.',
-      },
-    ]);
+    throw new OrchestratorValidationError(
+      'Workflow must be a non-null object.',
+      [
+        {
+          field: 'workflow',
+          code: 'MALFORMED_INPUT',
+          message: 'workflow must be a non-null object.',
+        },
+      ],
+    );
   }
 
   return workflow;
@@ -157,10 +169,17 @@ export class WorkflowDispatcher {
 
     const index = buildItemStatusIndex(validated);
 
-    const stepDecisions = validated.steps.map((step) => this.evaluateStep(step, validated, index));
-    const taskDecisions = validated.tasks.map((task) => this.evaluateTask(task, validated, index));
+    const stepDecisions = validated.steps.map((step) =>
+      this.evaluateStep(step, validated, index),
+    );
+    const taskDecisions = validated.tasks.map((task) =>
+      this.evaluateTask(task, validated, index),
+    );
 
-    const decisions: readonly WorkflowDispatchDecision[] = [...stepDecisions, ...taskDecisions];
+    const decisions: readonly WorkflowDispatchDecision[] = [
+      ...stepDecisions,
+      ...taskDecisions,
+    ];
 
     const dispatchable: readonly string[] = decisions
       .filter((decision) => decision.ready)
@@ -172,18 +191,27 @@ export class WorkflowDispatcher {
     ];
 
     return {
-      workflowId: typeof validated.workflowId === 'string' ? validated.workflowId : '',
+      workflowId:
+        typeof validated.workflowId === 'string' ? validated.workflowId : '',
       dispatchable,
       decisions,
       escalations,
     };
   }
 
-  private evaluateStep(step: WorkflowStep, workflow: Workflow, index: ItemStatusIndex): WorkflowDispatchDecision {
+  private evaluateStep(
+    step: WorkflowStep,
+    workflow: Workflow,
+    index: ItemStatusIndex,
+  ): WorkflowDispatchDecision {
     return this.evaluateItem(step.stepId, 'step', step.status, workflow, index);
   }
 
-  private evaluateTask(task: WorkflowTask, workflow: Workflow, index: ItemStatusIndex): WorkflowDispatchDecision {
+  private evaluateTask(
+    task: WorkflowTask,
+    workflow: Workflow,
+    index: ItemStatusIndex,
+  ): WorkflowDispatchDecision {
     return this.evaluateItem(task.taskId, 'task', task.status, workflow, index);
   }
 
@@ -196,19 +224,29 @@ export class WorkflowDispatcher {
   ): WorkflowDispatchDecision {
     const reasons: WorkflowDispatchReason[] = [];
 
-    const eligibleStatuses: readonly (WorkflowStepStatus | WorkflowTaskStatus)[] =
-      itemType === 'step' ? DISPATCH_ELIGIBLE_STEP_STATUSES : DISPATCH_ELIGIBLE_TASK_STATUSES;
+    const eligibleStatuses: readonly (
+      WorkflowStepStatus | WorkflowTaskStatus
+    )[] =
+      itemType === 'step'
+        ? DISPATCH_ELIGIBLE_STEP_STATUSES
+        : DISPATCH_ELIGIBLE_TASK_STATUSES;
     const statusReady = eligibleStatuses.includes(status);
     reasons.push(statusReady ? 'status-ready' : 'status-not-ready');
 
     const preconditionDependencies = workflow.dependencies.filter(
-      (dependency) => dependency.targetId === itemId && DISPATCH_PRECONDITION_DEPENDENCY_TYPES.has(dependency.type),
+      (dependency) =>
+        dependency.targetId === itemId &&
+        DISPATCH_PRECONDITION_DEPENDENCY_TYPES.has(dependency.type),
     );
 
     const dependenciesSatisfied = preconditionDependencies.every((dependency) =>
       isSourceSatisfied(dependency.sourceId, index),
     );
-    reasons.push(dependenciesSatisfied ? 'dependencies-satisfied' : 'dependencies-unsatisfied');
+    reasons.push(
+      dependenciesSatisfied
+        ? 'dependencies-satisfied'
+        : 'dependencies-unsatisfied',
+    );
 
     return {
       itemId,
@@ -218,16 +256,30 @@ export class WorkflowDispatcher {
     };
   }
 
-  private escalationsForSteps(workflow: Workflow): readonly WorkflowEscalationDecision[] {
+  private escalationsForSteps(
+    workflow: Workflow,
+  ): readonly WorkflowEscalationDecision[] {
     return workflow.steps
-      .map((step) => this.escalationForItem(step.stepId, 'step', step.status, workflow))
-      .filter((decision): decision is WorkflowEscalationDecision => decision !== undefined);
+      .map((step) =>
+        this.escalationForItem(step.stepId, 'step', step.status, workflow),
+      )
+      .filter(
+        (decision): decision is WorkflowEscalationDecision =>
+          decision !== undefined,
+      );
   }
 
-  private escalationsForTasks(workflow: Workflow): readonly WorkflowEscalationDecision[] {
+  private escalationsForTasks(
+    workflow: Workflow,
+  ): readonly WorkflowEscalationDecision[] {
     return workflow.tasks
-      .map((task) => this.escalationForItem(task.taskId, 'task', task.status, workflow))
-      .filter((decision): decision is WorkflowEscalationDecision => decision !== undefined);
+      .map((task) =>
+        this.escalationForItem(task.taskId, 'task', task.status, workflow),
+      )
+      .filter(
+        (decision): decision is WorkflowEscalationDecision =>
+          decision !== undefined,
+      );
   }
 
   private escalationForItem(
@@ -266,12 +318,9 @@ export class WorkflowDispatcher {
       return 'blocked-status';
     }
 
-    const terminalStatuses: ReadonlySet<WorkflowStepStatus | WorkflowTaskStatus> = new Set([
-      'completed',
-      'failed',
-      'cancelled',
-      'skipped',
-    ]);
+    const terminalStatuses: ReadonlySet<
+      WorkflowStepStatus | WorkflowTaskStatus
+    > = new Set(['completed', 'failed', 'cancelled', 'skipped']);
 
     if (priority === 'critical' && !terminalStatuses.has(status)) {
       return 'critical-priority-not-progressing';

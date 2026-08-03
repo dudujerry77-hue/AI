@@ -17,12 +17,12 @@ Milestone 6 adds deterministic structural plan estimation and explanation, and i
 
 - Implements the Titan runtime engine contract via lifecycle, health, metadata, version, and state methods.
 - Exposes Planner API method signatures:
-	- `createPlan()`
-	- `validatePlan()`
-	- `optimizePlan()`
-	- `estimatePlan()`
-	- `explainPlan()`
-	- `cancelPlan()`
+  - `createPlan()`
+  - `validatePlan()`
+  - `optimizePlan()`
+  - `estimatePlan()`
+  - `explainPlan()`
+  - `cancelPlan()`
 
 ## Planner Domain Model (Milestone 2)
 

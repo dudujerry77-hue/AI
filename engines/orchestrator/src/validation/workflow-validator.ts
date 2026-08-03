@@ -7,7 +7,10 @@ import type {
   WorkflowStepStatus,
   WorkflowTaskStatus,
 } from '../models/types';
-import { OrchestratorValidationError, type OrchestratorValidationIssue } from '../errors/orchestrator-errors';
+import {
+  OrchestratorValidationError,
+  type OrchestratorValidationIssue,
+} from '../errors/orchestrator-errors';
 
 /**
  * Structured result returned by `WorkflowValidator.validate`.
@@ -32,9 +35,18 @@ const VALID_WORKFLOW_STATUSES: readonly WorkflowStatus[] = [
   'cancelled',
 ];
 
-const VALID_WORKFLOW_PRIORITIES: readonly WorkflowPriority[] = ['low', 'medium', 'high', 'critical'];
+const VALID_WORKFLOW_PRIORITIES: readonly WorkflowPriority[] = [
+  'low',
+  'medium',
+  'high',
+  'critical',
+];
 
-const VALID_WORKFLOW_EXECUTION_MODES: readonly WorkflowExecutionMode[] = ['sequential', 'parallel', 'conditional'];
+const VALID_WORKFLOW_EXECUTION_MODES: readonly WorkflowExecutionMode[] = [
+  'sequential',
+  'parallel',
+  'conditional',
+];
 
 const VALID_WORKFLOW_STEP_STATUSES: readonly WorkflowStepStatus[] = [
   'pending',
@@ -142,14 +154,21 @@ export class WorkflowValidator {
    * returned `WorkflowValidationResult` instead of being thrown.
    */
   validate(workflow: Workflow): WorkflowValidationResult {
-    if (workflow === null || workflow === undefined || !isPlainObject(workflow)) {
-      throw new OrchestratorValidationError('Workflow must be a non-null object.', [
-        {
-          field: 'workflow',
-          code: 'MALFORMED_INPUT',
-          message: 'workflow must be a non-null object.',
-        },
-      ]);
+    if (
+      workflow === null ||
+      workflow === undefined ||
+      !isPlainObject(workflow)
+    ) {
+      throw new OrchestratorValidationError(
+        'Workflow must be a non-null object.',
+        [
+          {
+            field: 'workflow',
+            code: 'MALFORMED_INPUT',
+            message: 'workflow must be a non-null object.',
+          },
+        ],
+      );
     }
 
     const issues: OrchestratorValidationIssue[] = [];
@@ -162,13 +181,17 @@ export class WorkflowValidator {
     this.checkDependencies(workflow, issues);
 
     return {
-      workflowId: typeof workflow.workflowId === 'string' ? workflow.workflowId : '',
+      workflowId:
+        typeof workflow.workflowId === 'string' ? workflow.workflowId : '',
       valid: issues.length === 0,
       issues,
     };
   }
 
-  private checkRequiredFields(workflow: Workflow, issues: OrchestratorValidationIssue[]): void {
+  private checkRequiredFields(
+    workflow: Workflow,
+    issues: OrchestratorValidationIssue[],
+  ): void {
     if (!isNonEmptyString(workflow.workflowId)) {
       issues.push({
         field: 'workflowId',
@@ -201,7 +224,10 @@ export class WorkflowValidator {
       });
     }
 
-    if (workflow.executionMode === undefined || workflow.executionMode === null) {
+    if (
+      workflow.executionMode === undefined ||
+      workflow.executionMode === null
+    ) {
       issues.push({
         field: 'executionMode',
         code: 'REQUIRED_FIELD_MISSING',
@@ -242,7 +268,10 @@ export class WorkflowValidator {
     }
   }
 
-  private checkEnumValues(workflow: Workflow, issues: OrchestratorValidationIssue[]): void {
+  private checkEnumValues(
+    workflow: Workflow,
+    issues: OrchestratorValidationIssue[],
+  ): void {
     if (
       workflow.status !== undefined &&
       workflow.status !== null &&
@@ -280,7 +309,10 @@ export class WorkflowValidator {
     }
   }
 
-  private checkMetadata(workflow: Workflow, issues: OrchestratorValidationIssue[]): void {
+  private checkMetadata(
+    workflow: Workflow,
+    issues: OrchestratorValidationIssue[],
+  ): void {
     if (!isPlainObject(workflow.metadata)) {
       return;
     }
@@ -291,7 +323,8 @@ export class WorkflowValidator {
       issues.push({
         field: 'metadata.createdAt',
         code: 'REQUIRED_FIELD_MISSING',
-        message: 'metadata.createdAt is required and must be a non-empty string.',
+        message:
+          'metadata.createdAt is required and must be a non-empty string.',
       });
     } else if (!isValidIsoTimestamp(metadata.createdAt)) {
       issues.push({
@@ -305,7 +338,8 @@ export class WorkflowValidator {
       issues.push({
         field: 'metadata.updatedAt',
         code: 'REQUIRED_FIELD_MISSING',
-        message: 'metadata.updatedAt is required and must be a non-empty string.',
+        message:
+          'metadata.updatedAt is required and must be a non-empty string.',
       });
     } else if (!isValidIsoTimestamp(metadata.updatedAt)) {
       issues.push({
@@ -325,7 +359,8 @@ export class WorkflowValidator {
       issues.push({
         field: 'metadata.updatedAt',
         code: 'TIMESTAMP_ORDER_INVALID',
-        message: 'metadata.updatedAt must not be earlier than metadata.createdAt.',
+        message:
+          'metadata.updatedAt must not be earlier than metadata.createdAt.',
       });
     }
 
@@ -333,11 +368,15 @@ export class WorkflowValidator {
       issues.push({
         field: 'metadata.createdBy',
         code: 'REQUIRED_FIELD_MISSING',
-        message: 'metadata.createdBy is required and must be a non-empty string.',
+        message:
+          'metadata.createdBy is required and must be a non-empty string.',
       });
     }
 
-    if (typeof metadata.revision !== 'number' || !Number.isFinite(metadata.revision)) {
+    if (
+      typeof metadata.revision !== 'number' ||
+      !Number.isFinite(metadata.revision)
+    ) {
       issues.push({
         field: 'metadata.revision',
         code: 'INVALID_FIELD_VALUE',
@@ -346,7 +385,10 @@ export class WorkflowValidator {
     }
   }
 
-  private checkSteps(workflow: Workflow, issues: OrchestratorValidationIssue[]): void {
+  private checkSteps(
+    workflow: Workflow,
+    issues: OrchestratorValidationIssue[],
+  ): void {
     if (!Array.isArray(workflow.steps)) {
       return;
     }
@@ -399,7 +441,9 @@ export class WorkflowValidator {
           code: 'REQUIRED_FIELD_MISSING',
           message: `steps[${index}].status is required.`,
         });
-      } else if (!VALID_WORKFLOW_STEP_STATUSES.includes(status as WorkflowStepStatus)) {
+      } else if (
+        !VALID_WORKFLOW_STEP_STATUSES.includes(status as WorkflowStepStatus)
+      ) {
         issues.push({
           field: `steps[${index}].status`,
           code: 'INVALID_ENUM_VALUE',
@@ -409,7 +453,10 @@ export class WorkflowValidator {
     });
   }
 
-  private checkTasks(workflow: Workflow, issues: OrchestratorValidationIssue[]): void {
+  private checkTasks(
+    workflow: Workflow,
+    issues: OrchestratorValidationIssue[],
+  ): void {
     if (!Array.isArray(workflow.tasks)) {
       return;
     }
@@ -462,7 +509,9 @@ export class WorkflowValidator {
           code: 'REQUIRED_FIELD_MISSING',
           message: `tasks[${index}].status is required.`,
         });
-      } else if (!VALID_WORKFLOW_TASK_STATUSES.includes(status as WorkflowTaskStatus)) {
+      } else if (
+        !VALID_WORKFLOW_TASK_STATUSES.includes(status as WorkflowTaskStatus)
+      ) {
         issues.push({
           field: `tasks[${index}].status`,
           code: 'INVALID_ENUM_VALUE',
@@ -472,17 +521,24 @@ export class WorkflowValidator {
     });
   }
 
-  private checkDependencies(workflow: Workflow, issues: OrchestratorValidationIssue[]): void {
+  private checkDependencies(
+    workflow: Workflow,
+    issues: OrchestratorValidationIssue[],
+  ): void {
     if (!Array.isArray(workflow.dependencies)) {
       return;
     }
 
     const knownIds = new Set<string>([
       ...(Array.isArray(workflow.steps)
-        ? workflow.steps.map((step) => extractStepId(step)).filter((stepId): stepId is string => stepId !== undefined)
+        ? workflow.steps
+            .map((step) => extractStepId(step))
+            .filter((stepId): stepId is string => stepId !== undefined)
         : []),
       ...(Array.isArray(workflow.tasks)
-        ? workflow.tasks.map((task) => extractTaskId(task)).filter((taskId): taskId is string => taskId !== undefined)
+        ? workflow.tasks
+            .map((task) => extractTaskId(task))
+            .filter((taskId): taskId is string => taskId !== undefined)
         : []),
     ]);
 
@@ -528,7 +584,11 @@ export class WorkflowValidator {
           code: 'REQUIRED_FIELD_MISSING',
           message: `dependencies[${index}].type is required.`,
         });
-      } else if (!VALID_WORKFLOW_DEPENDENCY_TYPES.includes(type as WorkflowDependencyType)) {
+      } else if (
+        !VALID_WORKFLOW_DEPENDENCY_TYPES.includes(
+          type as WorkflowDependencyType,
+        )
+      ) {
         issues.push({
           field: `dependencies[${index}].type`,
           code: 'INVALID_ENUM_VALUE',
@@ -564,7 +624,11 @@ export class WorkflowValidator {
         });
       }
 
-      if (isNonEmptyString(sourceId) && isNonEmptyString(targetId) && sourceId === targetId) {
+      if (
+        isNonEmptyString(sourceId) &&
+        isNonEmptyString(targetId) &&
+        sourceId === targetId
+      ) {
         issues.push({
           field: `dependencies[${index}]`,
           code: 'SELF_DEPENDENCY',
@@ -572,7 +636,12 @@ export class WorkflowValidator {
         });
       }
 
-      if (isNonEmptyString(sourceId) && isNonEmptyString(targetId) && type !== undefined && type !== null) {
+      if (
+        isNonEmptyString(sourceId) &&
+        isNonEmptyString(targetId) &&
+        type !== undefined &&
+        type !== null
+      ) {
         const edgeKey = `${String(type)}:${sourceId}->${targetId}`;
         if (seenDependencyEdges.has(edgeKey)) {
           issues.push({

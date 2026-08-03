@@ -90,7 +90,11 @@ describe('ContextEngine — Milestone 1 (Framework Contract)', () => {
     });
 
     it('allows overriding id, name, and version via options', () => {
-      const engine = new ContextEngine({ id: 'custom-id', name: 'Custom Name', version: '2.0.0' });
+      const engine = new ContextEngine({
+        id: 'custom-id',
+        name: 'Custom Name',
+        version: '2.0.0',
+      });
       const metadata = engine.metadata();
 
       expect(metadata.id).toBe('custom-id');
@@ -126,11 +130,21 @@ describe('ContextEngine — Milestone 1 (Framework Contract)', () => {
       // Any of these existing would indicate a business method was
       // added without explicit grounding in architecture.md or the
       // Phase 013 specification.
-      expect((engine as unknown as Record<string, unknown>).createSnapshot).toBeUndefined();
-      expect((engine as unknown as Record<string, unknown>).setProjectContext).toBeUndefined();
-      expect((engine as unknown as Record<string, unknown>).save).toBeUndefined();
-      expect((engine as unknown as Record<string, unknown>).load).toBeUndefined();
-      expect((engine as unknown as Record<string, unknown>).serialize).toBeUndefined();
+      expect(
+        (engine as unknown as Record<string, unknown>).createSnapshot,
+      ).toBeUndefined();
+      expect(
+        (engine as unknown as Record<string, unknown>).setProjectContext,
+      ).toBeUndefined();
+      expect(
+        (engine as unknown as Record<string, unknown>).save,
+      ).toBeUndefined();
+      expect(
+        (engine as unknown as Record<string, unknown>).load,
+      ).toBeUndefined();
+      expect(
+        (engine as unknown as Record<string, unknown>).serialize,
+      ).toBeUndefined();
     });
   });
 });
@@ -139,7 +153,10 @@ describe('Context Engine', () => {
   it('creates immutable snapshots and tracks versioned state', () => {
     const manager = createContextManager({
       project: createProjectContext({ id: 'project-1', name: 'Titan AI' }),
-      session: createSessionContext({ id: 'session-1', name: 'primary-session' }),
+      session: createSessionContext({
+        id: 'session-1',
+        name: 'primary-session',
+      }),
       task: createTaskContext({ id: 'task-1', name: 'phase-setup' }),
       phase: createPhaseContext({ id: 'phase-1', name: 'Phase 005' }),
       user: createUserContext({ id: 'user-1', name: 'Operator' }),
@@ -189,8 +206,12 @@ describe('Context Engine', () => {
   it('updates the runtime context and returns the latest snapshot', () => {
     const manager = createContextManager();
 
-    manager.setProjectContext(createProjectContext({ id: 'project-4', name: 'Updated' }));
-    manager.setSessionContext(createSessionContext({ id: 'session-2', name: 'runtime' }));
+    manager.setProjectContext(
+      createProjectContext({ id: 'project-4', name: 'Updated' }),
+    );
+    manager.setSessionContext(
+      createSessionContext({ id: 'session-2', name: 'runtime' }),
+    );
 
     const snapshot = manager.createSnapshot();
 
@@ -201,7 +222,13 @@ describe('Context Engine', () => {
   it('updates the task context and returns the latest snapshot', () => {
     const manager = createContextManager();
 
-    manager.setTaskContext(createTaskContext({ id: 'task-5', name: 'implement-feature', status: 'in-progress' }));
+    manager.setTaskContext(
+      createTaskContext({
+        id: 'task-5',
+        name: 'implement-feature',
+        status: 'in-progress',
+      }),
+    );
 
     const snapshot = manager.createSnapshot();
     expect(snapshot.task?.id).toBe('task-5');
@@ -212,7 +239,13 @@ describe('Context Engine', () => {
   it('updates the phase context and returns the latest snapshot', () => {
     const manager = createContextManager();
 
-    manager.setPhaseContext(createPhaseContext({ id: 'phase-014', name: 'Test Coverage Completion', status: 'in-progress' }));
+    manager.setPhaseContext(
+      createPhaseContext({
+        id: 'phase-014',
+        name: 'Test Coverage Completion',
+        status: 'in-progress',
+      }),
+    );
 
     const snapshot = manager.createSnapshot();
     expect(snapshot.phase?.id).toBe('phase-014');
@@ -223,7 +256,9 @@ describe('Context Engine', () => {
   it('updates the user context and returns the latest snapshot', () => {
     const manager = createContextManager();
 
-    manager.setUserContext(createUserContext({ id: 'user-9', name: 'Reviewer', role: 'reviewer' }));
+    manager.setUserContext(
+      createUserContext({ id: 'user-9', name: 'Reviewer', role: 'reviewer' }),
+    );
 
     const snapshot = manager.createSnapshot();
     expect(snapshot.user?.id).toBe('user-9');
@@ -234,7 +269,13 @@ describe('Context Engine', () => {
   it('updates the engine context and returns the latest snapshot', () => {
     const manager = createContextManager();
 
-    manager.setEngineContext(createEngineContext({ id: 'engine-9', name: 'context', status: 'running' }));
+    manager.setEngineContext(
+      createEngineContext({
+        id: 'engine-9',
+        name: 'context',
+        status: 'running',
+      }),
+    );
 
     const snapshot = manager.createSnapshot();
     expect(snapshot.engine?.id).toBe('engine-9');

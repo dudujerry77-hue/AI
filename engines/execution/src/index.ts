@@ -1,7 +1,13 @@
 import { BaseEngine } from '../../../runtime/engine/base';
-import { ENGINE_API_CONTRACT_VERSION, type BaseEngineOptions } from '../../../runtime/engine/types';
+import {
+  ENGINE_API_CONTRACT_VERSION,
+  type BaseEngineOptions,
+} from '../../../runtime/engine/types';
 import { ExecutionBuilder } from './builders/execution-builder';
-import { ExecutionValidationError, NotImplementedError } from './errors/execution-errors';
+import {
+  ExecutionValidationError,
+  NotImplementedError,
+} from './errors/execution-errors';
 import type {
   ExecutionBuildRequest,
   ExecutionRecord,
@@ -16,7 +22,10 @@ import { ExecutionValidator } from './validation/execution-validator';
 export { ExecutionBuilder } from './builders/execution-builder';
 export { ExecutionStatusTracker } from './status/execution-status-tracker';
 export { ExecutionValidator } from './validation/execution-validator';
-export { NotImplementedError, ExecutionValidationError } from './errors/execution-errors';
+export {
+  NotImplementedError,
+  ExecutionValidationError,
+} from './errors/execution-errors';
 
 export type {
   ExecutionActionContract,
@@ -117,7 +126,10 @@ export interface ExecutionReportResultRequest {
   readonly handoff?: ExecutionValidationHandoff;
 }
 
-export interface ExecutionEngineOptions extends Omit<BaseEngineOptions, 'id' | 'name' | 'version'> {
+export interface ExecutionEngineOptions extends Omit<
+  BaseEngineOptions,
+  'id' | 'name' | 'version'
+> {
   readonly id?: string;
   readonly name?: string;
   readonly version?: string;
@@ -211,14 +223,22 @@ export class ExecutionEngine extends BaseEngine {
    * Titan engine's runtime.
    */
   async execute(request: ExecutionExecuteRequest): Promise<ExecutionRecord> {
-    if (request === null || request === undefined || typeof request !== 'object' || Array.isArray(request)) {
-      throw new ExecutionValidationError('ExecutionExecuteRequest must be a non-null object.', [
-        {
-          field: 'request',
-          code: 'missing-request',
-          message: 'ExecutionExecuteRequest must be a non-null object.',
-        },
-      ]);
+    if (
+      request === null ||
+      request === undefined ||
+      typeof request !== 'object' ||
+      Array.isArray(request)
+    ) {
+      throw new ExecutionValidationError(
+        'ExecutionExecuteRequest must be a non-null object.',
+        [
+          {
+            field: 'request',
+            code: 'missing-request',
+            message: 'ExecutionExecuteRequest must be a non-null object.',
+          },
+        ],
+      );
     }
 
     return this.executionBuilder.build(request);
@@ -235,15 +255,26 @@ export class ExecutionEngine extends BaseEngine {
    * retries, persistence, networking, or AI behavior, and calls no
    * other Titan engine's runtime.
    */
-  async getExecutionStatus(request: ExecutionGetExecutionStatusRequest): Promise<ExecutionValidationResult> {
-    if (request === null || request === undefined || typeof request !== 'object' || Array.isArray(request)) {
-      throw new ExecutionValidationError('ExecutionGetExecutionStatusRequest must be a non-null object.', [
-        {
-          field: 'request',
-          code: 'missing-request',
-          message: 'ExecutionGetExecutionStatusRequest must be a non-null object.',
-        },
-      ]);
+  async getExecutionStatus(
+    request: ExecutionGetExecutionStatusRequest,
+  ): Promise<ExecutionValidationResult> {
+    if (
+      request === null ||
+      request === undefined ||
+      typeof request !== 'object' ||
+      Array.isArray(request)
+    ) {
+      throw new ExecutionValidationError(
+        'ExecutionGetExecutionStatusRequest must be a non-null object.',
+        [
+          {
+            field: 'request',
+            code: 'missing-request',
+            message:
+              'ExecutionGetExecutionStatusRequest must be a non-null object.',
+          },
+        ],
+      );
     }
 
     return this.executionValidator.validate(request.record);
@@ -254,7 +285,9 @@ export class ExecutionEngine extends BaseEngine {
    * stub: always throws `NotImplementedError`, unchanged from
    * Milestone 1.
    */
-  async cancelExecution(_request: ExecutionCancelExecutionRequest): Promise<ExecutionResult> {
+  async cancelExecution(
+    _request: ExecutionCancelExecutionRequest,
+  ): Promise<ExecutionResult> {
     throw new NotImplementedError(
       'ExecutionEngine.cancelExecution is not implemented yet (Milestone 5: structural execution builder, validator, and status tracker only).',
     );
@@ -277,15 +310,25 @@ export class ExecutionEngine extends BaseEngine {
    * retries, persistence, networking, or AI behavior, and calls no
    * other Titan engine's runtime.
    */
-  async reportResult(request: ExecutionReportResultRequest): Promise<ExecutionSummary> {
-    if (request === null || request === undefined || typeof request !== 'object' || Array.isArray(request)) {
-      throw new ExecutionValidationError('ExecutionReportResultRequest must be a non-null object.', [
-        {
-          field: 'request',
-          code: 'missing-request',
-          message: 'ExecutionReportResultRequest must be a non-null object.',
-        },
-      ]);
+  async reportResult(
+    request: ExecutionReportResultRequest,
+  ): Promise<ExecutionSummary> {
+    if (
+      request === null ||
+      request === undefined ||
+      typeof request !== 'object' ||
+      Array.isArray(request)
+    ) {
+      throw new ExecutionValidationError(
+        'ExecutionReportResultRequest must be a non-null object.',
+        [
+          {
+            field: 'request',
+            code: 'missing-request',
+            message: 'ExecutionReportResultRequest must be a non-null object.',
+          },
+        ],
+      );
     }
 
     return this.executionStatusTracker.summarize(request.record);

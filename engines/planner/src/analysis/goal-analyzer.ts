@@ -23,7 +23,12 @@ const VALID_GOAL_TYPES: readonly GoalType[] = [
   'compliance',
 ];
 
-const VALID_GOAL_PRIORITIES: readonly GoalPriority[] = ['low', 'medium', 'high', 'critical'];
+const VALID_GOAL_PRIORITIES: readonly GoalPriority[] = [
+  'low',
+  'medium',
+  'high',
+  'critical',
+];
 
 const VALID_GOAL_STATUSES: readonly GoalStatus[] = [
   'draft',
@@ -149,7 +154,11 @@ export class GoalAnalyzer {
   }
 
   private checkEnumValues(goal: Goal, issues: GoalValidationIssue[]): void {
-    if (goal?.type !== undefined && goal?.type !== null && !VALID_GOAL_TYPES.includes(goal.type)) {
+    if (
+      goal?.type !== undefined &&
+      goal?.type !== null &&
+      !VALID_GOAL_TYPES.includes(goal.type)
+    ) {
       issues.push({
         field: 'type',
         code: 'INVALID_ENUM_VALUE',
@@ -183,7 +192,10 @@ export class GoalAnalyzer {
   }
 
   private checkTimestamps(goal: Goal, issues: GoalValidationIssue[]): void {
-    if (isNonEmptyString(goal?.createdAt) && !isValidIsoTimestamp(goal.createdAt)) {
+    if (
+      isNonEmptyString(goal?.createdAt) &&
+      !isValidIsoTimestamp(goal.createdAt)
+    ) {
       issues.push({
         field: 'createdAt',
         code: 'INVALID_TIMESTAMP',
@@ -191,7 +203,10 @@ export class GoalAnalyzer {
       });
     }
 
-    if (isNonEmptyString(goal?.updatedAt) && !isValidIsoTimestamp(goal.updatedAt)) {
+    if (
+      isNonEmptyString(goal?.updatedAt) &&
+      !isValidIsoTimestamp(goal.updatedAt)
+    ) {
       issues.push({
         field: 'updatedAt',
         code: 'INVALID_TIMESTAMP',

@@ -1,6 +1,9 @@
 import { ValidationBuilder } from '../builders/validation-builder';
 import { ValidationEvidenceCollector } from '../evidence/validation-evidence-collector';
-import type { ValidationPipelineResult, ValidationSubject } from '../models/types';
+import type {
+  ValidationPipelineResult,
+  ValidationSubject,
+} from '../models/types';
 
 /**
  * Deterministic, synchronous, offline coordinator that assembles a
@@ -43,10 +46,17 @@ export class ValidationPipelineRunner {
    * delegate when `subject` (or the verdict derived from it) is
    * malformed.
    */
-  run(subject: ValidationSubject, timestamp?: string): ValidationPipelineResult {
+  run(
+    subject: ValidationSubject,
+    timestamp?: string,
+  ): ValidationPipelineResult {
     const resolvedTimestamp = timestamp ?? new Date().toISOString();
     const built = this.builder.build(subject, resolvedTimestamp);
-    const evidence = this.evidenceCollector.collect(subject, built.verdict, resolvedTimestamp);
+    const evidence = this.evidenceCollector.collect(
+      subject,
+      built.verdict,
+      resolvedTimestamp,
+    );
 
     return {
       verdict: built.verdict,

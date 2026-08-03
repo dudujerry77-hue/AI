@@ -1,5 +1,8 @@
 import { LearningRequestError } from '../errors/learning-errors';
-import type { LearningKnowledgeHandoff, LearningKnowledgeUpdateProposal } from '../models/types';
+import type {
+  LearningKnowledgeHandoff,
+  LearningKnowledgeUpdateProposal,
+} from '../models/types';
 
 /**
  * Returns true when `value` looks like a plain object (not an array,
@@ -56,7 +59,10 @@ export class LearningKnowledgeHandoffBuilder {
    * Throws `LearningRequestError` if `proposal` is not a well-formed
    * object with a non-empty `proposalId`.
    */
-  build(proposal: LearningKnowledgeUpdateProposal, timestamp?: string): LearningKnowledgeHandoff {
+  build(
+    proposal: LearningKnowledgeUpdateProposal,
+    timestamp?: string,
+  ): LearningKnowledgeHandoff {
     this.validateProposal(proposal);
 
     const resolvedTimestamp = timestamp ?? new Date().toISOString();
@@ -73,34 +79,56 @@ export class LearningKnowledgeHandoffBuilder {
   }
 
   private validateProposal(proposal: LearningKnowledgeUpdateProposal): void {
-    if (proposal === null || proposal === undefined || !isPlainObject(proposal)) {
-      throw new LearningRequestError('LearningKnowledgeUpdateProposal must be a non-null object.', [
-        {
-          field: 'proposal',
-          code: 'missing-proposal',
-          message: 'LearningKnowledgeUpdateProposal must be a non-null object.',
-        },
-      ]);
+    if (
+      proposal === null ||
+      proposal === undefined ||
+      !isPlainObject(proposal)
+    ) {
+      throw new LearningRequestError(
+        'LearningKnowledgeUpdateProposal must be a non-null object.',
+        [
+          {
+            field: 'proposal',
+            code: 'missing-proposal',
+            message:
+              'LearningKnowledgeUpdateProposal must be a non-null object.',
+          },
+        ],
+      );
     }
 
-    if (!isNonEmptyString((proposal as unknown as Record<string, unknown>).proposalId)) {
-      throw new LearningRequestError('LearningKnowledgeUpdateProposal.proposalId is required.', [
-        {
-          field: 'proposal.proposalId',
-          code: 'missing-proposal-id',
-          message: 'LearningKnowledgeUpdateProposal.proposalId must be a non-empty string.',
-        },
-      ]);
+    if (
+      !isNonEmptyString(
+        (proposal as unknown as Record<string, unknown>).proposalId,
+      )
+    ) {
+      throw new LearningRequestError(
+        'LearningKnowledgeUpdateProposal.proposalId is required.',
+        [
+          {
+            field: 'proposal.proposalId',
+            code: 'missing-proposal-id',
+            message:
+              'LearningKnowledgeUpdateProposal.proposalId must be a non-empty string.',
+          },
+        ],
+      );
     }
 
-    if (!Array.isArray((proposal as unknown as Record<string, unknown>).lessonIds)) {
-      throw new LearningRequestError('LearningKnowledgeUpdateProposal.lessonIds must be an array.', [
-        {
-          field: 'proposal.lessonIds',
-          code: 'invalid-lesson-ids',
-          message: 'LearningKnowledgeUpdateProposal.lessonIds must be an array.',
-        },
-      ]);
+    if (
+      !Array.isArray((proposal as unknown as Record<string, unknown>).lessonIds)
+    ) {
+      throw new LearningRequestError(
+        'LearningKnowledgeUpdateProposal.lessonIds must be an array.',
+        [
+          {
+            field: 'proposal.lessonIds',
+            code: 'invalid-lesson-ids',
+            message:
+              'LearningKnowledgeUpdateProposal.lessonIds must be an array.',
+          },
+        ],
+      );
     }
   }
 }

@@ -2,12 +2,7 @@
  * Supported goal categories for planner input.
  */
 export type GoalType =
-  | 'feature'
-  | 'bugfix'
-  | 'refactor'
-  | 'maintenance'
-  | 'research'
-  | 'compliance';
+  'feature' | 'bugfix' | 'refactor' | 'maintenance' | 'research' | 'compliance';
 
 /**
  * Relative urgency of a goal.
@@ -17,7 +12,8 @@ export type GoalPriority = 'low' | 'medium' | 'high' | 'critical';
 /**
  * Lifecycle state for a goal definition.
  */
-export type GoalStatus = 'draft' | 'ready' | 'in-progress' | 'blocked' | 'completed' | 'cancelled';
+export type GoalStatus =
+  'draft' | 'ready' | 'in-progress' | 'blocked' | 'completed' | 'cancelled';
 
 /**
  * Durable goal model consumed by planner APIs.
@@ -37,7 +33,14 @@ export interface Goal {
 /**
  * Runtime status for a plan record.
  */
-export type PlanStatus = 'draft' | 'validated' | 'approved' | 'active' | 'completed' | 'cancelled' | 'failed';
+export type PlanStatus =
+  | 'draft'
+  | 'validated'
+  | 'approved'
+  | 'active'
+  | 'completed'
+  | 'cancelled'
+  | 'failed';
 
 /**
  * Plan-level metadata for traceability.
@@ -53,12 +56,25 @@ export interface PlanMetadata {
 /**
  * Supported step categories in a plan.
  */
-export type StepType = 'analysis' | 'design' | 'implementation' | 'validation' | 'documentation' | 'release';
+export type StepType =
+  | 'analysis'
+  | 'design'
+  | 'implementation'
+  | 'validation'
+  | 'documentation'
+  | 'release';
 
 /**
  * Runtime status for a plan step.
  */
-export type StepStatus = 'pending' | 'ready' | 'in-progress' | 'blocked' | 'completed' | 'skipped' | 'cancelled';
+export type StepStatus =
+  | 'pending'
+  | 'ready'
+  | 'in-progress'
+  | 'blocked'
+  | 'completed'
+  | 'skipped'
+  | 'cancelled';
 
 /**
  * Atomic execution unit metadata inside a plan.
@@ -76,7 +92,14 @@ export interface PlanStep {
 /**
  * Runtime status for a task.
  */
-export type TaskStatus = 'pending' | 'ready' | 'in-progress' | 'blocked' | 'completed' | 'failed' | 'cancelled';
+export type TaskStatus =
+  | 'pending'
+  | 'ready'
+  | 'in-progress'
+  | 'blocked'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
 
 /**
  * Planner task model linked to plan steps.
@@ -93,7 +116,8 @@ export interface Task {
 /**
  * Relationship types between tasks or steps.
  */
-export type DependencyType = 'blocks' | 'requires' | 'related' | 'sequential' | 'parallel';
+export type DependencyType =
+  'blocks' | 'requires' | 'related' | 'sequential' | 'parallel';
 
 /**
  * Dependency edge connecting planner entities.
@@ -109,7 +133,14 @@ export interface Dependency {
 /**
  * Constraint categories for plan shaping.
  */
-export type ConstraintType = 'time' | 'cost' | 'resource' | 'policy' | 'security' | 'quality' | 'compliance';
+export type ConstraintType =
+  | 'time'
+  | 'cost'
+  | 'resource'
+  | 'policy'
+  | 'security'
+  | 'quality'
+  | 'compliance';
 
 /**
  * Immutable constraint descriptor for planner requests.

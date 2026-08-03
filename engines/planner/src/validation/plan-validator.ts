@@ -7,7 +7,10 @@ import type {
   StepType,
   TaskStatus,
 } from '../models/types';
-import { PlanningValidationError, type GoalValidationIssue } from '../errors/planner-errors';
+import {
+  PlanningValidationError,
+  type GoalValidationIssue,
+} from '../errors/planner-errors';
 
 /**
  * Structured result returned by `PlanValidator.validate`.
@@ -291,7 +294,8 @@ export class PlanValidator {
       issues.push({
         field: 'metadata.createdAt',
         code: 'REQUIRED_FIELD_MISSING',
-        message: 'metadata.createdAt is required and must be a non-empty string.',
+        message:
+          'metadata.createdAt is required and must be a non-empty string.',
       });
     } else if (!isValidIsoTimestamp(metadata.createdAt)) {
       issues.push({
@@ -305,7 +309,8 @@ export class PlanValidator {
       issues.push({
         field: 'metadata.updatedAt',
         code: 'REQUIRED_FIELD_MISSING',
-        message: 'metadata.updatedAt is required and must be a non-empty string.',
+        message:
+          'metadata.updatedAt is required and must be a non-empty string.',
       });
     } else if (!isValidIsoTimestamp(metadata.updatedAt)) {
       issues.push({
@@ -325,7 +330,8 @@ export class PlanValidator {
       issues.push({
         field: 'metadata.updatedAt',
         code: 'TIMESTAMP_ORDER_INVALID',
-        message: 'metadata.updatedAt must not be earlier than metadata.createdAt.',
+        message:
+          'metadata.updatedAt must not be earlier than metadata.createdAt.',
       });
     }
 
@@ -333,7 +339,8 @@ export class PlanValidator {
       issues.push({
         field: 'metadata.createdBy',
         code: 'REQUIRED_FIELD_MISSING',
-        message: 'metadata.createdBy is required and must be a non-empty string.',
+        message:
+          'metadata.createdBy is required and must be a non-empty string.',
       });
     }
 

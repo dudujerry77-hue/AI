@@ -47,7 +47,11 @@ export class Logger {
     return this.log('error', message, data);
   }
 
-  private log(level: LogLevel, message: string, data?: Record<string, unknown>): LogEntry {
+  private log(
+    level: LogLevel,
+    message: string,
+    data?: Record<string, unknown>,
+  ): LogEntry {
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,

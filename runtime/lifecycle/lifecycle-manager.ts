@@ -2,7 +2,8 @@ import type { EventBus } from '../events/event-bus';
 import type { Logger } from '../logging/logger';
 import { InitializationError, ShutdownError } from '../errors/errors';
 
-export type LifecycleState = 'created' | 'initialized' | 'running' | 'stopped' | 'failed';
+export type LifecycleState =
+  'created' | 'initialized' | 'running' | 'stopped' | 'failed';
 
 const DEFAULT_SUPPORTED_CONTRACT_VERSIONS = ['1.0.0'];
 
@@ -74,7 +75,9 @@ export class LifecycleManager {
   }
 
   validateContractVersion(contractVersion: string): void {
-    const supported = this.options.supportedContractVersions ?? DEFAULT_SUPPORTED_CONTRACT_VERSIONS;
+    const supported =
+      this.options.supportedContractVersions ??
+      DEFAULT_SUPPORTED_CONTRACT_VERSIONS;
     if (!supported.includes(contractVersion)) {
       throw new InitializationError(
         `Unsupported engine contract version: ${contractVersion}. Supported: ${supported.join(', ')}`,
@@ -89,10 +92,14 @@ export class LifecycleManager {
   private assertTransition(target: LifecycleState): void {
     if (!this.isTransitionAllowed(this.state, target)) {
       if (target === 'stopped') {
-        throw new ShutdownError(`Invalid lifecycle transition from ${this.state} to ${target}`);
+        throw new ShutdownError(
+          `Invalid lifecycle transition from ${this.state} to ${target}`,
+        );
       }
 
-      throw new InitializationError(`Invalid lifecycle transition from ${this.state} to ${target}`);
+      throw new InitializationError(
+        `Invalid lifecycle transition from ${this.state} to ${target}`,
+      );
     }
   }
 
@@ -106,7 +113,10 @@ export class LifecycleManager {
     }
 
     if (this.options.logger) {
-      this.options.logger.info(`lifecycle:${state}`, { state, error: error?.message });
+      this.options.logger.info(`lifecycle:${state}`, {
+        state,
+        error: error?.message,
+      });
     }
   }
 }

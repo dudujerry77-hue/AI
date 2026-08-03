@@ -11,7 +11,10 @@ import {
   type ValidationSubject,
   type ValidationVerdict,
 } from '../../engines/validation/src';
-import type { ExecutionRecord, ExecutionSummary } from '../../engines/execution/src/models/types';
+import type {
+  ExecutionRecord,
+  ExecutionSummary,
+} from '../../engines/execution/src/models/types';
 import { ENGINE_API_CONTRACT_VERSION } from '../../runtime/engine/types';
 
 const EXPECTED_CAPABILITIES = [
@@ -21,7 +24,9 @@ const EXPECTED_CAPABILITIES = [
   'validation.reject-validation',
 ];
 
-function buildExecutionRecord(overrides: Partial<ExecutionRecord> = {}): ExecutionRecord {
+function buildExecutionRecord(
+  overrides: Partial<ExecutionRecord> = {},
+): ExecutionRecord {
   return {
     executionId: 'execution-workflow-1-step-1',
     target: { workflowId: 'workflow-1', itemId: 'step-1', itemType: 'step' },
@@ -32,7 +37,9 @@ function buildExecutionRecord(overrides: Partial<ExecutionRecord> = {}): Executi
   };
 }
 
-function buildExecutionSummary(overrides: Partial<ExecutionSummary> = {}): ExecutionSummary {
+function buildExecutionSummary(
+  overrides: Partial<ExecutionSummary> = {},
+): ExecutionSummary {
   return {
     executionId: 'execution-workflow-1-step-1',
     status: 'completed',
@@ -45,7 +52,9 @@ function buildExecutionSummary(overrides: Partial<ExecutionSummary> = {}): Execu
   };
 }
 
-function buildValidVerdict(overrides: Partial<ValidationVerdict> = {}): ValidationVerdict {
+function buildValidVerdict(
+  overrides: Partial<ValidationVerdict> = {},
+): ValidationVerdict {
   return {
     validationId: 'validation-workflow-1-step-1',
     target: {
@@ -140,7 +149,11 @@ describe('ValidationEngine — Milestone 5 (Structural Evidence Collection)', ()
     });
 
     it('allows overriding id, name, and version via options', () => {
-      const engine = new ValidationEngine({ id: 'custom-id', name: 'Custom Name', version: '2.0.0' });
+      const engine = new ValidationEngine({
+        id: 'custom-id',
+        name: 'Custom Name',
+        version: '2.0.0',
+      });
       const metadata = engine.metadata();
 
       expect(metadata.id).toBe('custom-id');
@@ -237,8 +250,17 @@ describe('ValidationEngine — Milestone 5 (Structural Evidence Collection)', ()
 
       const withRules = await engine.validate({
         subject,
-        policyRules: [{ ruleId: 'p1', description: 'd', checkType: 'policy', severity: 'blocking' }],
-        governanceRules: [{ ruleId: 'g1', description: 'd', severity: 'blocking' }],
+        policyRules: [
+          {
+            ruleId: 'p1',
+            description: 'd',
+            checkType: 'policy',
+            severity: 'blocking',
+          },
+        ],
+        governanceRules: [
+          { ruleId: 'g1', description: 'd', severity: 'blocking' },
+        ],
       });
       const withoutRules = await engine.validate({ subject });
 
@@ -249,25 +271,35 @@ describe('ValidationEngine — Milestone 5 (Structural Evidence Collection)', ()
       const engine = new ValidationEngine();
 
       // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.validate(null)).rejects.toBeInstanceOf(ValidationRequestError);
+      await expect(engine.validate(null)).rejects.toBeInstanceOf(
+        ValidationRequestError,
+      );
       // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.validate(undefined)).rejects.toBeInstanceOf(ValidationRequestError);
+      await expect(engine.validate(undefined)).rejects.toBeInstanceOf(
+        ValidationRequestError,
+      );
     });
 
     it('rejects with ValidationRequestError for a non-object request', async () => {
       const engine = new ValidationEngine();
 
       // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.validate('not-an-object')).rejects.toBeInstanceOf(ValidationRequestError);
+      await expect(engine.validate('not-an-object')).rejects.toBeInstanceOf(
+        ValidationRequestError,
+      );
       // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.validate(['array'])).rejects.toBeInstanceOf(ValidationRequestError);
+      await expect(engine.validate(['array'])).rejects.toBeInstanceOf(
+        ValidationRequestError,
+      );
     });
 
     it('propagates ValidationRequestError from ValidationBuilder when subject itself is malformed', async () => {
       const engine = new ValidationEngine();
 
       // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.validate({ subject: null })).rejects.toBeInstanceOf(ValidationRequestError);
+      await expect(engine.validate({ subject: null })).rejects.toBeInstanceOf(
+        ValidationRequestError,
+      );
       await expect(
         // @ts-expect-error — intentionally malformed for the test
         engine.validate({ subject: { record: { executionId: 'x' } } }),
@@ -298,7 +330,10 @@ describe('ValidationEngine — Milestone 5 (Structural Evidence Collection)', ()
 
     it('populates evidence with source "execution-summary" when subject has a summary', async () => {
       const engine = new ValidationEngine();
-      const subject: ValidationSubject = { record: buildExecutionRecord(), summary: buildExecutionSummary() };
+      const subject: ValidationSubject = {
+        record: buildExecutionRecord(),
+        summary: buildExecutionSummary(),
+      };
 
       const result = await engine.validate({ subject });
 
@@ -351,14 +386,18 @@ describe('ValidationEngine — Milestone 5 (Structural Evidence Collection)', ()
       const engine = new ValidationEngine();
 
       // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.getValidationStatus(null)).rejects.toBeInstanceOf(ValidationRequestError);
+      await expect(engine.getValidationStatus(null)).rejects.toBeInstanceOf(
+        ValidationRequestError,
+      );
     });
 
     it('propagates ValidationRequestError from ValidationValidator when verdict itself is malformed', async () => {
       const engine = new ValidationEngine();
 
-      // @ts-expect-error — intentionally malformed for the test
-      await expect(engine.getValidationStatus({ verdict: null })).rejects.toBeInstanceOf(ValidationRequestError);
+      await expect(
+        // @ts-expect-error — intentionally malformed for the test
+        engine.getValidationStatus({ verdict: null }),
+      ).rejects.toBeInstanceOf(ValidationRequestError);
     });
 
     it('delegates to ValidationValidator such that engine and direct-validator output are identical', async () => {
@@ -380,7 +419,10 @@ describe('ValidationEngine — Milestone 5 (Structural Evidence Collection)', ()
       const engine = new ValidationEngine();
 
       await expect(
-        engine.approveValidation({ validationId: 'validation-1', reason: 'looks good' }),
+        engine.approveValidation({
+          validationId: 'validation-1',
+          reason: 'looks good',
+        }),
       ).rejects.toBeInstanceOf(NotImplementedError);
     });
 
@@ -388,15 +430,22 @@ describe('ValidationEngine — Milestone 5 (Structural Evidence Collection)', ()
       const engine = new ValidationEngine();
 
       await expect(
-        engine.rejectValidation({ validationId: 'validation-1', reason: 'missing evidence' }),
+        engine.rejectValidation({
+          validationId: 'validation-1',
+          reason: 'missing evidence',
+        }),
       ).rejects.toBeInstanceOf(NotImplementedError);
     });
 
     it('NotImplementedError carries a descriptive message per method', async () => {
       const engine = new ValidationEngine();
 
-      await expect(engine.approveValidation({ validationId: 'validation-1' })).rejects.toThrow(/approveValidation/);
-      await expect(engine.rejectValidation({ validationId: 'validation-1' })).rejects.toThrow(/rejectValidation/);
+      await expect(
+        engine.approveValidation({ validationId: 'validation-1' }),
+      ).rejects.toThrow(/approveValidation/);
+      await expect(
+        engine.rejectValidation({ validationId: 'validation-1' }),
+      ).rejects.toThrow(/rejectValidation/);
     });
 
     it('approveValidation() and rejectValidation() throw regardless of engine lifecycle state', async () => {
@@ -404,17 +453,17 @@ describe('ValidationEngine — Milestone 5 (Structural Evidence Collection)', ()
       await engine.initialize();
       await engine.start();
 
-      await expect(engine.approveValidation({ validationId: 'validation-1' })).rejects.toBeInstanceOf(
-        NotImplementedError,
-      );
-      await expect(engine.rejectValidation({ validationId: 'validation-1' })).rejects.toBeInstanceOf(
-        NotImplementedError,
-      );
+      await expect(
+        engine.approveValidation({ validationId: 'validation-1' }),
+      ).rejects.toBeInstanceOf(NotImplementedError);
+      await expect(
+        engine.rejectValidation({ validationId: 'validation-1' }),
+      ).rejects.toBeInstanceOf(NotImplementedError);
 
       await engine.stop();
-      await expect(engine.approveValidation({ validationId: 'validation-1' })).rejects.toBeInstanceOf(
-        NotImplementedError,
-      );
+      await expect(
+        engine.approveValidation({ validationId: 'validation-1' }),
+      ).rejects.toBeInstanceOf(NotImplementedError);
     });
 
     it('approveValidation() and rejectValidation() perform no state transition of any kind', async () => {
@@ -422,9 +471,9 @@ describe('ValidationEngine — Milestone 5 (Structural Evidence Collection)', ()
       await engine.initialize();
       await engine.start();
 
-      await expect(engine.approveValidation({ validationId: 'validation-1' })).rejects.toBeInstanceOf(
-        NotImplementedError,
-      );
+      await expect(
+        engine.approveValidation({ validationId: 'validation-1' }),
+      ).rejects.toBeInstanceOf(NotImplementedError);
       expect(engine.getState()).toBe('running');
     });
   });
@@ -463,7 +512,11 @@ describe('ValidationBuilder — Milestone 3 (unchanged in Milestone 5)', () => {
         record: buildExecutionRecord({ executionId: 'execution-record-id' }),
         summary: buildExecutionSummary({
           executionId: 'execution-summary-id',
-          target: { workflowId: 'workflow-summary', itemId: 'item-summary', itemType: 'task' },
+          target: {
+            workflowId: 'workflow-summary',
+            itemId: 'item-summary',
+            itemType: 'task',
+          },
         }),
       };
 
@@ -525,8 +578,14 @@ describe('ValidationBuilder — Milestone 3 (unchanged in Milestone 5)', () => {
     it('produces identical output across separate ValidationBuilder instances', () => {
       const subject: ValidationSubject = { record: buildExecutionRecord() };
 
-      const first = new ValidationBuilder().build(subject, '2026-07-24T00:00:00.000Z');
-      const second = new ValidationBuilder().build(subject, '2026-07-24T00:00:00.000Z');
+      const first = new ValidationBuilder().build(
+        subject,
+        '2026-07-24T00:00:00.000Z',
+      );
+      const second = new ValidationBuilder().build(
+        subject,
+        '2026-07-24T00:00:00.000Z',
+      );
 
       expect(first).toEqual(second);
     });
@@ -555,7 +614,9 @@ describe('ValidationBuilder — Milestone 3 (unchanged in Milestone 5)', () => {
       const builder = new ValidationBuilder();
 
       // @ts-expect-error — intentionally malformed for the test
-      expect(() => builder.build('not-an-object')).toThrow(ValidationRequestError);
+      expect(() => builder.build('not-an-object')).toThrow(
+        ValidationRequestError,
+      );
       // @ts-expect-error — intentionally malformed for the test
       expect(() => builder.build(['array'])).toThrow(ValidationRequestError);
     });
@@ -571,7 +632,9 @@ describe('ValidationBuilder — Milestone 3 (unchanged in Milestone 5)', () => {
       const builder = new ValidationBuilder();
 
       // @ts-expect-error — intentionally malformed for the test
-      expect(() => builder.build({ record: { executionId: 'x' } })).toThrow(ValidationRequestError);
+      expect(() => builder.build({ record: { executionId: 'x' } })).toThrow(
+        ValidationRequestError,
+      );
     });
 
     it('rejects a subject whose record.target is missing workflowId', () => {
@@ -579,8 +642,11 @@ describe('ValidationBuilder — Milestone 3 (unchanged in Milestone 5)', () => {
 
       expect(() =>
         builder.build({
-          // @ts-expect-error — intentionally malformed for the test
-          record: { executionId: 'x', target: { itemId: 'step-1', itemType: 'step' } },
+          record: {
+            executionId: 'x',
+            // @ts-expect-error — intentionally malformed for the test
+            target: { itemId: 'step-1', itemType: 'step' },
+          },
         }),
       ).toThrow(ValidationRequestError);
     });
@@ -655,7 +721,14 @@ describe('ValidationValidator — Milestone 4 (unchanged in Milestone 5)', () =>
     it('reports valid: true for a verdict with well-formed checks', () => {
       const validator = new ValidationValidator();
       const verdict = buildValidVerdict({
-        checks: [{ checkId: 'check-1', checkType: 'testing', status: 'pass', message: 'ok' }],
+        checks: [
+          {
+            checkId: 'check-1',
+            checkType: 'testing',
+            status: 'pass',
+            message: 'ok',
+          },
+        ],
       });
 
       const result = validator.validate(verdict);
@@ -674,7 +747,9 @@ describe('ValidationValidator — Milestone 4 (unchanged in Milestone 5)', () =>
       const result = validator.validate(verdict);
 
       expect(result.valid).toBe(false);
-      expect(result.issues.some((issue) => issue.code === 'INVALID_STATUS')).toBe(true);
+      expect(
+        result.issues.some((issue) => issue.code === 'INVALID_STATUS'),
+      ).toBe(true);
     });
 
     it('reports an issue for a missing validationId', () => {
@@ -683,7 +758,9 @@ describe('ValidationValidator — Milestone 4 (unchanged in Milestone 5)', () =>
 
       const result = validator.validate(verdict);
 
-      expect(result.issues.some((issue) => issue.code === 'MISSING_VALIDATION_ID')).toBe(true);
+      expect(
+        result.issues.some((issue) => issue.code === 'MISSING_VALIDATION_ID'),
+      ).toBe(true);
     });
 
     it('reports an issue for a malformed createdAt', () => {
@@ -692,7 +769,9 @@ describe('ValidationValidator — Milestone 4 (unchanged in Milestone 5)', () =>
 
       const result = validator.validate(verdict);
 
-      expect(result.issues.some((issue) => issue.code === 'MISSING_CREATED_AT')).toBe(true);
+      expect(
+        result.issues.some((issue) => issue.code === 'MISSING_CREATED_AT'),
+      ).toBe(true);
     });
 
     it('reports an issue when updatedAt is earlier than createdAt', () => {
@@ -727,8 +806,15 @@ describe('ValidationValidator — Milestone 4 (unchanged in Milestone 5)', () =>
     it('reports an issue for a check with an unrecognized checkType', () => {
       const validator = new ValidationValidator();
       const verdict = buildValidVerdict({
-        // @ts-expect-error — intentionally malformed for the test
-        checks: [{ checkId: 'check-1', checkType: 'bogus', status: 'pass', message: 'ok' }],
+        checks: [
+          {
+            checkId: 'check-1',
+            // @ts-expect-error — intentionally malformed for the test
+            checkType: 'bogus',
+            status: 'pass',
+            message: 'ok',
+          },
+        ],
       });
 
       const result = validator.validate(verdict);
@@ -754,16 +840,22 @@ describe('ValidationValidator — Milestone 4 (unchanged in Milestone 5)', () =>
       // @ts-expect-error — intentionally malformed for the test
       expect(() => validator.validate(null)).toThrow(ValidationRequestError);
       // @ts-expect-error — intentionally malformed for the test
-      expect(() => validator.validate(undefined)).toThrow(ValidationRequestError);
+      expect(() => validator.validate(undefined)).toThrow(
+        ValidationRequestError,
+      );
     });
 
     it('throws ValidationRequestError for a non-object verdict', () => {
       const validator = new ValidationValidator();
 
       // @ts-expect-error — intentionally malformed for the test
-      expect(() => validator.validate('not-an-object')).toThrow(ValidationRequestError);
+      expect(() => validator.validate('not-an-object')).toThrow(
+        ValidationRequestError,
+      );
       // @ts-expect-error — intentionally malformed for the test
-      expect(() => validator.validate(['array'])).toThrow(ValidationRequestError);
+      expect(() => validator.validate(['array'])).toThrow(
+        ValidationRequestError,
+      );
     });
 
     it('throws ValidationRequestError when target is missing entirely', () => {
@@ -771,7 +863,13 @@ describe('ValidationValidator — Milestone 4 (unchanged in Milestone 5)', () =>
 
       expect(() =>
         // @ts-expect-error — intentionally malformed for the test
-        validator.validate({ validationId: 'x', status: 'pass', checks: [], createdAt: 'a', updatedAt: 'a' }),
+        validator.validate({
+          validationId: 'x',
+          status: 'pass',
+          checks: [],
+          createdAt: 'a',
+          updatedAt: 'a',
+        }),
       ).toThrow(ValidationRequestError);
     });
 
@@ -820,8 +918,14 @@ describe('ValidationValidator — Milestone 4 (unchanged in Milestone 5)', () =>
     it('produces identical output across separate ValidationValidator instances', () => {
       const verdict = buildValidVerdict();
 
-      const first = new ValidationValidator().validate(verdict, '2026-07-24T00:00:00.000Z');
-      const second = new ValidationValidator().validate(verdict, '2026-07-24T00:00:00.000Z');
+      const first = new ValidationValidator().validate(
+        verdict,
+        '2026-07-24T00:00:00.000Z',
+      );
+      const second = new ValidationValidator().validate(
+        verdict,
+        '2026-07-24T00:00:00.000Z',
+      );
 
       expect(first).toEqual(second);
     });
@@ -855,7 +959,9 @@ describe('ValidationValidator — Milestone 4 (unchanged in Milestone 5)', () =>
 
       const result = validator.validate(verdict);
 
-      expect(Object.keys(result).sort()).toEqual(['issues', 'valid', 'validatedAt', 'validationId'].sort());
+      expect(Object.keys(result).sort()).toEqual(
+        ['issues', 'valid', 'validatedAt', 'validationId'].sort(),
+      );
     });
   });
 });
@@ -868,7 +974,11 @@ describe('ValidationEvidenceCollector — Milestone 5', () => {
       const builder = new ValidationBuilder();
       const built = builder.build(subject, '2026-07-24T00:00:00.000Z');
 
-      const evidence = collector.collect(subject, built.verdict, '2026-07-24T00:00:00.000Z');
+      const evidence = collector.collect(
+        subject,
+        built.verdict,
+        '2026-07-24T00:00:00.000Z',
+      );
 
       expect(evidence).toHaveLength(1);
     });
@@ -885,7 +995,10 @@ describe('ValidationEvidenceCollector — Milestone 5', () => {
 
     it('reports source "execution-summary" when subject has a summary', () => {
       const collector = new ValidationEvidenceCollector();
-      const subject: ValidationSubject = { record: buildExecutionRecord(), summary: buildExecutionSummary() };
+      const subject: ValidationSubject = {
+        record: buildExecutionRecord(),
+        summary: buildExecutionSummary(),
+      };
       const verdict = new ValidationBuilder().build(subject).verdict;
 
       const evidence = collector.collect(subject, verdict);
@@ -918,9 +1031,16 @@ describe('ValidationEvidenceCollector — Milestone 5', () => {
     it('uses the supplied timestamp verbatim for capturedAt when provided', () => {
       const collector = new ValidationEvidenceCollector();
       const subject: ValidationSubject = { record: buildExecutionRecord() };
-      const verdict = new ValidationBuilder().build(subject, '2026-07-24T00:00:00.000Z').verdict;
+      const verdict = new ValidationBuilder().build(
+        subject,
+        '2026-07-24T00:00:00.000Z',
+      ).verdict;
 
-      const evidence = collector.collect(subject, verdict, '2026-07-25T00:00:00.000Z');
+      const evidence = collector.collect(
+        subject,
+        verdict,
+        '2026-07-25T00:00:00.000Z',
+      );
 
       expect(evidence[0].capturedAt).toBe('2026-07-25T00:00:00.000Z');
     });
@@ -940,20 +1060,42 @@ describe('ValidationEvidenceCollector — Milestone 5', () => {
     it('produces identical output for identical input and timestamp', () => {
       const collector = new ValidationEvidenceCollector();
       const subject: ValidationSubject = { record: buildExecutionRecord() };
-      const verdict = new ValidationBuilder().build(subject, '2026-07-24T00:00:00.000Z').verdict;
+      const verdict = new ValidationBuilder().build(
+        subject,
+        '2026-07-24T00:00:00.000Z',
+      ).verdict;
 
-      const first = collector.collect(subject, verdict, '2026-07-24T00:00:00.000Z');
-      const second = collector.collect(subject, verdict, '2026-07-24T00:00:00.000Z');
+      const first = collector.collect(
+        subject,
+        verdict,
+        '2026-07-24T00:00:00.000Z',
+      );
+      const second = collector.collect(
+        subject,
+        verdict,
+        '2026-07-24T00:00:00.000Z',
+      );
 
       expect(first).toEqual(second);
     });
 
     it('produces identical output across separate ValidationEvidenceCollector instances', () => {
       const subject: ValidationSubject = { record: buildExecutionRecord() };
-      const verdict = new ValidationBuilder().build(subject, '2026-07-24T00:00:00.000Z').verdict;
+      const verdict = new ValidationBuilder().build(
+        subject,
+        '2026-07-24T00:00:00.000Z',
+      ).verdict;
 
-      const first = new ValidationEvidenceCollector().collect(subject, verdict, '2026-07-24T00:00:00.000Z');
-      const second = new ValidationEvidenceCollector().collect(subject, verdict, '2026-07-24T00:00:00.000Z');
+      const first = new ValidationEvidenceCollector().collect(
+        subject,
+        verdict,
+        '2026-07-24T00:00:00.000Z',
+      );
+      const second = new ValidationEvidenceCollector().collect(
+        subject,
+        verdict,
+        '2026-07-24T00:00:00.000Z',
+      );
 
       expect(first).toEqual(second);
     });
@@ -975,9 +1117,13 @@ describe('ValidationEvidenceCollector — Milestone 5', () => {
       const verdict = buildValidVerdict();
 
       // @ts-expect-error — intentionally malformed for the test
-      expect(() => collector.collect(null, verdict)).toThrow(ValidationRequestError);
+      expect(() => collector.collect(null, verdict)).toThrow(
+        ValidationRequestError,
+      );
       // @ts-expect-error — intentionally malformed for the test
-      expect(() => collector.collect(undefined, verdict)).toThrow(ValidationRequestError);
+      expect(() => collector.collect(undefined, verdict)).toThrow(
+        ValidationRequestError,
+      );
     });
 
     it('rejects a non-object subject', () => {
@@ -985,9 +1131,13 @@ describe('ValidationEvidenceCollector — Milestone 5', () => {
       const verdict = buildValidVerdict();
 
       // @ts-expect-error — intentionally malformed for the test
-      expect(() => collector.collect('not-an-object', verdict)).toThrow(ValidationRequestError);
+      expect(() => collector.collect('not-an-object', verdict)).toThrow(
+        ValidationRequestError,
+      );
       // @ts-expect-error — intentionally malformed for the test
-      expect(() => collector.collect(['array'], verdict)).toThrow(ValidationRequestError);
+      expect(() => collector.collect(['array'], verdict)).toThrow(
+        ValidationRequestError,
+      );
     });
 
     it('rejects a null/undefined verdict', () => {
@@ -995,9 +1145,13 @@ describe('ValidationEvidenceCollector — Milestone 5', () => {
       const subject: ValidationSubject = { record: buildExecutionRecord() };
 
       // @ts-expect-error — intentionally malformed for the test
-      expect(() => collector.collect(subject, null)).toThrow(ValidationRequestError);
+      expect(() => collector.collect(subject, null)).toThrow(
+        ValidationRequestError,
+      );
       // @ts-expect-error — intentionally malformed for the test
-      expect(() => collector.collect(subject, undefined)).toThrow(ValidationRequestError);
+      expect(() => collector.collect(subject, undefined)).toThrow(
+        ValidationRequestError,
+      );
     });
 
     it('rejects a verdict missing target entirely', () => {
@@ -1006,7 +1160,11 @@ describe('ValidationEvidenceCollector — Milestone 5', () => {
 
       expect(() =>
         // @ts-expect-error — intentionally malformed for the test
-        collector.collect(subject, { validationId: 'x', status: 'partial', checks: [] }),
+        collector.collect(subject, {
+          validationId: 'x',
+          status: 'partial',
+          checks: [],
+        }),
       ).toThrow(ValidationRequestError);
     });
 
@@ -1059,7 +1217,10 @@ describe('ValidationPipelineRunner — Milestone 5', () => {
 
       const result = runner.run(subject, '2026-07-24T00:00:00.000Z');
 
-      const expectedVerdict = new ValidationBuilder().build(subject, '2026-07-24T00:00:00.000Z').verdict;
+      const expectedVerdict = new ValidationBuilder().build(
+        subject,
+        '2026-07-24T00:00:00.000Z',
+      ).verdict;
       const expectedEvidence = new ValidationEvidenceCollector().collect(
         subject,
         expectedVerdict,
@@ -1108,8 +1269,14 @@ describe('ValidationPipelineRunner — Milestone 5', () => {
     it('produces identical output across separate ValidationPipelineRunner instances', () => {
       const subject: ValidationSubject = { record: buildExecutionRecord() };
 
-      const first = new ValidationPipelineRunner().run(subject, '2026-07-24T00:00:00.000Z');
-      const second = new ValidationPipelineRunner().run(subject, '2026-07-24T00:00:00.000Z');
+      const first = new ValidationPipelineRunner().run(
+        subject,
+        '2026-07-24T00:00:00.000Z',
+      );
+      const second = new ValidationPipelineRunner().run(
+        subject,
+        '2026-07-24T00:00:00.000Z',
+      );
 
       expect(first).toEqual(second);
     });

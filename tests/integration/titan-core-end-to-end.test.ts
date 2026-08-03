@@ -4,10 +4,26 @@ import { BaseEngine } from '../../runtime/engine/base';
 import { ContextEngine } from '../../engines/context/src';
 import { KnowledgeEngine } from '../../engines/knowledge/src';
 import { PlannerEngine, type Goal, type Plan } from '../../engines/planner/src';
-import { OrchestratorEngine, type Workflow, type WorkflowDispatchResult, type WorkflowResult } from '../../engines/orchestrator/src';
-import { ExecutionEngine, type ExecutionRecord, type ExecutionSummary } from '../../engines/execution/src';
-import { ValidationEngine, type ValidationPipelineResult, type ValidationVerdict } from '../../engines/validation/src';
-import { LearningEngine, type LearningSubject } from '../../engines/learning/src';
+import {
+  OrchestratorEngine,
+  type Workflow,
+  type WorkflowDispatchResult,
+  type WorkflowResult,
+} from '../../engines/orchestrator/src';
+import {
+  ExecutionEngine,
+  type ExecutionRecord,
+  type ExecutionSummary,
+} from '../../engines/execution/src';
+import {
+  ValidationEngine,
+  type ValidationPipelineResult,
+  type ValidationVerdict,
+} from '../../engines/validation/src';
+import {
+  LearningEngine,
+  type LearningSubject,
+} from '../../engines/learning/src';
 
 /**
  * Phase 013 Milestone 3 — End-to-End Workflow Integration Tests.
@@ -73,7 +89,10 @@ function buildGoal(overrides: Partial<Goal> = {}): Goal {
  * scenario to prove no engine instance is ever embedded in a
  * cross-engine request/response payload.
  */
-function containsEngineInstance(value: unknown, seen: Set<unknown> = new Set()): boolean {
+function containsEngineInstance(
+  value: unknown,
+  seen: Set<unknown> = new Set(),
+): boolean {
   if (value instanceof BaseEngine) {
     return true;
   }
@@ -84,7 +103,9 @@ function containsEngineInstance(value: unknown, seen: Set<unknown> = new Set()):
   if (Array.isArray(value)) {
     return value.some((item) => containsEngineInstance(item, seen));
   }
-  return Object.values(value as Record<string, unknown>).some((item) => containsEngineInstance(item, seen));
+  return Object.values(value as Record<string, unknown>).some((item) =>
+    containsEngineInstance(item, seen),
+  );
 }
 
 interface EngineSet {
@@ -120,17 +141,34 @@ interface PlanThroughValidationResult {
  * output directly into the next engine's request. The test harness
  * performs this chaining; no engine calls another engine internally.
  */
-async function runPlanThroughValidation(engines: EngineSet, goal: Goal): Promise<PlanThroughValidationResult> {
+async function runPlanThroughValidation(
+  engines: EngineSet,
+  goal: Goal,
+): Promise<PlanThroughValidationResult> {
   const plan = await engines.planner.createPlan({ goal });
   const workflow = await engines.orchestrator.orchestrate({ plan });
-  const dispatchResult = await engines.orchestrator.dispatchWorkflow({ workflow });
-  const executionRecord = await engines.execution.execute({ dispatchResult, itemId: TASK_ITEM_ID });
-  const executionSummary = await engines.execution.reportResult({ record: executionRecord });
+  const dispatchResult = await engines.orchestrator.dispatchWorkflow({
+    workflow,
+  });
+  const executionRecord = await engines.execution.execute({
+    dispatchResult,
+    itemId: TASK_ITEM_ID,
+  });
+  const executionSummary = await engines.execution.reportResult({
+    record: executionRecord,
+  });
   const validationResult = await engines.validation.validate({
     subject: { record: executionRecord, summary: executionSummary },
   });
 
-  return { plan, workflow, dispatchResult, executionRecord, executionSummary, validationResult };
+  return {
+    plan,
+    workflow,
+    dispatchResult,
+    executionRecord,
+    executionSummary,
+    validationResult,
+  };
 }
 
 describe('Titan Core end-to-end integration (Phase 013 Milestone 3)', () => {
@@ -139,8 +177,14 @@ describe('Titan Core end-to-end integration (Phase 013 Milestone 3)', () => {
       const engines = createEngineSet();
       const goal = buildGoal();
 
-      const { plan, workflow, dispatchResult, executionRecord, executionSummary, validationResult } =
-        await runPlanThroughValidation(engines, goal);
+      const {
+        plan,
+        workflow,
+        dispatchResult,
+        executionRecord,
+        executionSummary,
+        validationResult,
+      } = await runPlanThroughValidation(engines, goal);
 
       expect(plan.planId).toBe('plan-goal-e2e-1');
       expect(workflow.workflowId).toBe('workflow-plan-goal-e2e-1');
@@ -152,7 +196,13 @@ describe('Titan Core end-to-end integration (Phase 013 Milestone 3)', () => {
       // structurally unsatisfied until that task completes, so no step
       // is dispatch-ready at this point in the chain.
       expect(dispatchResult.dispatchable).toEqual(
-        expect.arrayContaining(['task-analysis', 'task-design', 'task-implementation', 'task-validation', 'task-documentation']),
+        expect.arrayContaining([
+          'task-analysis',
+          'task-design',
+          'task-implementation',
+          'task-validation',
+          'task-documentation',
+        ]),
       );
       expect(dispatchResult.dispatchable).not.toContain(STEP_ITEM_ID);
       expect(executionRecord.target.itemId).toBe(TASK_ITEM_ID);
@@ -166,18 +216,25 @@ describe('Titan Core end-to-end integration (Phase 013 Milestone 3)', () => {
         completedStepIds: [STEP_ITEM_ID],
         failedStepIds: [],
       };
-      const subject: LearningSubject = { outcome, verdict: validationResult.verdict };
+      const subject: LearningSubject = {
+        outcome,
+        verdict: validationResult.verdict,
+      };
 
       const observation = await engines.learning.observeCycle({ subject });
       expect(observation.stage).toBe('outcome');
       expect(observation.subject.verdict.status).toBe('partial');
 
-      const pipelineResult = await engines.learning.analyzeCycle({ observations: [observation] });
+      const pipelineResult = await engines.learning.analyzeCycle({
+        observations: [observation],
+      });
 
       expect(pipelineResult.lessons).toHaveLength(1);
       expect(pipelineResult.lessons[0].category).toBe('estimate-inaccuracy');
       expect(pipelineResult.knowledgeUpdateProposals).toHaveLength(1);
-      expect(pipelineResult.knowledgeUpdateProposals[0].status).toBe('proposed');
+      expect(pipelineResult.knowledgeUpdateProposals[0].status).toBe(
+        'proposed',
+      );
     });
   });
 
@@ -186,14 +243,20 @@ describe('Titan Core end-to-end integration (Phase 013 Milestone 3)', () => {
       const engines = createEngineSet();
       const goal = buildGoal();
 
-      const { workflow, validationResult } = await runPlanThroughValidation(engines, goal);
+      const { workflow, validationResult } = await runPlanThroughValidation(
+        engines,
+        goal,
+      );
 
       // ValidationEngine.validate() cannot itself produce a 'fail'
       // verdict today (see file header) -- this fixture copies every
       // other field from the real validate() output and overrides only
       // `status`, matching the fixture-construction precedent already
       // used throughout the repository's own engine test suites.
-      const failingVerdict: ValidationVerdict = { ...validationResult.verdict, status: 'fail' };
+      const failingVerdict: ValidationVerdict = {
+        ...validationResult.verdict,
+        status: 'fail',
+      };
 
       const outcome: WorkflowResult = {
         workflowId: workflow.workflowId,
@@ -204,16 +267,22 @@ describe('Titan Core end-to-end integration (Phase 013 Milestone 3)', () => {
       const subject: LearningSubject = { outcome, verdict: failingVerdict };
 
       const observation = await engines.learning.observeCycle({ subject });
-      const pipelineResult = await engines.learning.analyzeCycle({ observations: [observation] });
+      const pipelineResult = await engines.learning.analyzeCycle({
+        observations: [observation],
+      });
 
       expect(pipelineResult.lessons).toHaveLength(1);
       expect(pipelineResult.lessons[0].category).toBe('failure');
       expect(pipelineResult.flaggedRisks).toHaveLength(1);
-      expect(pipelineResult.flaggedRisks[0].relatedLessonIds).toEqual([pipelineResult.lessons[0].lessonId]);
+      expect(pipelineResult.flaggedRisks[0].relatedLessonIds).toEqual([
+        pipelineResult.lessons[0].lessonId,
+      ]);
       expect(pipelineResult.proposedAdrs).toHaveLength(1);
       expect(pipelineResult.proposedAdrs[0].status).toBe('proposed');
       expect(pipelineResult.proposedAdrs[0].relatedLessonIds).toEqual(
-        expect.arrayContaining([...pipelineResult.flaggedRisks[0].relatedLessonIds]),
+        expect.arrayContaining([
+          ...pipelineResult.flaggedRisks[0].relatedLessonIds,
+        ]),
       );
     });
   });
@@ -238,12 +307,24 @@ describe('Titan Core end-to-end integration (Phase 013 Milestone 3)', () => {
       // fresh `new Date().toISOString()` timestamp with no way to
       // inject one through the public API, so only their deterministic
       // id/target fields are compared, not the full object.
-      expect(first.executionRecord.executionId).toBe(second.executionRecord.executionId);
-      expect(first.executionRecord.target).toEqual(second.executionRecord.target);
-      expect(first.executionSummary.executionId).toBe(second.executionSummary.executionId);
-      expect(first.validationResult.verdict.validationId).toBe(second.validationResult.verdict.validationId);
-      expect(first.validationResult.verdict.target).toEqual(second.validationResult.verdict.target);
-      expect(first.validationResult.verdict.status).toBe(second.validationResult.verdict.status);
+      expect(first.executionRecord.executionId).toBe(
+        second.executionRecord.executionId,
+      );
+      expect(first.executionRecord.target).toEqual(
+        second.executionRecord.target,
+      );
+      expect(first.executionSummary.executionId).toBe(
+        second.executionSummary.executionId,
+      );
+      expect(first.validationResult.verdict.validationId).toBe(
+        second.validationResult.verdict.validationId,
+      );
+      expect(first.validationResult.verdict.target).toEqual(
+        second.validationResult.verdict.target,
+      );
+      expect(first.validationResult.verdict.status).toBe(
+        second.validationResult.verdict.status,
+      );
 
       const outcomeFor = (workflowId: string): WorkflowResult => ({
         workflowId,
@@ -256,25 +337,45 @@ describe('Titan Core end-to-end integration (Phase 013 Milestone 3)', () => {
       const secondEngines = createEngineSet();
 
       const firstObservation = await firstEngines.learning.observeCycle({
-        subject: { outcome: outcomeFor(first.workflow.workflowId), verdict: first.validationResult.verdict },
+        subject: {
+          outcome: outcomeFor(first.workflow.workflowId),
+          verdict: first.validationResult.verdict,
+        },
       });
       const secondObservation = await secondEngines.learning.observeCycle({
-        subject: { outcome: outcomeFor(second.workflow.workflowId), verdict: second.validationResult.verdict },
+        subject: {
+          outcome: outcomeFor(second.workflow.workflowId),
+          verdict: second.validationResult.verdict,
+        },
       });
 
-      expect(firstObservation.observationId).toBe(secondObservation.observationId);
+      expect(firstObservation.observationId).toBe(
+        secondObservation.observationId,
+      );
       expect(firstObservation.stage).toBe(secondObservation.stage);
 
-      const firstPipeline = await firstEngines.learning.analyzeCycle({ observations: [firstObservation] });
-      const secondPipeline = await secondEngines.learning.analyzeCycle({ observations: [secondObservation] });
+      const firstPipeline = await firstEngines.learning.analyzeCycle({
+        observations: [firstObservation],
+      });
+      const secondPipeline = await secondEngines.learning.analyzeCycle({
+        observations: [secondObservation],
+      });
 
-      expect(firstPipeline.lessons[0].lessonId).toBe(secondPipeline.lessons[0].lessonId);
-      expect(firstPipeline.lessons[0].category).toBe(secondPipeline.lessons[0].category);
+      expect(firstPipeline.lessons[0].lessonId).toBe(
+        secondPipeline.lessons[0].lessonId,
+      );
+      expect(firstPipeline.lessons[0].category).toBe(
+        secondPipeline.lessons[0].category,
+      );
       expect(firstPipeline.knowledgeUpdateProposals[0].proposalId).toBe(
         secondPipeline.knowledgeUpdateProposals[0].proposalId,
       );
-      expect(firstPipeline.flaggedRisks[0]?.riskId).toBe(secondPipeline.flaggedRisks[0]?.riskId);
-      expect(firstPipeline.proposedAdrs[0]?.adrId).toBe(secondPipeline.proposedAdrs[0]?.adrId);
+      expect(firstPipeline.flaggedRisks[0]?.riskId).toBe(
+        secondPipeline.flaggedRisks[0]?.riskId,
+      );
+      expect(firstPipeline.proposedAdrs[0]?.adrId).toBe(
+        secondPipeline.proposedAdrs[0]?.adrId,
+      );
     });
   });
 
@@ -282,7 +383,11 @@ describe('Titan Core end-to-end integration (Phase 013 Milestone 3)', () => {
     it('never passes an engine instance as input to another engine', async () => {
       const engines = createEngineSet();
       const context = new ContextEngine();
-      const knowledge = new KnowledgeEngine({ rootDir: process.cwd(), actorId: 'integration-test', roles: ['ai-agent'] });
+      const knowledge = new KnowledgeEngine({
+        rootDir: process.cwd(),
+        actorId: 'integration-test',
+        roles: ['ai-agent'],
+      });
       // KnowledgeEngine independently implements the same lifecycle
       // contract shape but does not extend `BaseEngine` (confirmed by
       // reading engines/knowledge/src/index.ts), so this list is typed
@@ -299,8 +404,14 @@ describe('Titan Core end-to-end integration (Phase 013 Milestone 3)', () => {
       ];
 
       const goal = buildGoal();
-      const { plan, workflow, dispatchResult, executionRecord, executionSummary, validationResult } =
-        await runPlanThroughValidation(engines, goal);
+      const {
+        plan,
+        workflow,
+        dispatchResult,
+        executionRecord,
+        executionSummary,
+        validationResult,
+      } = await runPlanThroughValidation(engines, goal);
 
       const outcome: WorkflowResult = {
         workflowId: workflow.workflowId,
@@ -311,7 +422,9 @@ describe('Titan Core end-to-end integration (Phase 013 Milestone 3)', () => {
       const observation = await engines.learning.observeCycle({
         subject: { outcome, verdict: validationResult.verdict },
       });
-      const pipelineResult = await engines.learning.analyzeCycle({ observations: [observation] });
+      const pipelineResult = await engines.learning.analyzeCycle({
+        observations: [observation],
+      });
 
       const payloads: readonly unknown[] = [
         plan,
@@ -347,7 +460,11 @@ describe('Titan Core end-to-end integration (Phase 013 Milestone 3)', () => {
       // introduced here -- these two engines are constructed as real
       // instances only, exactly as Milestone 2's registry wiring does.
       const context = new ContextEngine();
-      const knowledge = new KnowledgeEngine({ rootDir: process.cwd(), actorId: 'integration-test', roles: ['ai-agent'] });
+      const knowledge = new KnowledgeEngine({
+        rootDir: process.cwd(),
+        actorId: 'integration-test',
+        roles: ['ai-agent'],
+      });
 
       expect(context.metadata().id).toBe('context-engine');
       expect(context.getState()).toBe('created');

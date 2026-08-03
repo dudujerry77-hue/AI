@@ -36,7 +36,9 @@ function hasLessonOverlap(
   }
 
   const candidateSet = new Set(candidateLessonIds);
-  return priorProposals.some((prior) => prior.lessonIds.some((lessonId) => candidateSet.has(lessonId)));
+  return priorProposals.some((prior) =>
+    prior.lessonIds.some((lessonId) => candidateSet.has(lessonId)),
+  );
 }
 
 /**
@@ -110,9 +112,14 @@ export class LearningProposalBuilder {
     this.validateObservations(observations);
 
     const resolvedTimestamp = timestamp ?? new Date().toISOString();
-    const observationIds = observations.map((observation) => observation.observationId);
+    const observationIds = observations.map(
+      (observation) => observation.observationId,
+    );
     const lessonIds = lessons.map((lesson) => lesson.lessonId);
-    const updateType: LearningKnowledgeUpdateType = hasLessonOverlap(lessonIds, priorProposals)
+    const updateType: LearningKnowledgeUpdateType = hasLessonOverlap(
+      lessonIds,
+      priorProposals,
+    )
       ? 'refined-heuristic'
       : 'new-precedent';
 
@@ -126,46 +133,68 @@ export class LearningProposalBuilder {
     };
   }
 
-  private validateObservations(observations: readonly LearningObservation[]): void {
-    if (observations === null || observations === undefined || !Array.isArray(observations)) {
-      throw new LearningRequestError('observations must be a non-empty array.', [
-        {
-          field: 'observations',
-          code: 'missing-observations',
-          message: 'observations must be a non-empty array.',
-        },
-      ]);
+  private validateObservations(
+    observations: readonly LearningObservation[],
+  ): void {
+    if (
+      observations === null ||
+      observations === undefined ||
+      !Array.isArray(observations)
+    ) {
+      throw new LearningRequestError(
+        'observations must be a non-empty array.',
+        [
+          {
+            field: 'observations',
+            code: 'missing-observations',
+            message: 'observations must be a non-empty array.',
+          },
+        ],
+      );
     }
 
     if (observations.length === 0) {
-      throw new LearningRequestError('observations must contain at least one entry.', [
-        {
-          field: 'observations',
-          code: 'empty-observations',
-          message: 'observations must contain at least one entry.',
-        },
-      ]);
+      throw new LearningRequestError(
+        'observations must contain at least one entry.',
+        [
+          {
+            field: 'observations',
+            code: 'empty-observations',
+            message: 'observations must contain at least one entry.',
+          },
+        ],
+      );
     }
 
     observations.forEach((observation, index) => {
       if (!isPlainObject(observation)) {
-        throw new LearningRequestError(`observations[${index}] must be a non-null object.`, [
-          {
-            field: `observations[${index}]`,
-            code: 'invalid-observation',
-            message: `observations[${index}] must be a non-null object.`,
-          },
-        ]);
+        throw new LearningRequestError(
+          `observations[${index}] must be a non-null object.`,
+          [
+            {
+              field: `observations[${index}]`,
+              code: 'invalid-observation',
+              message: `observations[${index}] must be a non-null object.`,
+            },
+          ],
+        );
       }
 
-      if (!isNonEmptyString((observation as unknown as Record<string, unknown>).observationId)) {
-        throw new LearningRequestError(`observations[${index}].observationId is required.`, [
-          {
-            field: `observations[${index}].observationId`,
-            code: 'missing-observation-id',
-            message: `observations[${index}].observationId must be a non-empty string.`,
-          },
-        ]);
+      if (
+        !isNonEmptyString(
+          (observation as unknown as Record<string, unknown>).observationId,
+        )
+      ) {
+        throw new LearningRequestError(
+          `observations[${index}].observationId is required.`,
+          [
+            {
+              field: `observations[${index}].observationId`,
+              code: 'missing-observation-id',
+              message: `observations[${index}].observationId must be a non-empty string.`,
+            },
+          ],
+        );
       }
     });
   }

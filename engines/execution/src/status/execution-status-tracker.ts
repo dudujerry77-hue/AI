@@ -1,7 +1,15 @@
 import { ExecutionValidationError } from '../errors/execution-errors';
-import type { ExecutionRecord, ExecutionStatus, ExecutionSummary } from '../models/types';
+import type {
+  ExecutionRecord,
+  ExecutionStatus,
+  ExecutionSummary,
+} from '../models/types';
 
-const TERMINAL_STATUSES: readonly ExecutionStatus[] = ['completed', 'failed', 'cancelled'];
+const TERMINAL_STATUSES: readonly ExecutionStatus[] = [
+  'completed',
+  'failed',
+  'cancelled',
+];
 
 /**
  * Returns true when `value` looks like a plain object (not an array,
@@ -72,7 +80,10 @@ export class ExecutionStatusTracker {
     this.validateShape(record);
 
     const target = record.target;
-    const durationMs = this.deriveDurationMs(record.createdAt, record.updatedAt);
+    const durationMs = this.deriveDurationMs(
+      record.createdAt,
+      record.updatedAt,
+    );
     const isTerminal = TERMINAL_STATUSES.includes(record.status);
     const isCancelled = record.status === 'cancelled';
 
@@ -101,25 +112,31 @@ export class ExecutionStatusTracker {
    */
   private validateShape(record: ExecutionRecord): void {
     if (record === null || record === undefined || !isPlainObject(record)) {
-      throw new ExecutionValidationError('ExecutionRecord must be a non-null object.', [
-        {
-          field: 'record',
-          code: 'missing-record',
-          message: 'ExecutionRecord must be a non-null object.',
-        },
-      ]);
+      throw new ExecutionValidationError(
+        'ExecutionRecord must be a non-null object.',
+        [
+          {
+            field: 'record',
+            code: 'missing-record',
+            message: 'ExecutionRecord must be a non-null object.',
+          },
+        ],
+      );
     }
 
     const target = (record as unknown as Record<string, unknown>).target;
 
     if (target === null || target === undefined || !isPlainObject(target)) {
-      throw new ExecutionValidationError('ExecutionRecord.target must be a non-null object.', [
-        {
-          field: 'record.target',
-          code: 'missing-target',
-          message: 'ExecutionRecord.target must be a non-null object.',
-        },
-      ]);
+      throw new ExecutionValidationError(
+        'ExecutionRecord.target must be a non-null object.',
+        [
+          {
+            field: 'record.target',
+            code: 'missing-target',
+            message: 'ExecutionRecord.target must be a non-null object.',
+          },
+        ],
+      );
     }
   }
 
@@ -129,7 +146,10 @@ export class ExecutionStatusTracker {
    * strings. Returns `undefined` otherwise — never guessed, never
    * defaulted, and never clamped to zero.
    */
-  private deriveDurationMs(createdAt: string, updatedAt: string): number | undefined {
+  private deriveDurationMs(
+    createdAt: string,
+    updatedAt: string,
+  ): number | undefined {
     if (!isIsoTimestamp(createdAt) || !isIsoTimestamp(updatedAt)) {
       return undefined;
     }

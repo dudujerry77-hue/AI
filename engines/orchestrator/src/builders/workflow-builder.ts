@@ -72,10 +72,14 @@ export class WorkflowBuilder {
       ...(plan.metadata.labels ? { labels: [...plan.metadata.labels] } : {}),
     };
 
-    const steps: readonly WorkflowStep[] = plan.steps.map((step) => this.buildStep(step));
-    const tasks: readonly WorkflowTask[] = plan.tasks.map((task) => this.buildTask(task));
-    const dependencies: readonly WorkflowDependency[] = plan.dependencies.map((dependency) =>
-      this.buildDependency(dependency),
+    const steps: readonly WorkflowStep[] = plan.steps.map((step) =>
+      this.buildStep(step),
+    );
+    const tasks: readonly WorkflowTask[] = plan.tasks.map((task) =>
+      this.buildTask(task),
+    );
+    const dependencies: readonly WorkflowDependency[] = plan.dependencies.map(
+      (dependency) => this.buildDependency(dependency),
     );
 
     const priority: WorkflowPriority = 'medium';
@@ -101,7 +105,9 @@ export class WorkflowBuilder {
       description: step.description,
       status: step.status,
       taskIds: [...step.taskIds],
-      ...(step.dependsOnStepIds ? { dependsOnStepIds: [...step.dependsOnStepIds] } : {}),
+      ...(step.dependsOnStepIds
+        ? { dependsOnStepIds: [...step.dependsOnStepIds] }
+        : {}),
     };
   }
 
@@ -133,7 +139,9 @@ export class WorkflowBuilder {
    * `sequential`, `parallel`), so this is a direct, exhaustively
    * verified mapping rather than an inferred one.
    */
-  private translateDependencyType(type: PlannerDependencyType): WorkflowDependencyType {
+  private translateDependencyType(
+    type: PlannerDependencyType,
+  ): WorkflowDependencyType {
     switch (type) {
       case 'blocks':
         return 'blocks';
@@ -170,36 +178,55 @@ export class WorkflowBuilder {
 
     if (typeof plan.planId !== 'string' || plan.planId.trim().length === 0) {
       throw new OrchestratorValidationError('Plan.planId is required.', [
-        { field: 'plan.planId', code: 'missing-plan-id', message: 'Plan.planId is required.' },
+        {
+          field: 'plan.planId',
+          code: 'missing-plan-id',
+          message: 'Plan.planId is required.',
+        },
       ]);
     }
 
     if (!plan.metadata) {
       throw new OrchestratorValidationError('Plan.metadata is required.', [
-        { field: 'plan.metadata', code: 'missing-plan-metadata', message: 'Plan.metadata is required.' },
+        {
+          field: 'plan.metadata',
+          code: 'missing-plan-metadata',
+          message: 'Plan.metadata is required.',
+        },
       ]);
     }
 
     if (!Array.isArray(plan.steps)) {
       throw new OrchestratorValidationError('Plan.steps must be an array.', [
-        { field: 'plan.steps', code: 'invalid-plan-steps', message: 'Plan.steps must be an array.' },
+        {
+          field: 'plan.steps',
+          code: 'invalid-plan-steps',
+          message: 'Plan.steps must be an array.',
+        },
       ]);
     }
 
     if (!Array.isArray(plan.tasks)) {
       throw new OrchestratorValidationError('Plan.tasks must be an array.', [
-        { field: 'plan.tasks', code: 'invalid-plan-tasks', message: 'Plan.tasks must be an array.' },
+        {
+          field: 'plan.tasks',
+          code: 'invalid-plan-tasks',
+          message: 'Plan.tasks must be an array.',
+        },
       ]);
     }
 
     if (!Array.isArray(plan.dependencies)) {
-      throw new OrchestratorValidationError('Plan.dependencies must be an array.', [
-        {
-          field: 'plan.dependencies',
-          code: 'invalid-plan-dependencies',
-          message: 'Plan.dependencies must be an array.',
-        },
-      ]);
+      throw new OrchestratorValidationError(
+        'Plan.dependencies must be an array.',
+        [
+          {
+            field: 'plan.dependencies',
+            code: 'invalid-plan-dependencies',
+            message: 'Plan.dependencies must be an array.',
+          },
+        ],
+      );
     }
   }
 }

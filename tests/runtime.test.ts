@@ -8,7 +8,12 @@ import { HealthMonitor } from '../runtime/health/health-monitor';
 import { MetricsCollector } from '../runtime/metrics/metrics';
 import { EngineRegistry } from '../runtime/registry/engine-registry';
 import { LifecycleManager } from '../runtime/lifecycle/lifecycle-manager';
-import { ConfigurationError, InitializationError, RuntimeError, ShutdownError } from '../runtime/errors/errors';
+import {
+  ConfigurationError,
+  InitializationError,
+  RuntimeError,
+  ShutdownError,
+} from '../runtime/errors/errors';
 import type { LegacyTitanEngine } from '../runtime/engine/types';
 import { ENGINE_API_CONTRACT_VERSION } from '../runtime/engine/types';
 import type {
@@ -83,7 +88,11 @@ describe('Titan runtime infrastructure', () => {
     expect(engine.getState()).toBe('stopped');
     expect(engine.metadata().id).toBe('engine-test');
     expect(engine.contractVersion()).toBe(ENGINE_API_CONTRACT_VERSION);
-    expect(events.map((event) => event.state)).toEqual(['initialized', 'running', 'stopped']);
+    expect(events.map((event) => event.state)).toEqual([
+      'initialized',
+      'running',
+      'stopped',
+    ]);
     expect(events.every((event) => event.eventId.length > 0)).toBe(true);
     expect(events.every((event) => event.correlationId.length > 0)).toBe(true);
     expect(events.every((event) => event.traceId.length > 0)).toBe(true);
@@ -92,7 +101,9 @@ describe('Titan runtime infrastructure', () => {
     expect(events.every((event) => event.engineId.length > 0)).toBe(true);
     expect(events.every((event) => event.phaseId.length > 0)).toBe(true);
     expect(events.every((event) => event.version.length > 0)).toBe(true);
-    expect(events.every((event) => event.eventType === 'engine.lifecycle')).toBe(true);
+    expect(
+      events.every((event) => event.eventType === 'engine.lifecycle'),
+    ).toBe(true);
 
     unsubscribe();
   });
@@ -132,7 +143,11 @@ describe('Titan runtime infrastructure', () => {
         return;
       },
       async health() {
-        return { status: 'healthy', ready: true, timestamp: new Date().toISOString() };
+        return {
+          status: 'healthy',
+          ready: true,
+          timestamp: new Date().toISOString(),
+        };
       },
       getState() {
         return 'initialized';
@@ -154,7 +169,9 @@ describe('Titan runtime infrastructure', () => {
       .withValue('runtime.host', 'localhost');
 
     expect(service.get<number>('runtime.port')).toBe(8080);
-    expect(() => service.getRequired<string>('runtime.secret')).toThrow(ConfigurationError);
+    expect(() => service.getRequired<string>('runtime.secret')).toThrow(
+      ConfigurationError,
+    );
   });
 
   it('writes structured log entries and reports health transitions', () => {
@@ -162,14 +179,19 @@ describe('Titan runtime infrastructure', () => {
     const healthMonitor = new HealthMonitor();
 
     const entries: Array<Record<string, unknown>> = [];
-    logger.onLog((entry) => entries.push(entry as unknown as Record<string, unknown>));
+    logger.onLog((entry) =>
+      entries.push(entry as unknown as Record<string, unknown>),
+    );
 
     logger.info('ready', { component: 'health' });
     healthMonitor.markDegraded('warming up');
     healthMonitor.markHealthy('ready');
 
     const snapshot = healthMonitor.getSnapshot();
-    expect(entries[0]).toMatchObject({ message: 'ready', service: 'runtime-test' });
+    expect(entries[0]).toMatchObject({
+      message: 'ready',
+      service: 'runtime-test',
+    });
     expect(snapshot.status).toBe('healthy');
     expect(snapshot.ready).toBe(true);
   });
@@ -188,7 +210,9 @@ describe('Titan runtime infrastructure', () => {
   });
 
   it('rejects initialization when engine contract version is unsupported', async () => {
-    const lifecycleManager = new LifecycleManager({ supportedContractVersions: ['2.0.0'] });
+    const lifecycleManager = new LifecycleManager({
+      supportedContractVersions: ['2.0.0'],
+    });
     const engine = new BaseEngine({
       id: 'contract-test',
       name: 'Contract Test Engine',
@@ -203,7 +227,13 @@ describe('Titan runtime infrastructure', () => {
   describe('LifecycleManager state machine (Phase 014 Milestone 3)', () => {
     it('exposes isTransitionAllowed() matching specification/engine_api.md §4.2 exactly', () => {
       const lifecycleManager = new LifecycleManager();
-      const states = ['created', 'initialized', 'running', 'stopped', 'failed'] as const;
+      const states = [
+        'created',
+        'initialized',
+        'running',
+        'stopped',
+        'failed',
+      ] as const;
 
       // Exactly the transitions listed in specification/engine_api.md §4.2:
       // Created->Initialized, Initialized->Running, Initialized->Failed,
@@ -231,7 +261,9 @@ describe('Titan runtime infrastructure', () => {
     it('rejects start() before initialize(), per §4.2\'s "must not transition directly from Created to Running"', async () => {
       const lifecycleManager = new LifecycleManager();
 
-      await expect(lifecycleManager.start()).rejects.toThrow(InitializationError);
+      await expect(lifecycleManager.start()).rejects.toThrow(
+        InitializationError,
+      );
       expect(lifecycleManager.getState()).toBe('created');
     });
 
@@ -241,7 +273,9 @@ describe('Titan runtime infrastructure', () => {
       await lifecycleManager.start();
       await lifecycleManager.stop();
 
-      await expect(lifecycleManager.start()).rejects.toThrow(InitializationError);
+      await expect(lifecycleManager.start()).rejects.toThrow(
+        InitializationError,
+      );
       expect(lifecycleManager.getState()).toBe('stopped');
     });
 
@@ -257,7 +291,9 @@ describe('Titan runtime infrastructure', () => {
       await lifecycleManager.initialize();
       await lifecycleManager.start();
 
-      await expect(lifecycleManager.initialize()).rejects.toThrow(InitializationError);
+      await expect(lifecycleManager.initialize()).rejects.toThrow(
+        InitializationError,
+      );
       expect(lifecycleManager.getState()).toBe('running');
     });
 
@@ -314,14 +350,18 @@ describe('Titan runtime infrastructure', () => {
         lifecycleManager.markFailed(new Error('first failure'));
         expect(lifecycleManager.getState()).toBe('failed');
 
-        expect(() => lifecycleManager.markFailed(new Error('second failure'))).not.toThrow();
+        expect(() =>
+          lifecycleManager.markFailed(new Error('second failure')),
+        ).not.toThrow();
         expect(lifecycleManager.getState()).toBe('failed');
       });
 
       it('throws InitializationError when called from created, which has no path to failed', () => {
         const lifecycleManager = new LifecycleManager();
 
-        expect(() => lifecycleManager.markFailed(new Error('too early'))).toThrow(InitializationError);
+        expect(() =>
+          lifecycleManager.markFailed(new Error('too early')),
+        ).toThrow(InitializationError);
         expect(lifecycleManager.getState()).toBe('created');
       });
 
@@ -331,7 +371,9 @@ describe('Titan runtime infrastructure', () => {
         await lifecycleManager.start();
         await lifecycleManager.stop();
 
-        expect(() => lifecycleManager.markFailed(new Error('too late'))).toThrow(InitializationError);
+        expect(() =>
+          lifecycleManager.markFailed(new Error('too late')),
+        ).toThrow(InitializationError);
         expect(lifecycleManager.getState()).toBe('stopped');
       });
     });

@@ -61,7 +61,11 @@ export class EventBus {
     };
   }
 
-  async publish<T = unknown>(topic: string, payload: T, options: EventPublishOptions = {}): Promise<void> {
+  async publish<T = unknown>(
+    topic: string,
+    payload: T,
+    options: EventPublishOptions = {},
+  ): Promise<void> {
     const handlers = this.listeners.get(topic);
     if (!handlers || handlers.size === 0) {
       return;
@@ -74,7 +78,11 @@ export class EventBus {
       traceId: options.traceId ?? options.correlationId ?? eventId,
       timestamp: options.timestamp ?? new Date().toISOString(),
       sessionId: options.sessionId ?? DEFAULT_SESSION_ID,
-      engineId: options.engineId ?? (isObjectRecord(payload) && typeof payload.engineId === 'string' ? payload.engineId : DEFAULT_ENGINE_ID),
+      engineId:
+        options.engineId ??
+        (isObjectRecord(payload) && typeof payload.engineId === 'string'
+          ? payload.engineId
+          : DEFAULT_ENGINE_ID),
       phaseId: options.phaseId ?? DEFAULT_PHASE_ID,
       version: options.version ?? DEFAULT_EVENT_VERSION,
       eventType: topic,
@@ -85,6 +93,10 @@ export class EventBus {
       ? ({ ...envelope, ...payload } as unknown as T)
       : (envelope as unknown as T);
 
-    await Promise.all(Array.from(handlers).map((handler) => Promise.resolve(handler(eventForHandlers))));
+    await Promise.all(
+      Array.from(handlers).map((handler) =>
+        Promise.resolve(handler(eventForHandlers)),
+      ),
+    );
   }
 }
