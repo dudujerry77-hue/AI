@@ -545,3 +545,412 @@ describe('Knowledge Engine integration', () => {
     expect(snapshot.records.every((record) => Object.isFrozen(record))).toBe(true);
   });
 });
+
+describe('KnowledgeEngine — Phase 014 Milestone 2 coverage closure', () => {
+  describe('KnowledgeEngine.update()', () => {
+    it('updates an existing record, incrementing its version and preserving immutable fields', async () => {
+      const rootDir = await createRepositoryRoot();
+      await seedRepository(rootDir);
+      const providers = createWriteProviders(true);
+      const engine = new KnowledgeEngine({
+        rootDir,
+        actorId: 'developer-1',
+        roles: ['Developer'],
+        ...providers,
+      });
+      await engine.initialize();
+
+      const created = await engine.add({
+        kind: 'preference',
+        category: 'user',
+        title: 'Original Title',
+        tags: ['review'],
+        summary: 'Original summary.',
+        body: 'Original body.',
+        securityClass: 'internal',
+        source: 'user',
+        author: 'developer-1',
+        approvalStatus: 'approved',
+        authority: 'user',
+      });
+
+      const updated = await engine.update(created.recordId, {
+        title: 'Updated Title',
+        body: 'Updated body.',
+      });
+
+      expect(updated.title).toBe('Updated Title');
+      expect(updated.body).toBe('Updated body.');
+      expect(updated.version).toBe('1.0.1');
+
+      // Immutable fields preserved across the update.
+      expect(updated.recordId).toBe(created.recordId);
+      expect(updated.canonicalLocation).toBe(created.canonicalLocation);
+      expect(updated.createdAt).toBe(created.createdAt);
+      expect(updated.archived).toBe(created.archived);
+
+      // Audit/version behavior already implemented by executeWrite().
+      expect(updated.checksum).not.toBe(created.checksum);
+      expect(providers.authenticationProvider.authenticate).toHaveBeenCalled();
+      expect(providers.authorizationProvider.authorize).toHaveBeenCalled();
+      expect(providers.auditLogger.log).toHaveBeenCalled();
+    });
+
+    it('throws KnowledgeError for a missing record before any write-provider dependency is checked', async () => {
+      const rootDir = await createRepositoryRoot();
+      await seedRepository(rootDir);
+
+      // Deliberately no write providers configured: KnowledgeEngine.update()
+      // looks the record up before executeWrite()'s provider-presence
+      // checks run, so a missing record fails with "Record not found"
+      // rather than a provider-dependency error.
+      const engine = new KnowledgeEngine({ rootDir, actorId: 'developer-1', roles: ['Developer'] });
+      await engine.initialize();
+
+      await expect(engine.update('does-not-exist', { title: 'x' })).rejects.toThrow(
+        'Record not found: does-not-exist',
+      );
+    });
+
+    it('requires authentication/authorization/audit dependencies to update an already-existing record', async () => {
+      const rootDir = await createRepositoryRoot();
+      await seedRepository(rootDir);
+
+      // "user.preference-1" is seeded directly on disk by seedRepository()
+      // and is loaded into the store during initialize() regardless of
+      // write-provider configuration, so it is an already-existing record
+      // for this engine instance without needing a prior add() call.
+      const engineWithoutSecurity = new KnowledgeEngine({
+        rootDir,
+        actorId: 'developer-1',
+        roles: ['Developer'],
+      });
+      await engineWithoutSecurity.initialize();
+
+      await expect(
+        engineWithoutSecurity.update('user.preference-1', { title: 'Blocked Update' }),
+      ).rejects.toBeInstanceOf(KnowledgeError);
+    });
+  });
+
+  describe('AuthorityManager.canWrite() — internal RBAC matrix (exercised through KnowledgeEngine.add(), with external providers fixed to always allow)', () => {
+    it('denies a Guest role even for an otherwise-writable category', async () => {
+      const rootDir = await createRepositoryRoot();
+      await seedRepository(rootDir);
+      const providers = createWriteProviders(true, true);
+      const engine = new KnowledgeEngine({ rootDir, actorId: 'guest-1', roles: ['Guest'], ...providers });
+      await engine.initialize();
+
+      await expect(
+        engine.add({
+          kind: 'note',
+          category: 'user',
+          title: 'Guest Attempt',
+          tags: [],
+          summary: 'Guest attempt.',
+          body: 'Guest attempt.',
+          securityClass: 'internal',
+          source: 'user',
+          author: 'guest-1',
+          approvalStatus: 'approved',
+        }),
+      ).rejects.toThrow('Write denied for authority=user category=user');
+    });
+
+    it('denies a Developer role writing to the governance category', async () => {
+      const rootDir = await createRepositoryRoot();
+      await seedRepository(rootDir);
+      const providers = createWriteProviders(true, true);
+      const engine = new KnowledgeEngine({ rootDir, actorId: 'developer-1', roles: ['Developer'], ...providers });
+      await engine.initialize();
+
+      await expect(
+        engine.add({
+          kind: 'policy',
+          category: 'governance',
+          title: 'Governance Attempt',
+          tags: [],
+          summary: 'Governance attempt.',
+          body: 'Governance attempt.',
+          securityClass: 'internal',
+          source: 'repository',
+          author: 'developer-1',
+          approvalStatus: 'approved',
+        }),
+      ).rejects.toThrow('Write denied for authority=governance category=governance');
+    });
+
+    it('denies a Developer role writing to the architecture category', async () => {
+      const rootDir = await createRepositoryRoot();
+      await seedRepository(rootDir);
+      const providers = createWriteProviders(true, true);
+      const engine = new KnowledgeEngine({ rootDir, actorId: 'developer-1', roles: ['Developer'], ...providers });
+      await engine.initialize();
+
+      await expect(
+        engine.add({
+          kind: 'policy',
+          category: 'architecture',
+          title: 'Architecture Attempt',
+          tags: [],
+          summary: 'Architecture attempt.',
+          body: 'Architecture attempt.',
+          securityClass: 'internal',
+          source: 'repository',
+          author: 'developer-1',
+          approvalStatus: 'approved',
+        }),
+      ).rejects.toThrow('Write denied for authority=architecture category=architecture');
+    });
+
+    it('denies a Developer role writing to the security category', async () => {
+      const rootDir = await createRepositoryRoot();
+      await seedRepository(rootDir);
+      const providers = createWriteProviders(true, true);
+      const engine = new KnowledgeEngine({ rootDir, actorId: 'developer-1', roles: ['Developer'], ...providers });
+      await engine.initialize();
+
+      await expect(
+        engine.add({
+          kind: 'policy',
+          category: 'security',
+          title: 'Security Attempt',
+          tags: [],
+          summary: 'Security attempt.',
+          body: 'Security attempt.',
+          securityClass: 'internal',
+          source: 'repository',
+          author: 'developer-1',
+          approvalStatus: 'approved',
+        }),
+      ).rejects.toThrow('Write denied for authority=security category=security');
+    });
+
+    it('allows a Developer role writing to the user category (comparison path)', async () => {
+      const rootDir = await createRepositoryRoot();
+      await seedRepository(rootDir);
+      const providers = createWriteProviders(true, true);
+      const engine = new KnowledgeEngine({ rootDir, actorId: 'developer-1', roles: ['Developer'], ...providers });
+      await engine.initialize();
+
+      const added = await engine.add({
+        kind: 'preference',
+        category: 'user',
+        title: 'Allowed Attempt',
+        tags: [],
+        summary: 'Allowed attempt.',
+        body: 'Allowed attempt.',
+        securityClass: 'internal',
+        source: 'user',
+        author: 'developer-1',
+        approvalStatus: 'approved',
+      });
+
+      expect(added.category).toBe('user');
+      expect(added.authority).toBe('user');
+    });
+  });
+
+  describe('assertClassification() — authority/category mismatch rules (exercised through KnowledgeEngine.add(), Owner role to bypass canWrite())', () => {
+    it('rejects a security-category record whose authority is not "security"', async () => {
+      const rootDir = await createRepositoryRoot();
+      await seedRepository(rootDir);
+      const providers = createWriteProviders(true, true);
+      const engine = new KnowledgeEngine({ rootDir, actorId: 'owner-1', roles: ['Owner'], ...providers });
+      await engine.initialize();
+
+      await expect(
+        engine.add({
+          kind: 'policy',
+          category: 'security',
+          title: 'Mismatched Security Record',
+          tags: [],
+          summary: 'Mismatched.',
+          body: 'Mismatched.',
+          securityClass: 'internal',
+          source: 'repository',
+          author: 'owner-1',
+          approvalStatus: 'approved',
+          authority: 'user',
+        }),
+      ).rejects.toThrow('Security category records must use security authority');
+    });
+
+    it('rejects an architecture-category record whose authority is not "architecture"', async () => {
+      const rootDir = await createRepositoryRoot();
+      await seedRepository(rootDir);
+      const providers = createWriteProviders(true, true);
+      const engine = new KnowledgeEngine({ rootDir, actorId: 'owner-1', roles: ['Owner'], ...providers });
+      await engine.initialize();
+
+      await expect(
+        engine.add({
+          kind: 'policy',
+          category: 'architecture',
+          title: 'Mismatched Architecture Record',
+          tags: [],
+          summary: 'Mismatched.',
+          body: 'Mismatched.',
+          securityClass: 'internal',
+          source: 'repository',
+          author: 'owner-1',
+          approvalStatus: 'approved',
+          authority: 'user',
+        }),
+      ).rejects.toThrow('Architecture and decisions records must use architecture authority');
+    });
+
+    it('rejects a decisions-category record whose authority is not "architecture"', async () => {
+      const rootDir = await createRepositoryRoot();
+      await seedRepository(rootDir);
+      const providers = createWriteProviders(true, true);
+      const engine = new KnowledgeEngine({ rootDir, actorId: 'owner-1', roles: ['Owner'], ...providers });
+      await engine.initialize();
+
+      await expect(
+        engine.add({
+          kind: 'policy',
+          category: 'decisions',
+          title: 'Mismatched Decisions Record',
+          tags: [],
+          summary: 'Mismatched.',
+          body: 'Mismatched.',
+          securityClass: 'internal',
+          source: 'repository',
+          author: 'owner-1',
+          approvalStatus: 'approved',
+          authority: 'user',
+        }),
+      ).rejects.toThrow('Architecture and decisions records must use architecture authority');
+    });
+
+    it('rejects a governance-category record whose authority is neither "governance" nor "constitution"', async () => {
+      const rootDir = await createRepositoryRoot();
+      await seedRepository(rootDir);
+      const providers = createWriteProviders(true, true);
+      const engine = new KnowledgeEngine({ rootDir, actorId: 'owner-1', roles: ['Owner'], ...providers });
+      await engine.initialize();
+
+      await expect(
+        engine.add({
+          kind: 'policy',
+          category: 'governance',
+          title: 'Mismatched Governance Record',
+          tags: [],
+          summary: 'Mismatched.',
+          body: 'Mismatched.',
+          securityClass: 'internal',
+          source: 'repository',
+          author: 'owner-1',
+          approvalStatus: 'approved',
+          authority: 'user',
+        }),
+      ).rejects.toThrow('Governance and project-state records must use governance or constitution authority');
+    });
+
+    it('rejects a project-state-category record whose authority is neither "governance" nor "constitution"', async () => {
+      const rootDir = await createRepositoryRoot();
+      await seedRepository(rootDir);
+      const providers = createWriteProviders(true, true);
+      const engine = new KnowledgeEngine({ rootDir, actorId: 'owner-1', roles: ['Owner'], ...providers });
+      await engine.initialize();
+
+      await expect(
+        engine.add({
+          kind: 'policy',
+          category: 'project-state',
+          title: 'Mismatched Project State Record',
+          tags: [],
+          summary: 'Mismatched.',
+          body: 'Mismatched.',
+          securityClass: 'internal',
+          source: 'repository',
+          author: 'owner-1',
+          approvalStatus: 'approved',
+          authority: 'session',
+        }),
+      ).rejects.toThrow('Governance and project-state records must use governance or constitution authority');
+    });
+
+    it('allows a governance-category record whose authority is "constitution" (comparison path)', async () => {
+      const rootDir = await createRepositoryRoot();
+      await seedRepository(rootDir);
+      const providers = createWriteProviders(true, true);
+      const engine = new KnowledgeEngine({ rootDir, actorId: 'owner-1', roles: ['Owner'], ...providers });
+      await engine.initialize();
+
+      const added = await engine.add({
+        kind: 'policy',
+        category: 'governance',
+        title: 'Matched Governance Record',
+        tags: [],
+        summary: 'Matched.',
+        body: 'Matched.',
+        securityClass: 'internal',
+        source: 'repository',
+        author: 'owner-1',
+        approvalStatus: 'approved',
+        authority: 'constitution',
+      });
+
+      expect(added.category).toBe('governance');
+      expect(added.authority).toBe('constitution');
+    });
+  });
+
+  describe('MarkdownLoader — malformed input handling', () => {
+    it('throws for markdown front matter that never closes', () => {
+      const loader = new MarkdownLoader();
+
+      expect(() => loader.loadFromText('---\nfoo: bar\n', '/tmp/bad-front-matter.md')).toThrow(
+        'Invalid markdown front matter: /tmp/bad-front-matter.md',
+      );
+    });
+
+    it('throws for front matter that is not valid JSON', () => {
+      const loader = new MarkdownLoader();
+      const content = ['---', 'not valid json', '---', 'Body text.', ''].join('\n');
+
+      expect(() => loader.loadFromText(content, '/tmp/bad-metadata.md')).toThrow(
+        'Invalid markdown metadata JSON: /tmp/bad-metadata.md',
+      );
+    });
+
+    it('throws for well-formed JSON front matter missing recordId', () => {
+      const loader = new MarkdownLoader();
+      const content = ['---', JSON.stringify({ title: 'No Id' }), '---', 'Body.', ''].join('\n');
+
+      expect(() => loader.loadFromText(content, '/tmp/missing-record-id.md')).toThrow(
+        'Markdown metadata missing recordId: /tmp/missing-record-id.md',
+      );
+    });
+  });
+
+  describe('JsonLoader — malformed input handling', () => {
+    it('throws for content that is not valid JSON', () => {
+      const loader = new JsonLoader();
+
+      expect(() => loader.loadFromText('{not valid json', '/tmp/bad-content.json')).toThrow(
+        'Invalid JSON content: /tmp/bad-content.json',
+      );
+    });
+
+    it('throws from normalizeRecord when a record-shaped payload has an empty recordId', () => {
+      const loader = new JsonLoader();
+
+      expect(() => loader.loadFromText(JSON.stringify({ recordId: '' }), '/tmp/empty-record-id.json')).toThrow(
+        'Invalid recordId: must be non-empty',
+      );
+    });
+
+    it('treats a non-object JSON payload as opaque content rather than throwing (JsonLoader has no recordId-shape rejection, unlike MarkdownLoader)', () => {
+      const loader = new JsonLoader();
+
+      const record = loader.loadFromText(JSON.stringify('just a string'), '/tmp/opaque-content.json');
+
+      expect(record.recordId.length).toBeGreaterThan(0);
+      expect(record.bodyFormat).toBe('json');
+      expect(record.body).toContain('just a string');
+    });
+  });
+});
