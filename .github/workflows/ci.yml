@@ -1,0 +1,54 @@
+name: CI
+
+# Runs the repository-defined quality gates from testing_strategy.md §6:
+# "CI must run and pass before merge: 1. Linting/formatting checks.
+# 2. Full unit test suite. 3. Integration test suite... 4. Dependency
+# vulnerability scan (see security_policy.md). 5. Coverage report
+# generated and checked against the thresholds in Section 2 (warn,
+# don't necessarily hard-block, on first pass...)."
+#
+# Item 5's threshold check is intentionally NOT enforced as a hard gate
+# here: testing_strategy.md §2 defines coverage targets by folder name
+# (/domain, /application) that no engine package actually uses (see
+# Phase 014 Milestone 1's documented ambiguity), so no single numeric
+# threshold can be enforced without inventing an undocumented mapping.
+# This workflow generates the coverage report (satisfying "generated")
+# without gating on an invented number.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality-gates:
+    name: Lint, test, build, coverage, dependency scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit and integration tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Coverage report
+        run: npm run coverage
+
+      - name: Dependency vulnerability scan (security_policy.md §5)
+        run: npm audit --audit-level=high
