@@ -1,6 +1,7 @@
 node_modules/
 dist/
 coverage/
+titan-core-artifact.tar.gz
 .env
 .env.*
 !.env.example

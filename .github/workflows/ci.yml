@@ -31,6 +31,21 @@ name: CI
 # tracked tree on every run rather than only the diff, since true
 # diff-scoped scanning would need to resolve a base ref — a reasonable,
 # more conservative simplification using the same tooling.
+#
+# The second job below implements deployment_strategy.md §2 step 6's
+# "produce the deployable artifact" and a deployment-target-agnostic form
+# of step 8's "staging validation" — deliberately scoped to what's
+# achievable without a hosting/deployment-target decision (see
+# .titan/phases/phase-015-deployment-readiness.md's Current Blockers).
+# The artifact is a `git archive` source tarball — the "package" form
+# named in §2 step 6, not a container image, which would presume a
+# hosting target not yet selected. It is validated by extracting it into
+# a fresh job (a genuinely clean environment, not just a reused
+# checkout), reinstalling from scratch, and running the complete existing
+# test suite — including tests/integration/*.test.ts — unmodified. This
+# is *not* the literal "staging" environment deployment_strategy.md §1
+# defines (which must mirror an undefined production config); it is the
+# closest deployment-target-agnostic approximation achievable today.
 
 on:
   push:
@@ -78,3 +93,40 @@ jobs:
 
       - name: Basic secrets pattern scan (deployment_strategy.md §2 step 5)
         run: '! grep -rnEI "(AKIA[0-9A-Z]{16}|-----BEGIN[A-Z ]*PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{36,}|xox[baprs]-[A-Za-z0-9-]+)" --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=coverage --exclude-dir=.git .'
+
+  validate-artifact:
+    name: Package artifact and validate in a clean environment
+    needs: quality-gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package artifact (deployment_strategy.md §2 step 6)
+        run: npm run package
+
+      - name: Extract artifact into a clean directory
+        run: |
+          mkdir -p "$RUNNER_TEMP/artifact-validation"
+          tar -xzf titan-core-artifact.tar.gz -C "$RUNNER_TEMP/artifact-validation"
+
+      - name: Reinstall from the extracted artifact
+        working-directory: ${{ runner.temp }}/artifact-validation
+        run: npm ci
+
+      - name: Build the extracted artifact
+        working-directory: ${{ runner.temp }}/artifact-validation
+        run: npm run build
+
+      - name: Run the existing full test suite against the extracted artifact
+        working-directory: ${{ runner.temp }}/artifact-validation
+        run: npm test
