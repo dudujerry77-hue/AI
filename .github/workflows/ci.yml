@@ -33,19 +33,41 @@ name: CI
 # more conservative simplification using the same tooling.
 #
 # The second job below implements deployment_strategy.md §2 step 6's
-# "produce the deployable artifact" and a deployment-target-agnostic form
-# of step 8's "staging validation" — deliberately scoped to what's
-# achievable without a hosting/deployment-target decision (see
-# .titan/phases/phase-015-deployment-readiness.md's Current Blockers).
+# "produce the deployable artifact" and, for a local/CLI deployment
+# target (ADR-0008: no hosting provider, no server — the artifact is
+# invoked in-process), §2 steps 7-8's "deploy to staging" / "staging
+# validation". Per ADR-0008, "production" for this target is the
+# stable, packaged artifact run via local/CLI execution, so "staging"
+# is a clean, freshly-provisioned local/CI environment running that
+# same artifact — not a network-hosted environment requiring
+# provider-specific configuration.
+#
 # The artifact is a `git archive` source tarball — the "package" form
 # named in §2 step 6, not a container image, which would presume a
-# hosting target not yet selected. It is validated by extracting it into
-# a fresh job (a genuinely clean environment, not just a reused
-# checkout), reinstalling from scratch, and running the complete existing
-# test suite — including tests/integration/*.test.ts — unmodified. This
-# is *not* the literal "staging" environment deployment_strategy.md §1
-# defines (which must mirror an undefined production config); it is the
-# closest deployment-target-agnostic approximation achievable today.
+# hosting target not yet selected. This job runs only on push to `main`
+# (i.e. on merge, per §2 step 7 — not on every PR), extracts the
+# artifact into a fresh runner (a genuinely clean environment, not a
+# reused checkout), reinstalls and rebuilds from scratch, and runs the
+# complete existing test suite — including tests/integration/*.test.ts
+# — unmodified, as the closest available stand-in for §2 step 8's
+# "smoke tests / critical-path E2E tests" (Titan Core currently has no
+# CLI entrypoint or HTTP surface to smoke-test directly — see ADR-0008's
+# audit). The result is recorded as staging validation evidence in the
+# job summary (commit SHA, artifact name, run link, test-suite result),
+# satisfying phase-015's Exit Criteria wording "with documented
+# evidence".
+#
+# The job declares `environment: staging`, giving it real, GitHub-native
+# environment identity and automatic deployment history/records
+# (visible under the repo's Environments tab and Deployments feed) —
+# this is not cosmetic. It does NOT, by itself, provide
+# deployment_strategy.md §1's "restricted access": GitHub Actions
+# enforces restriction via environment protection rules (required
+# reviewers, deployment branch policies), which must be configured in
+# repository Settings -> Environments, not in this workflow file. Until
+# those protection rules are configured manually, this environment has
+# identity and a history of records but no actual access restriction —
+# this is a tracked, outstanding manual step, not part of this file.
 
 on:
   push:
@@ -95,9 +117,11 @@ jobs:
         run: '! grep -rnEI "(AKIA[0-9A-Z]{16}|-----BEGIN[A-Z ]*PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{36,}|xox[baprs]-[A-Za-z0-9-]+)" --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=coverage --exclude-dir=.git .'
 
   validate-artifact:
-    name: Package artifact and validate in a clean environment
+    name: 'Staging: package artifact and validate in a clean environment'
     needs: quality-gates
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    environment: staging
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -129,4 +153,21 @@ jobs:
 
       - name: Run the existing full test suite against the extracted artifact
         working-directory: ${{ runner.temp }}/artifact-validation
-        run: npm test
+        run: npm test 2>&1 | tee "$RUNNER_TEMP/staging-test-output.log"
+
+      - name: Record staging validation evidence (deployment_strategy.md §2 step 8; phase-015 Exit Criteria)
+        run: |
+          {
+            echo "## Staging Validation Evidence"
+            echo ""
+            echo "- **Environment:** staging (clean, freshly-provisioned local/CI environment running the packaged artifact, per ADR-0008)"
+            echo "- **Artifact:** titan-core-artifact.tar.gz"
+            echo "- **Source commit:** ${{ github.sha }}"
+            echo "- **Workflow run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "- **Validated (UTC):** $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            echo ""
+            echo "### Test suite result"
+            echo '```'
+            grep -E "Test Files|^ *Tests " "$RUNNER_TEMP/staging-test-output.log" || echo "(summary lines not found in log)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

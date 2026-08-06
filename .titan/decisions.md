@@ -262,6 +262,91 @@ The detailed blueprint is recorded in `specification/knowledge_engine.md`.
 - Phase 007 implementation must follow `specification/knowledge_engine.md`.
 - Any future move to cloud-backed or vector-first canonical storage requires a new ADR.
 
-## ADR-0008 through ADR-000N
+## ADR-0008: Adopt Local/CLI Execution as Titan Core's Initial Deployment Target
+
+- **Status:** accepted
+- **Date:** 2026-08-06
+- **Author:** Claude
+
+### Context
+
+Phase 015 (Deployment Readiness) requires a hosting/deployment target before its
+Staging Environment, staging validation, production deployment, and rollback
+milestones can proceed — `deployment_strategy.md` §1 defines Staging as an
+environment that "mirrors production config," which cannot be defined without
+first knowing what production is. `tech_stack.md` §5 deferred this decision
+"until product-specific requirements exist."
+
+Following `tech_stack.md` §2's process, this decision is based on Titan Core's
+current implementation, not hypothetical future features. An audit of the
+repository as it exists today found:
+
+- No network-facing surface anywhere (`http.createServer`, `express`,
+  `fastify`, and `.listen()` all return zero matches across `apps/`,
+  `engines/`, `packages/`, `runtime/`).
+- No CLI entrypoint (no `bin` field in any `package.json`; `apps/titan-shell`
+  is a plain in-process factory function, not a runnable program).
+- No database or external persistence (root `package.json` has zero runtime
+  dependencies; the Knowledge Engine, per ADR-0007, is repository-file-backed
+  with an in-memory read model — the SQLite index layer ADR-0007 recommended
+  as a future extension was never implemented).
+- No `/interfaces` layer (`architecture.md` §3) built for any of the seven
+  Titan Core engines — no HTTP API, no published CLI, no event listener
+  consuming external input.
+
+Titan Core, as currently implemented, is an in-process library/toolset invoked
+directly against its own git repository — architecturally identical to how
+every phase of this project has itself been executed to date.
+
+### Decision
+
+Adopt **local/CLI execution** as Titan Core's deployment target: no external
+hosting provider, container platform, or serverless runtime is selected.
+Titan Core continues to run in-process, invoked directly against its own
+repository, exactly as it does today. This unblocks Phase 015's Staging
+Environment milestone in principle: "staging" for a local/CLI-execution
+target is a clean, freshly-provisioned local/CI environment running the
+packaged artifact (already produced and validated in Phase 015 Milestone 6),
+not a network-hosted environment requiring provider-specific configuration.
+
+This decision may be superseded by a future ADR once a concrete `/interfaces`
+layer (an HTTP API, a published CLI, or similar) is designed and built, giving
+a later hosting evaluation something real to evaluate against.
+
+### Alternatives Considered
+
+1. **Containerized service on a generic cloud platform.** Rejected — requires
+   a long-running server process and a specific provider choice that nothing
+   in the current architecture needs or defines; would require inventing an
+   `/interfaces` layer and a provider decision simultaneously, neither
+   grounded in the current implementation.
+2. **Serverless/FaaS.** Rejected — requires an HTTP or event trigger that
+   doesn't exist, and is a poor fit for the Orchestrator Engine's current
+   in-process, synchronous design (`architecture.md` §3a: "long-running
+   orchestration support").
+3. **Managed Node.js PaaS.** Rejected — same reasoning as containerized
+   service; adds a managed-platform dependency for a system with no runnable
+   service to deploy.
+
+### Consequences
+
+- **Positive:** No new infrastructure, dependency, cost, or attack surface
+  introduced (`tech_stack.md` §3's "Operational cost" and "Security track
+  record" criteria both favor this option directly). Unblocks Phase 015's
+  Staging Environment milestone in principle. Matches how the project has
+  actually operated since Phase 000. Preserves the existing engine-boundary
+  design (`architecture.md` §3a) without forcing a premature re-architecture
+  for network calls between engines.
+- **Negative:** Defers real hosting-provider evaluation to a later ADR;
+  "staging," "production deployment," and "rollback" require reinterpretation
+  for a CLI/library model (e.g., "production" ≈ the stable, tagged artifact
+  produced by `npm run package`) rather than a server/container model.
+- **Mitigation:** This ADR can be superseded once an `/interfaces` layer is
+  designed, at which point a hosting-provider evaluation will have something
+  concrete to evaluate. The reinterpretation of "staging"/"production" for
+  this target is left to the Staging Environment milestone itself, not
+  decided here.
+
+## ADR-0009 through ADR-000N
 
 No further decisions have been made yet. Add new entries below this line using `templates/adr-template.md`, incrementing the number sequentially. Do not skip numbers; do not reuse numbers.

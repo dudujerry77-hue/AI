@@ -67,7 +67,7 @@ These are starting biases, not mandates — they can be overridden by an ADR if 
 - **Linting/formatting:** ESLint and Prettier
 - **Configuration:** environment-based configuration via `.env` and `.env.example`
 - **CI/CD platform:** Not yet configured; deferred to a follow-up step if required
-- **Hosting/deployment target:** Not yet selected; deferred until product-specific requirements exist
+- **Hosting/deployment target:** **Local/CLI execution — no external hosting provider** (decided Phase 015, see ADR-0008). Titan Core runs in-process, invoked directly against its own repository; no server, container platform, or cloud provider is in use. This entry should be revisited via a new ADR once a concrete `/interfaces` layer (HTTP API, published CLI, etc.) is designed.
 
 This selection is recorded here and in ADR-0003 so the scaffold is not treated as an ad hoc choice.
 

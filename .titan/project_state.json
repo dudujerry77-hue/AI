@@ -4,8 +4,8 @@
   "governance_version": "1.0.0",
   "runtime_version": "0.1.0",
   "documentation_version": "1.2.0",
-  "last_updated": "2026-08-03",
-  "last_updated_by": "Claude (Phase 015 status correction — reverted to in-progress, blockers documented not statused)",
+  "last_updated": "2026-08-06",
+  "last_updated_by": "Claude (Phase 015 governance sync — ADR-0008 and dependency remediation reflected; Staging Environment is the sole remaining milestone)",
   "project": {
     "name": "Titan AI",
     "description": "Autonomous software engineering operating system, implemented as Titan Core: seven cooperating engines (Planner, Orchestrator, Context, Knowledge, Execution, Validation, Learning). See architecture.md Section 7 and decisions.md ADR-0002.",
@@ -20,7 +20,7 @@
     "id": "016",
     "name": "Production Release",
     "status": "not-started",
-    "blocked_reason": "Awaiting Phase 015 completion, which is itself governance-blocked pending a hosting/deployment-target decision (tech_stack.md §2/§5) and resolution or risk-acceptance (via ADR) of existing high/critical dependency vulnerabilities (deployment_strategy.md §7)."
+    "blocked_reason": "Awaiting Phase 015 completion. No governance decision remains outstanding (hosting/deployment target decided via ADR-0008; dependency vulnerabilities remediated to 0). The remaining work is implementation: Staging Environment, then staging validation, production deployment, and rollback."
   },
   "governance": {
     "constitution_version": "1.0.0",
@@ -63,7 +63,7 @@
     "notes": "architecture.md Section 7 defines the approved Titan Core engine architecture (7 engines), with security architecture governance established in Section 6."
   },
   "titan_core": {
-    "status": "coverage-completion-closed-deployment-readiness-in-progress-with-documented-blockers",
+    "status": "coverage-completion-closed-deployment-readiness-in-progress-governance-resolved-staging-pending",
     "engine_framework_required_before_future_engine_implementation": true,
     "engine_framework_phase": "006",
     "shared_framework": {
@@ -80,18 +80,18 @@
       { "name": "Validation Engine", "status": "implemented", "implementation_phase": "011", "notes": "validate and getValidationStatus are implemented (Milestones 1-5: runtime foundation, complete planned domain model, ValidationBuilder/validate() - deterministic structural translation of an Execution Engine ExecutionSummary/ExecutionRecord into a ValidationPipelineResult, ValidationValidator/getValidationStatus() - deterministic structural validation of a ValidationVerdict, and ValidationEvidenceCollector/ValidationPipelineRunner - deterministic structural evidence collection composed with verdict construction, wired into validate()). approveValidation and rejectValidation remain unimplemented NotImplementedError stubs; a dedicated specification audit and governance review (see phases/phase-011-validation-engine-implementation.md) confirmed neither is required by any Phase 011 exit criterion or specification/engine_api.md requirement, and that implementing them would require either persistence (a validation store/lookup mechanism) or business logic (approval authority/audit semantics), both out of scope for deterministic structural processing." },
       { "name": "Learning Engine", "status": "implemented", "implementation_phase": "012", "notes": "observeCycle, generateProposal, prepareKnowledgeHandoff, and analyzeCycle are implemented (Milestones 1-6: runtime foundation, complete domain model, LearningObservationBuilder/observeCycle(), LearningProposalBuilder/generateProposal(), LearningKnowledgeHandoffBuilder/prepareKnowledgeHandoff(), and LearningLessonBuilder/LearningFlaggedRiskBuilder/LearningProposedAdrBuilder/LearningPipelineBuilder/analyzeCycle()). All four public API methods are implemented with no remaining NotImplementedError stubs. A dedicated Governance Resolution (see phases/phase-012-learning-engine-implementation.md) determined that actual Knowledge Engine-side consumption of Learning Engine handoff artifacts is architecturally assigned to the Knowledge Engine and to Phase 013's cross-engine validation scope, not to Phase 012; it remains unimplemented and unscoped pending Phase 013 or a future ADR." }
     ],
-    "notes": "Implementation order follows the Titan Core architecture data-flow dependency order: Context first, then the shared framework, then security governance, then Knowledge, Planner, Orchestrator, Execution, Validation, and Learning. Phase 013 (Titan Core Integration and Hardening) is complete: all seven engines are wired into apps/titan-shell via the shared EngineRegistry, end-to-end and cross-engine-boundary integration tests exist (tests/integration/), and a security/performance hardening review is recorded at .titan/reviews/2026-07-31-phase-013-security-performance-hardening.md. Phase 014 (Test Coverage Completion) is complete: coverage reporting infrastructure (npm run coverage), Knowledge Engine/LifecycleManager/ContextManager coverage gap closures, and a CI quality-gate workflow (.github/workflows/ci.yml) were added, with three unresolved items carried forward (npm audit findings not yet remediated/risk-accepted, unenforced coverage thresholds pending a domain/application folder-mapping decision, and a confirmed reproducible flaky test in tests/unit/validation-engine.test.ts). No engine's business logic changed during Phase 013 or Phase 014. Phase 015 (Deployment Readiness) is in-progress, not complete: three CI-gate milestones (format-check, no-skipped-tests, basic secrets pattern scan) were added to .github/workflows/ci.yml and verified, but every remaining milestone (artifact packaging, staging environment, staging validation, production deployment, rollback) is governance-blocked — no hosting/deployment target has been selected (tech_stack.md §5) and production deployment is additionally blocked by unresolved high/critical dependency vulnerabilities with no risk-acceptance ADR (deployment_strategy.md §7). No deployment infrastructure was invented to work around this."
+    "notes": "Implementation order follows the Titan Core architecture data-flow dependency order: Context first, then the shared framework, then security governance, then Knowledge, Planner, Orchestrator, Execution, Validation, and Learning. Phase 013 (Titan Core Integration and Hardening) is complete: all seven engines are wired into apps/titan-shell via the shared EngineRegistry, end-to-end and cross-engine-boundary integration tests exist (tests/integration/), and a security/performance hardening review is recorded at .titan/reviews/2026-07-31-phase-013-security-performance-hardening.md. Phase 014 (Test Coverage Completion) is complete: coverage reporting infrastructure (npm run coverage), Knowledge Engine/LifecycleManager/ContextManager coverage gap closures, and a CI quality-gate workflow (.github/workflows/ci.yml) were added, with three unresolved items carried forward (npm audit findings not yet remediated/risk-accepted, unenforced coverage thresholds pending a domain/application folder-mapping decision, and a confirmed reproducible flaky test in tests/unit/validation-engine.test.ts). No engine's business logic changed during Phase 013 or Phase 014. Phase 015 (Deployment Readiness) is in-progress, not complete: three CI-gate milestones (format-check, no-skipped-tests, basic secrets pattern scan) were added to .github/workflows/ci.yml and verified; the deployment-target governance decision was made and recorded as ADR-0008 (local/CLI execution, no external hosting provider, tech_stack.md §5); dependency vulnerability remediation eliminated all 8 previously-reported npm audit findings (now 0); and artifact packaging with clean-environment validation was implemented (scripts/package-artifact.sh, the validate-artifact CI job). No governance decision remains outstanding. The sole remaining milestone is Staging Environment, followed by staging validation, production deployment, and rollback — none yet implemented. No deployment infrastructure was invented to get ahead of this."
   },
   "quality": {
     "test_coverage_percent": 84.33,
-    "known_open_security_issues": 8,
+    "known_open_security_issues": 0,
     "known_open_bugs": 0,
     "known_open_test_issues": 1,
-    "notes": "test_coverage_percent is the overall statement/line coverage reported by npm run coverage (Vitest v8 provider) as of Phase 014 closure; no per-tier (domain/application) threshold is enforced (see phases/phase-014-test-coverage-completion.md Review/Findings). known_open_test_issues counts the confirmed, reproducible flaky test in tests/unit/validation-engine.test.ts ('never reads policyRules or governanceRules'), tracked as a Phase 014 follow-up, not resolved. known_open_security_issues (8 = 3 moderate + 3 high + 2 critical) reflects the npm audit findings from Phase 013's hardening review (devDependency transitives introduced when @vitest/coverage-v8 was installed); none remediated or risk-accepted via an ADR per security_policy.md §8. The 5 high/critical of these are the specific subset blocking production deployment per deployment_strategy.md §7."
+    "notes": "test_coverage_percent is the overall statement/line coverage reported by npm run coverage (Vitest v8 provider) as of Phase 014 closure; no per-tier (domain/application) threshold is enforced (see phases/phase-014-test-coverage-completion.md Review/Findings). known_open_test_issues counts the confirmed, reproducible flaky test in tests/unit/validation-engine.test.ts ('never reads policyRules or governanceRules'), tracked as a Phase 014 follow-up, not resolved. known_open_security_issues was 8 (3 moderate + 3 high + 2 critical) as reported in Phase 013's hardening review (devDependency transitives introduced when @vitest/coverage-v8 was installed); Phase 015 Milestone 5 remediated all 8 via a non-breaking npm audit fix plus a Vitest/@vitest/coverage-v8 upgrade to ^4.1.10 — npm audit now reports 0, so deployment_strategy.md §7's hard blocker on production deployment no longer applies."
   },
   "counters": {
     "sessions_logged": 7,
-    "adrs_recorded": 7,
+    "adrs_recorded": 8,
     "phases_completed": 16
   },
   "agents_involved_to_date": [
