@@ -5,22 +5,22 @@
   "runtime_version": "0.1.0",
   "documentation_version": "1.2.0",
   "last_updated": "2026-08-07",
-  "last_updated_by": "Claude (Phase 016 closure — Titan Core's first production deployment succeeded live via CI run #11, workflow_dispatch, triggered by dudujerry77-hue; all three Exit Criteria satisfied with independently-verified live evidence; Phase 017 not started)",
+  "last_updated_by": "Claude (Phase 017 'AI Shell & Command Interface' complete: interactive CLI built on the seven engines, 39 new tests, 653/653 suite passing, verified end-to-end against real engines and real .titan/ data; Phase 018 not started)",
   "project": {
     "name": "Titan AI",
     "description": "Autonomous software engineering operating system, implemented as Titan Core: seven cooperating engines (Planner, Orchestrator, Context, Knowledge, Execution, Validation, Learning). See architecture.md Section 7 and decisions.md ADR-0002.",
     "repository_root": "."
   },
   "current_phase": {
-    "id": "016",
-    "name": "Production Release",
+    "id": "017",
+    "name": "AI Shell & Command Interface",
     "status": "complete"
   },
   "next_phase": {
-    "id": "017",
+    "id": "018",
     "name": "Maintenance & Continuous Improvement",
     "status": "not-started",
-    "blocked_reason": "Not blocked. Phase 016 is complete (2026-08-07) and Phase 017's entry criteria (\"Phase 016 completion\") are met, making it eligible to begin. It has not been started and requires a separate, explicit instruction to begin — eligibility is not authorization."
+    "blocked_reason": "Not blocked. Phase 017 is complete (2026-08-07) and Phase 018's entry criteria (\"Phase 017 completion\") are met, making it eligible to begin. It has not been started and requires a separate, explicit instruction to begin — eligibility is not authorization."
   },
   "governance": {
     "constitution_version": "1.0.0",
@@ -91,8 +91,8 @@
   },
   "counters": {
     "sessions_logged": 7,
-    "adrs_recorded": 8,
-    "phases_completed": 18
+    "adrs_recorded": 9,
+    "phases_completed": 19
   },
   "agents_involved_to_date": [
     "Claude",
