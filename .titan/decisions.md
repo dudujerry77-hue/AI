@@ -347,6 +347,38 @@ a later hosting evaluation something real to evaluate against.
   this target is left to the Staging Environment milestone itself, not
   decided here.
 
-## ADR-0009 through ADR-000N
+## ADR-0009: Insert Phase 017 (AI Shell & Command Interface); Renumber Maintenance & Continuous Improvement to Phase 018
+
+- **Status:** accepted
+- **Date:** 2026-08-07
+- **Author:** Claude
+
+### Context
+
+Phase 016 (Production Release) is complete. `roadmap.md` names the next phase (017) "Maintenance & Continuous Improvement" — an open-ended operational phase (`phases/phase-017-maintenance-and-continuous-improvement.md`: "Operate Titan AI in steady state... no end date... revisited indefinitely," Exit Criteria literally including "Not applicable as a terminal ongoing phase").
+
+A concrete, substantial feature request arrived: build Titan AI's first usable interactive CLI/AI shell on top of the seven existing Titan Core engines — a command parser, a command registry (no giant switch statement), and read-oriented commands (`status`, `engines`, `help`, `version`, `plan create`/`plan explain`, `context`, `knowledge list`, `validate` placeholder) exposed through `apps/titan-shell`, which currently only instantiates and registers engines via `createTitanShell()` with no interactive entry point.
+
+This work does not fit "Maintenance & Continuous Improvement" under any reading of that phase's own Objective/Scope/Deliverables/Exit Criteria. `roadmap.md` §4 requires exactly this situation to be handled via ADR: *"Reordering, adding, or removing phases requires: an ADR in `decisions.md`, an update to this table, an update to `current_phase.md`... Do not silently reorder phases mid-session."* This project has handled the same kind of situation before — ADR-0002 inserted Phases 005–011 and renumbered every phase after them to accommodate concrete engine-implementation work discovered mid-course.
+
+Separately, this work is a plausible instance of the `/interfaces` layer ADR-0008 anticipated: ADR-0008 (local/CLI execution) noted its own decision *"may be superseded by a future ADR once a concrete `/interfaces` layer (an HTTP API, a published CLI, or similar) is designed and built."* A CLI shell is exactly that kind of layer, though it does not by itself require revisiting ADR-0008 (a CLI is still local/CLI execution, consistent with — not contradicting — that decision).
+
+### Decision
+
+Insert a new **Phase 017: AI Shell & Command Interface** immediately after Phase 016, with its own Objective/Scope/Deliverables/Acceptance/Exit Criteria (see `phases/phase-017-ai-shell-and-command-interface.md`). Renumber the existing **Maintenance & Continuous Improvement** phase from 017 to **018**; its content is preserved unchanged (`git mv` to `phases/phase-018-maintenance-and-continuous-improvement.md`, only its Phase ID/title/internal cross-references updated). No other phase numbers change.
+
+### Alternatives Considered
+
+1. **Add AI Shell as Phase 018, after Maintenance** — rejected. Maintenance is open-ended with no fixed completion trigger; sequencing a concrete, completable feature phase *after* an indefinite phase doesn't reflect real dependency order, since the shell doesn't depend on Maintenance ever "finishing" (it can't, by its own Exit Criteria).
+2. **Overwrite Phase 017's content in place without renumbering** — rejected. Destroys the existing Maintenance phase definition with nowhere to relocate it, violating `phases/README.md`'s "never delete a phase file... document the pivot" rule and `roadmap.md` §4's explicit change process.
+3. **Insert as a lettered sub-phase (e.g., `016a`)** — considered, rejected. This work has its own substantial Deliverables/Acceptance/Exit Criteria — a first-class phase, not a governance-only sub-step in the sense `006a` was. A lettered insertion between 016/017 is equivalent in effect to "insert as 017 and renumber," so it collapses to the chosen option without adding value.
+
+### Consequences
+
+- **Positive:** `roadmap.md` accurately reflects real, concrete work; reuses the established renumbering precedent (ADR-0002) rather than inventing a new mechanism; Maintenance's content is fully preserved, just relocated with full git history via `git mv`.
+- **Negative:** Any prior reference to "Phase 017" (in `changelog.md` entries, session logs, or this conversation's own earlier turns) meant Maintenance at the time it was written; from this ADR forward, Phase 017 means AI Shell & Command Interface. This is the same kind of consequence ADR-0002's renumbering already created, and is handled the same way: historical entries are read as accurate snapshots as of their own timestamp, not live truth.
+- **Mitigation:** This ADR, the updated `roadmap.md` table, and the `git mv`-preserved phase-018 file make the relocation fully traceable.
+
+## ADR-0010 through ADR-000N
 
 No further decisions have been made yet. Add new entries below this line using `templates/adr-template.md`, incrementing the number sequentially. Do not skip numbers; do not reuse numbers.
