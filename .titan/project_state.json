@@ -4,8 +4,8 @@
   "governance_version": "1.0.0",
   "runtime_version": "0.1.0",
   "documentation_version": "1.2.0",
-  "last_updated": "2026-08-06",
-  "last_updated_by": "Claude (Phase 015 governance sync — ADR-0008 and dependency remediation reflected; Staging Environment is the sole remaining milestone)",
+  "last_updated": "2026-08-07",
+  "last_updated_by": "Claude (Phase 015 closure — Phase 015/016 boundary correction applied; all three Exit Criteria satisfied, Exit Criterion 1 approved by explicit human decision; Phase 016 not started)",
   "project": {
     "name": "Titan AI",
     "description": "Autonomous software engineering operating system, implemented as Titan Core: seven cooperating engines (Planner, Orchestrator, Context, Knowledge, Execution, Validation, Learning). See architecture.md Section 7 and decisions.md ADR-0002.",
@@ -14,13 +14,13 @@
   "current_phase": {
     "id": "015",
     "name": "Deployment Readiness",
-    "status": "in-progress"
+    "status": "complete"
   },
   "next_phase": {
     "id": "016",
     "name": "Production Release",
     "status": "not-started",
-    "blocked_reason": "Awaiting Phase 015 completion. No governance decision remains outstanding (hosting/deployment target decided via ADR-0008; dependency vulnerabilities remediated to 0). The remaining work is implementation: Staging Environment, then staging validation, production deployment, and rollback."
+    "blocked_reason": "Not blocked. Phase 015 is complete (2026-08-07) and Phase 016's Dependencies field (\"Phase 015 completion\") is met, making it eligible to begin. It has not been started and requires a separate, explicit instruction to begin — eligibility is not authorization."
   },
   "governance": {
     "constitution_version": "1.0.0",
@@ -63,7 +63,7 @@
     "notes": "architecture.md Section 7 defines the approved Titan Core engine architecture (7 engines), with security architecture governance established in Section 6."
   },
   "titan_core": {
-    "status": "coverage-completion-closed-deployment-readiness-in-progress-governance-resolved-staging-pending",
+    "status": "deployment-readiness-complete-production-release-not-started",
     "engine_framework_required_before_future_engine_implementation": true,
     "engine_framework_phase": "006",
     "shared_framework": {
@@ -80,7 +80,7 @@
       { "name": "Validation Engine", "status": "implemented", "implementation_phase": "011", "notes": "validate and getValidationStatus are implemented (Milestones 1-5: runtime foundation, complete planned domain model, ValidationBuilder/validate() - deterministic structural translation of an Execution Engine ExecutionSummary/ExecutionRecord into a ValidationPipelineResult, ValidationValidator/getValidationStatus() - deterministic structural validation of a ValidationVerdict, and ValidationEvidenceCollector/ValidationPipelineRunner - deterministic structural evidence collection composed with verdict construction, wired into validate()). approveValidation and rejectValidation remain unimplemented NotImplementedError stubs; a dedicated specification audit and governance review (see phases/phase-011-validation-engine-implementation.md) confirmed neither is required by any Phase 011 exit criterion or specification/engine_api.md requirement, and that implementing them would require either persistence (a validation store/lookup mechanism) or business logic (approval authority/audit semantics), both out of scope for deterministic structural processing." },
       { "name": "Learning Engine", "status": "implemented", "implementation_phase": "012", "notes": "observeCycle, generateProposal, prepareKnowledgeHandoff, and analyzeCycle are implemented (Milestones 1-6: runtime foundation, complete domain model, LearningObservationBuilder/observeCycle(), LearningProposalBuilder/generateProposal(), LearningKnowledgeHandoffBuilder/prepareKnowledgeHandoff(), and LearningLessonBuilder/LearningFlaggedRiskBuilder/LearningProposedAdrBuilder/LearningPipelineBuilder/analyzeCycle()). All four public API methods are implemented with no remaining NotImplementedError stubs. A dedicated Governance Resolution (see phases/phase-012-learning-engine-implementation.md) determined that actual Knowledge Engine-side consumption of Learning Engine handoff artifacts is architecturally assigned to the Knowledge Engine and to Phase 013's cross-engine validation scope, not to Phase 012; it remains unimplemented and unscoped pending Phase 013 or a future ADR." }
     ],
-    "notes": "Implementation order follows the Titan Core architecture data-flow dependency order: Context first, then the shared framework, then security governance, then Knowledge, Planner, Orchestrator, Execution, Validation, and Learning. Phase 013 (Titan Core Integration and Hardening) is complete: all seven engines are wired into apps/titan-shell via the shared EngineRegistry, end-to-end and cross-engine-boundary integration tests exist (tests/integration/), and a security/performance hardening review is recorded at .titan/reviews/2026-07-31-phase-013-security-performance-hardening.md. Phase 014 (Test Coverage Completion) is complete: coverage reporting infrastructure (npm run coverage), Knowledge Engine/LifecycleManager/ContextManager coverage gap closures, and a CI quality-gate workflow (.github/workflows/ci.yml) were added, with three unresolved items carried forward (npm audit findings not yet remediated/risk-accepted, unenforced coverage thresholds pending a domain/application folder-mapping decision, and a confirmed reproducible flaky test in tests/unit/validation-engine.test.ts). No engine's business logic changed during Phase 013 or Phase 014. Phase 015 (Deployment Readiness) is in-progress, not complete: three CI-gate milestones (format-check, no-skipped-tests, basic secrets pattern scan) were added to .github/workflows/ci.yml and verified; the deployment-target governance decision was made and recorded as ADR-0008 (local/CLI execution, no external hosting provider, tech_stack.md §5); dependency vulnerability remediation eliminated all 8 previously-reported npm audit findings (now 0); and artifact packaging with clean-environment validation was implemented (scripts/package-artifact.sh, the validate-artifact CI job). No governance decision remains outstanding. The sole remaining milestone is Staging Environment, followed by staging validation, production deployment, and rollback — none yet implemented. No deployment infrastructure was invented to get ahead of this."
+    "notes": "Implementation order follows the Titan Core architecture data-flow dependency order: Context first, then the shared framework, then security governance, then Knowledge, Planner, Orchestrator, Execution, Validation, and Learning. Phase 013 (Titan Core Integration and Hardening) is complete: all seven engines are wired into apps/titan-shell via the shared EngineRegistry, end-to-end and cross-engine-boundary integration tests exist (tests/integration/), and a security/performance hardening review is recorded at .titan/reviews/2026-07-31-phase-013-security-performance-hardening.md. Phase 014 (Test Coverage Completion) is complete: coverage reporting infrastructure (npm run coverage), Knowledge Engine/LifecycleManager/ContextManager coverage gap closures, and a CI quality-gate workflow (.github/workflows/ci.yml) were added, with three unresolved items carried forward (npm audit findings not yet remediated/risk-accepted, unenforced coverage thresholds pending a domain/application folder-mapping decision, and a confirmed reproducible flaky test in tests/unit/validation-engine.test.ts). No engine's business logic changed during Phase 013 or Phase 014. Phase 015 (Deployment Readiness) is complete (2026-08-07), across ten milestones: three CI-gate additions to .github/workflows/ci.yml (format-check, no-skipped-tests, basic secrets pattern scan); the deployment-target governance decision (ADR-0008: local/CLI execution, no external hosting provider, tech_stack.md §5); dependency vulnerability remediation (npm audit 8 → 0); artifact packaging with clean-environment validation (scripts/package-artifact.sh, the validate-artifact CI job); the Staging Environment (a GitHub `staging` environment, deployment restricted to `main`, configured via repository Settings); Staging Validation (612/612 tests passed against the packaged artifact in a clean, freshly-provisioned environment — a local reproduction, not yet evidenced by a live GitHub Actions run); documentation gap closure (security_checklist.md's Pre-Deployment Checklist cross-referenced and classified; a code/security/incident-response-plan review produced, .titan/reviews/2026-08-07-phase-015-documentation-and-incident-readiness-review.md); and a Phase 015/016 boundary correction determining that Production Deployment and Rollback execution belong to Phase 016 (phase-016-production-release.md's own Objective/Scope), not Phase 015, whose Exit Criterion 3 (\"Production release can proceed under governance controls\") is a readiness/capability statement rather than a claim that a deployment occurred. All three Exit Criteria are satisfied and checked, including Exit Criterion 1's approval component, given by explicit human decision. Phase 016 (Production Release) is eligible to begin (its Dependencies field is met) but has not been started and awaits a separate, explicit instruction."
   },
   "quality": {
     "test_coverage_percent": 84.33,
@@ -92,7 +92,7 @@
   "counters": {
     "sessions_logged": 7,
     "adrs_recorded": 8,
-    "phases_completed": 16
+    "phases_completed": 17
   },
   "agents_involved_to_date": [
     "Claude",

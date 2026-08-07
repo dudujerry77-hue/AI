@@ -7,52 +7,47 @@
 
 ## Active Phase
 
-- **Phase ID:** 015
-- **Name:** Deployment Readiness
-- **Status:** in-progress
-- **Started:** 2026-08-03
-- **Completed:** 
-
-## What This Phase Is
-
-Finalizing CI/CD, staging validation, and operational controls required for a safe first production release: validating deployment pipelines and release gates, performing staging verification for functional and operational readiness, and confirming security/compliance/deployment checklists are satisfied.
-
-**Current state: CI/pipeline hygiene, the deployment-target governance decision (ADR-0008), dependency vulnerability remediation, and artifact packaging/clean-environment validation are all implemented and verified. No governance decision remains outstanding for this phase. The next remaining milestone is Staging Environment — not yet implemented; see Notes below and `phases/phase-015-deployment-readiness.md`'s Current Blockers section. This phase remains `in-progress`: no governance document requires a `blocked` status merely because implementation work remains.**
-
-## Prior Phase Completed
-
-- **Phase ID:** 014
-- **Name:** Test Coverage Completion
-- **Status:** complete
-- **Completed:** 2026-08-03
-
-## Exit Criteria (current phase)
-
-- [ ] Deployment-readiness checklists are complete and approved.
-- [ ] Staging validation passes with documented evidence.
-- [ ] Production release can proceed under governance controls.
-
-None are checked. The first is partially satisfied (CI/pipeline hygiene only); the second and third cannot be satisfied while no staging or production environment exists.
-
-## Next Phase
-
 - **Phase ID:** 016
 - **Name:** Production Release
 - **Status:** not-started
-- **Entry Criteria:** Phase 015 completion — **not yet met.**
-- **What the next agent should do first:** Do not start Phase 016. Phase 015 must first be unblocked (see Notes) and its remaining milestones completed.
+- **Started:** 
+- **Completed:** 
+
+**No phase is currently in-progress.** Phase 015 (Deployment Readiness) completed on 2026-08-07. Phase 016 is next per `roadmap.md` and its Dependencies field ("Phase 015 completion") is now met, but **it has not been started and is not authorized by Phase 015's closure** — beginning it requires a separate, explicit instruction. Do not begin any Phase 016 work (production deployment execution, rollback execution, or otherwise) until that instruction is given.
+
+## Prior Phase Completed
+
+- **Phase ID:** 015
+- **Name:** Deployment Readiness
+- **Status:** complete
+- **Completed:** 2026-08-07
+
+## Exit Criteria (prior phase — 015, for reference)
+
+- [x] Deployment-readiness checklists are complete and approved.
+- [x] Staging validation passes with documented evidence.
+- [x] Production release can proceed under governance controls.
+
+All three checked. See `phases/phase-015-deployment-readiness.md` for full rationale, including the Phase 015 / Phase 016 Boundary Correction that determined Exit Criterion 3 is a readiness/capability statement, not a claim that a production release has occurred.
+
+## Next Phase
+
+- **Phase ID:** 017
+- **Name:** Maintenance & Continuous Improvement
+- **Status:** not-started
+- **Entry Criteria:** Phase 016 completion — not met (Phase 016 has not started).
+- **What the next agent should do first:** Not applicable yet — Phase 016 must start and complete first.
 
 ## Notes
 
-- Phase 015 (Deployment Readiness) is **in-progress**, not complete. Six milestones are completed and verified: a `format:check` gate (`deployment_strategy.md` §2 step 2), a no-skipped/ignored-tests gate (§2 step 3), a basic, dependency-free secrets pattern scan (§2 step 5) — all added to `.github/workflows/ci.yml` — the deployment-target governance decision (**ADR-0008**, recorded in `decisions.md` and `tech_stack.md` §5: local/CLI execution, no external hosting provider), dependency vulnerability remediation (`npm audit` now reports 0 vulnerabilities, down from 8), and artifact packaging with clean-environment validation (`scripts/package-artifact.sh`, the `validate-artifact` CI job). The pre-existing `npm audit --audit-level=high` dependency scan (added in Phase 014, not Phase 015) is also part of this pipeline. `npm run lint`, `npm test` (612/612), and `npm run build` all pass; `npm run format:check` fails only on 74 pre-existing, out-of-scope `.titan/` files.
-- **No governance decision remains outstanding for Phase 015.** Both governance gaps that previously blocked this phase's remaining milestones are resolved: the hosting/deployment-target decision (ADR-0008) and the dependency-vulnerability hard blocker (`deployment_strategy.md` §7, now moot at 0 vulnerabilities). See `phases/phase-015-deployment-readiness.md`'s Current Blockers section for the full resolution record.
-- **Staging Environment is the sole remaining milestone**, and it is unblocked in principle: per ADR-0008, "production" for this target is local/CLI execution of the packaged artifact, so staging can be defined as a clean, freshly-provisioned local/CI environment running that same artifact (already produced and validated). It has not yet been implemented.
-- No deployment infrastructure, artifact format, cloud provider, staging environment, or rollback mechanism has been invented to get ahead of this.
-- Phase 014 (Test Coverage Completion) is complete — see prior entry in `changelog.md` and `phases/phase-014-test-coverage-completion.md` for its own carried-forward items (coverage-threshold ambiguity, a confirmed flaky Validation Engine test), which remain separately unresolved and are unrelated to Phase 015.
+- **Phase 015 (Deployment Readiness) is complete** (2026-08-07). Ten milestones: CI/pipeline hygiene gates (format-check, no-skipped-tests, secrets pattern scan — `deployment_strategy.md` §2 steps 2/3/5), the deployment-target governance decision (**ADR-0008**: local/CLI execution, no external hosting provider), dependency vulnerability remediation (`npm audit` 8 → 0), artifact packaging with clean-environment validation (`scripts/package-artifact.sh`, the `validate-artifact` CI job), the Staging Environment (a GitHub `staging` environment, deployment restricted to `main`), Staging Validation (612/612 tests passed against the packaged artifact in a clean environment — a local reproduction, not yet a live GitHub Actions run), documentation gap closure (`security_checklist.md` cross-referenced/classified; a code/security/incident-response-plan review produced), and a correction of this document's and `phase-015-deployment-readiness.md`'s earlier, mistaken framing of Production Deployment/Rollback as Phase 015 milestones. `npm run lint`, `npm test` (612/612), and `npm run build` all pass; `npm audit` reports 0 vulnerabilities.
+- **The Phase 015 / Phase 016 boundary:** Phase 015 establishes deployment readiness (a production release *can* proceed under governance controls); Phase 016 performs the actual first production deployment. This is established by `phase-016-production-release.md`'s own explicit Objective/Scope ("Execute the first production deployment..."), the dependency-chain logic (Phase 016 cannot start until Phase 015 completes, so Phase 015 cannot itself require Phase 016's defining act), and the deliberate verb-mood contrast between the two phases' Exit Criteria. Full reasoning in `phases/phase-015-deployment-readiness.md`'s Phase 015 / Phase 016 Boundary Correction section.
+- Two small, non-blocking follow-ups are tracked for whoever starts Phase 016: no live GitHub Actions run has ever executed for any commit in this repository (Phase 015's CI/staging work is verified locally and via a prior, older successful history, but not for the current commit); and `deployment_strategy.md` §6 (Monitoring & Alerting) is self-triggered by the Staging environment's existence but not yet extended.
+- Phase 014 (Test Coverage Completion) is complete — see `changelog.md` and `phases/phase-014-test-coverage-completion.md` for its own carried-forward items (coverage-threshold ambiguity, a confirmed flaky Validation Engine test), unrelated to Phase 015/016.
 
 ## Instructions for Whoever Reads This Next
 
-1. Continue with the next phase in dependency order: Engine Framework (006) → Security Architecture Governance (006a) → Knowledge Engine (007) → Planner Engine (008) → Orchestrator Engine (009) → Execution Engine (010) → Validation Engine (011) → Learning Engine (012) → Titan Core Integration and Hardening (013) → Test Coverage Completion (014) → Deployment Readiness (015, in-progress), per `roadmap.md`.
-2. **Do not advance to Phase 016.** Deployment Readiness (015) remains active. No governance decision remains outstanding; the next work is implementation — stand up the Staging Environment milestone, then staging validation, production deployment, and rollback, in that dependency order.
-3. When you complete work, update this file's Active Phase status, update `project_state.json`, and append to `changelog.md`.
+1. Phases 000–015 are complete, in dependency order per `roadmap.md`. Phase 016 (Production Release) is next but **has not been started**.
+2. **Do not begin Phase 016 work without an explicit instruction to do so.** Its entry condition (Phase 015 completion) is met, but eligibility is not authorization.
+3. When Phase 016 work begins, update this file's Active Phase section (Status: in-progress, fill in Started), update `project_state.json`, and append to `changelog.md`. When it completes, update again per the same pattern used for Phase 015's closure.
 4. If you are picking this project back up after a long gap, also skim the last 2–3 files in `sessions/` for tacit context not yet promoted into these governance docs.
