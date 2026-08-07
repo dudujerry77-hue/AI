@@ -82,6 +82,7 @@ A running list of non-trivial dependencies added to the project, for visibility 
 | ESLint | Linting and code-quality enforcement | 004 | ADR-0003 |
 | Prettier | Automated formatting | 004 | ADR-0003 |
 | @types/node | Node.js type definitions | 004 | ADR-0003 |
+| tsx | Dev-only TypeScript execution for the Titan Shell CLI entry point (`npx tsx src/cli.ts`) | 017 | — (minor dev tooling, exempt per §2; verified no usable installation existed anywhere in the repo before this phase) |
 
 ## 7. Deprecation & Migration Policy
 
