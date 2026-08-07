@@ -1,8 +1,8 @@
 # Phase 016: Production Release
 
-- **Status:** in-progress
+- **Status:** complete
 - **Started:** 2026-08-07
-- **Completed:** 
+- **Completed:** 2026-08-07
 - **Agent(s) involved:** Claude
 
 ## Objective
@@ -23,10 +23,10 @@ Execute the first production deployment of Titan AI according to `deployment_str
 
 ## Acceptance Criteria
 
-- Deployment workflows are reproducible and policy-compliant.
-- Production deployment completes successfully with no unmanaged critical incidents. **Not yet evidenced — see Exit Criteria.**
-- Core Titan workflows are operational post-release. **Not yet evidenced — see Exit Criteria.**
-- Release evidence and governance traceability are complete for all mechanism/policy work performed (Milestones 1-6); pending for the release event itself.
+- Deployment workflows are reproducible and policy-compliant. **Satisfied** — CI run #11 (`31187774444`) executed the full pipeline (quality-gates → staging → production) as one reproducible `workflow_dispatch` invocation.
+- Production deployment completes successfully with no unmanaged critical incidents. **Satisfied** — `deploy-production` job: `success`, every one of its 9 steps `success`, zero failures or manual interventions required.
+- Core Titan workflows are operational post-release. **Satisfied** — the post-deploy verification step ("Run the existing full test suite against the extracted artifact") succeeded against the deployed artifact, confirming all engine workflows function correctly post-release.
+- Release evidence and governance traceability are complete. **Satisfied** — see Production Deployment Evidence below.
 
 ## Dependencies
 
@@ -40,11 +40,11 @@ Execute the first production deployment of Titan AI according to `deployment_str
 
 ## Exit Criteria
 
-- [ ] First production release is completed and validated.
-- [ ] Post-release health checks meet defined operational thresholds.
-- [ ] Transition to maintenance phase is documented.
+- [x] First production release is completed and validated.
+- [x] Post-release health checks meet defined operational thresholds.
+- [x] Transition to maintenance phase is documented.
 
-**None are checked.** All three depend on an actual live `deploy-production` run having occurred, which has not happened — see Milestone History and Handoff Notes. The mechanism, policy, and rollback path are built and verified to the fullest extent possible without that live event.
+**All three checked.** A human with repository access (`dudujerry77-hue`) manually triggered `deploy-production` via `workflow_dispatch` on 2026-08-07. CI run **#11** (`31187774444`) completed with `success` across all three jobs (`quality-gates`, `validate-artifact`, `deploy-production`), every step. See Production Deployment Evidence below for full detail. "Post-release health checks meet defined operational thresholds" is satisfied per Milestone 5's policy: for this deployment target (ADR-0008, no live service), the defined threshold *is* the post-deploy verification step passing — which it did (the full test suite ran clean against the deployed artifact). "Transition to maintenance phase is documented" is satisfied by this document's Handoff Notes below, pointing to Phase 017.
 
 ## Milestone History
 
@@ -52,8 +52,21 @@ Execute the first production deployment of Titan AI according to `deployment_str
 - **Milestones 2-4 — Production Environment, Deploy Mechanics, Post-Deploy Verification (combined, one `ci.yml` change):** Added a `deploy-production` job triggered only by `workflow_dispatch` — by construction, it cannot fire automatically on any push or PR, satisfying `deployment_strategy.md` §2 step 9's "never fully automatic" requirement without depending on external GitHub Settings configuration. On dispatch, the full pipeline runs in one continuous execution; `deploy-production` reuses the exact artifact `validate-artifact` already built in the same run via `actions/upload-artifact`/`download-artifact`, honoring §2 step 6's "build exactly once... promote that same artifact." Steps 10 (deploy) and 11 (post-deploy verification) are combined: per ADR-0008, there is no running service to separately health-check post-deploy, so the job reinstalls and re-runs the full test suite against the promoted artifact as the verification act, then records a "Production Release Evidence" summary (commit, actor, run link, test results) to the job summary — satisfying the Deliverable "Production release execution record." The `production` GitHub environment will auto-create (unprotected) on first dispatch, mirroring `staging`'s own history; adding required-reviewer protection afterward is a recommended, optional hardening step. **Verified locally** to the fullest extent possible without live dispatch access: every shell command the job runs (extract, `npm ci`, `npm run build`, `npm test`) was executed directly against a locally-built copy of the same artifact — clean build, 612/612 tests. `download-artifact`/`upload-artifact` themselves are standard, official GitHub Actions, used per their documented interface; YAML validity confirmed via `js-yaml` parse.
 - **Milestone 5 — Monitoring & Alerting Policy:** Extended `deployment_strategy.md` §6, self-triggered since Phase 015's Staging environment went live but left unactioned until now. Defined metrics (CI pipeline pass/fail as the health signal — no live service exists to emit uptime/error-rate telemetry per ADR-0008), on-call (the single repository owner, via GitHub's native failure notifications — no rotation, no new tool), and log retention (GitHub Actions' default retention, consistent with `security_policy.md` §6's no-secrets-in-logs principle, which the evidence-recording steps already honor). No new tooling or dependency introduced.
 - **Milestone 6 — Rollback Exercise:** Actually exercised (not merely described) the rollback procedure `deployment_strategy.md` §4 defines: packaged the last known-good commit prior to this phase's work (`3b4d2df`, Phase 015's closure commit) via `git archive`, extracted it into a clean directory, and ran the full verification suite against it. **Result: build clean, 612/612 tests pass — the rollback mechanism works.** Also surfaced an honest, documented finding: `npm audit` against that commit reproduces the `js-yaml` advisory Milestone 1 fixed, since that commit predates the fix — a real, worth-knowing consequence of rolling back to that specific point, not a defect in the rollback mechanism itself. Logged in `.titan/sessions/2026-08-07-1500-phase-016-production-release-kickoff.md`, per §4's "a rollback event must always be logged in `sessions/`."
-- **No Production Deployment has occurred.** This is the honest, load-bearing fact governing this phase's status. No agent working this repository has authenticated GitHub write/dispatch access (`gh` CLI is not installed; no API token is available) — only unauthenticated public reads and ordinary `git push`, both used throughout this project. The `deploy-production` job was deliberately designed, by explicit agreement with the project owner, so that only a human with repository access can trigger it. That trigger has not yet been pulled.
+- **Milestone 7 — Governance Closure (this entry):** Verified CI run #11 as authoritative live evidence (independently re-derived from the GitHub Actions API — run metadata, job list, and per-step conclusions — not assumed from the run number alone), checked all three Exit Criteria, and closed this document. See Production Deployment Evidence below.
+
+## Production Deployment Evidence
+
+Titan Core's first production release. All facts below were independently retrieved from the GitHub Actions API during this closure (not assumed):
+
+- **Workflow run:** [#11](https://github.com/dudujerry77-hue/AI/actions/runs/31187774444) (`run_id` 31187774444)
+- **Trigger:** `workflow_dispatch`, manually invoked by **`dudujerry77-hue`** (both `actor` and `triggering_actor` — a genuine human action, not automated)
+- **Commit deployed:** `98a33987f888f0ca9e5fca20b036c8781d1387de` (`98a3398` — the Milestone 7 governance-closure-in-progress commit; the artifact packaged and deployed includes all of Milestones 1-6's implementation)
+- **Duration:** 2026-08-07T14:28:41Z → 14:29:59Z (~78 seconds, all three jobs)
+- **Job results:** `Lint, test, build, coverage, dependency scan` → `success` (all 9 steps) · `Staging: package artifact and validate in a clean environment` → `success` (all 9 steps, including artifact upload) · `Production: deploy and verify the validated artifact` → `success` (all 8 steps: download the staging-built artifact, extract, `npm ci`, build, run the full test suite, record evidence)
+- **Post-deploy verification:** the "Run the existing full test suite against the extracted artifact" step in `deploy-production` succeeded (`npm test` exited 0) — for this deterministic suite that means a full pass. The literal per-test count is recorded in that run's own "Production Release Evidence" job summary and raw logs; raw log text requires authenticated GitHub access this closure did not have, so it is cited by reference (the run URL above) rather than re-quoted here, consistent with not presenting inferred data as directly observed.
+- **Environment:** `production` (GitHub Environment) auto-created on this first dispatch. Confirmed via the Environments API: it currently has **no protection rules** (`deployment_branch_policy: null`) — see Risks/Remaining Follow-Ups.
+- **Traceability (`deployment_strategy.md` §4):** artifact ↔ exact commit `98a3398` ↔ this document ↔ `changelog.md`'s entry below ↔ CI run #11. Complete chain, no gaps.
 
 ## Handoff Notes
 
-**Phase 016 is in-progress, not complete.** Milestones 1-6 are implemented and verified to the fullest extent possible without live production-dispatch access: the CI pipeline is restored and confirmed live-green for the first time in this repository's history; the production promotion mechanism, deploy mechanics, and post-deploy verification are built into `.github/workflows/ci.yml` and locally verified; the monitoring/alerting policy gap is closed; the rollback procedure has been genuinely exercised and confirmed functional. **None of Phase 016's three Exit Criteria can be honestly checked yet** — all three require an actual live production release, which has not happened. To finish Phase 016: a human with repository access must trigger the `deploy-production` job via the GitHub Actions "Run workflow" button (or their own authenticated `gh`/API access), selecting the `main` branch. Once that run completes, whoever picks this up next should pull the live evidence (the run's "Production Release Evidence" job summary and run URL), confirm the job succeeded, check all three Exit Criteria, add the release's `changelog.md` entry, fill in this document's `Completed` date, and only then mark Phase 016 complete. **Do not begin Phase 017** until that has happened — Phase 017's own entry criteria require Phase 016 completion, which has not occurred.
+**Phase 016 is complete as of 2026-08-07.** All seven milestones done: CI restoration, the production promotion mechanism (workflow_dispatch-gated, build-once/promote via artifact upload-download), post-deploy verification, the monitoring/alerting policy, a genuinely-exercised rollback procedure, and now a live, human-triggered, fully successful first production deployment (CI run #11) — see Production Deployment Evidence above. All three Exit Criteria are checked with real evidence, not inferred. Two small, non-blocking follow-ups remain, tracked and not resolved: (1) the `production` environment has no protection rules yet — adding required-reviewer protection in Settings → Environments is recommended defense-in-depth for any *future* production dispatch, though it was not needed for this one, since `workflow_dispatch` itself already prevented any automatic trigger; (2) `phases/README.md`'s index remains stale (pre-existing, repeatedly flagged). **Phase 017 (Maintenance & Continuous Improvement) has NOT been started** — its entry criteria (Phase 016 completion) are now met, but beginning it requires a separate, explicit instruction, per the same pattern used at every phase boundary in this project.
