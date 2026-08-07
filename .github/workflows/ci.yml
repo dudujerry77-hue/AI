@@ -68,12 +68,41 @@ name: CI
 # those protection rules are configured manually, this environment has
 # identity and a history of records but no actual access restriction —
 # this is a tracked, outstanding manual step, not part of this file.
+#
+# The third job (`deploy-production`, Phase 016) implements
+# deployment_strategy.md §2 steps 9-11 for the same local/CLI target:
+# "manual promotion to production" (step 9), "production deploy... using
+# the same artifact validated in staging" (step 10), and "post-deploy
+# verification" (step 11). It runs ONLY on `workflow_dispatch` — a
+# human must explicitly select a ref and click "Run workflow" in the
+# GitHub UI (or use their own authenticated `gh`/API access); it can
+# never run automatically on a push or PR, satisfying step 9's "never
+# fully automatic" requirement by construction, not by an external
+# protection rule this file can't guarantee is configured. On dispatch,
+# the full pipeline runs in one continuous execution — quality-gates,
+# then staging validation, then production — and `deploy-production`
+# reuses the *exact* artifact `validate-artifact` already built and
+# validated in the same run via `actions/upload-artifact` /
+# `download-artifact`, rather than rebuilding it, honoring step 6's
+# "build exactly once... promote that same artifact through later
+# stages." Steps 10 and 11 are combined into one job: per ADR-0008,
+# there is no running, network-facing service to separately monitor
+# post-deploy (no `/interfaces` layer exists), so "deploy" and "verify
+# it's healthy" collapse to the same act for this target — reinstalling
+# and re-running the full test suite against the promoted artifact one
+# final time, immediately before recording it as released. The job
+# declares `environment: production` (auto-created on first dispatch,
+# same as `staging` was); adding required-reviewer protection to it in
+# repository Settings is a recommended, optional defense-in-depth
+# hardening step, not required for the "never automatic" property,
+# which `workflow_dispatch` alone already guarantees.
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch: {}
 
 jobs:
   quality-gates:
@@ -119,7 +148,7 @@ jobs:
   validate-artifact:
     name: 'Staging: package artifact and validate in a clean environment'
     needs: quality-gates
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     environment: staging
     steps:
@@ -137,6 +166,13 @@ jobs:
 
       - name: Build package artifact (deployment_strategy.md §2 step 6)
         run: npm run package
+
+      - name: Upload artifact for promotion to production (deployment_strategy.md §2 step 6)
+        uses: actions/upload-artifact@v4
+        with:
+          name: titan-core-artifact
+          path: titan-core-artifact.tar.gz
+          retention-days: 7
 
       - name: Extract artifact into a clean directory
         run: |
@@ -169,5 +205,57 @@ jobs:
             echo "### Test suite result"
             echo '```'
             grep -E "Test Files|^ *Tests " "$RUNNER_TEMP/staging-test-output.log" || echo "(summary lines not found in log)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-production:
+    name: 'Production: deploy and verify the validated artifact'
+    needs: validate-artifact
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Download the artifact already validated in staging (deployment_strategy.md §2 step 6 / step 10)
+        uses: actions/download-artifact@v4
+        with:
+          name: titan-core-artifact
+
+      - name: Extract artifact into a clean directory
+        run: |
+          mkdir -p "$RUNNER_TEMP/production-deploy"
+          tar -xzf titan-core-artifact.tar.gz -C "$RUNNER_TEMP/production-deploy"
+
+      - name: Reinstall from the extracted artifact
+        working-directory: ${{ runner.temp }}/production-deploy
+        run: npm ci
+
+      - name: Build the extracted artifact
+        working-directory: ${{ runner.temp }}/production-deploy
+        run: npm run build
+
+      - name: Run the existing full test suite against the extracted artifact (deployment_strategy.md §2 step 11)
+        working-directory: ${{ runner.temp }}/production-deploy
+        run: npm test 2>&1 | tee "$RUNNER_TEMP/production-test-output.log"
+
+      - name: Record production release evidence (deployment_strategy.md §2 steps 10-11; §4 traceability)
+        run: |
+          {
+            echo "## Production Release Evidence"
+            echo ""
+            echo "- **Environment:** production (local/CLI execution of the packaged artifact, per ADR-0008)"
+            echo "- **Artifact:** titan-core-artifact.tar.gz (built once by the staging job in this same run, not rebuilt)"
+            echo "- **Source commit:** ${{ github.sha }}"
+            echo "- **Triggered by:** ${{ github.actor }} (manual workflow_dispatch)"
+            echo "- **Workflow run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "- **Deployed (UTC):** $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            echo ""
+            echo "### Post-deploy verification result"
+            echo '```'
+            grep -E "Test Files|^ *Tests " "$RUNNER_TEMP/production-test-output.log" || echo "(summary lines not found in log)"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
