@@ -58,6 +58,12 @@ Once a system reaches staging/production, this section must be extended to defin
 - On-call/response expectations for production incidents.
 - Log retention and access policy (consistent with `security_policy.md`).
 
+**Extended in Phase 016** for Titan Core's actual current shape (ADR-0008: local/CLI execution, no network-facing service, no `/interfaces` layer). The answers below apply specifically to this deployment target and should be revisited — likely rewritten from network-service assumptions rather than merely extended — once a concrete `/interfaces` layer exists, per ADR-0008's own note that it "may be superseded... once a concrete `/interfaces` layer... is designed and built."
+
+- **Key health/error metrics and alert thresholds.** There is no running service to emit uptime or error-rate telemetry. The only meaningful health signal for a local/CLI artifact is whether its release pipeline (`.github/workflows/ci.yml`) passes: lint, the full test suite, build, and dependency audit. The alert threshold is binary — any failure of the `deploy-production` job on a real dispatch *is* the alert; no numeric threshold is invented where none is meaningful.
+- **On-call/response expectations.** Single-developer project; there is no on-call rotation. The repository owner is the sole responder. GitHub's native workflow-run-failure notifications are the paging mechanism — no additional alerting tool is introduced.
+- **Log retention and access policy.** Workflow run logs and job summaries (including the "Staging Validation Evidence" and "Production Release Evidence" records) are retained per GitHub Actions' default retention policy for this repository and are visible to anyone with read access to it (public), consistent with `security_policy.md` §6 — the evidence-recording steps in `ci.yml` deliberately record only commit SHA, artifact name, run link, actor, and test-summary counts, never secrets or credentials.
+
 ## 7. Deployment Gate Summary (Hard Blockers)
 
 A deployment to production must be blocked if any of the following are true:
