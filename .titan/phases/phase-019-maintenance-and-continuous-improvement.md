@@ -1,6 +1,6 @@
-# Phase 018: Maintenance and Continuous Improvement
+# Phase 019: Maintenance and Continuous Improvement
 
-**Renumbered from Phase 017 to Phase 018 by ADR-0009 (2026-08-07)** — Phase 017 was inserted for a concrete feature phase, "AI Shell & Command Interface" (`phase-017-ai-shell-and-command-interface.md`), which this open-ended phase does not depend on completing before it can eventually begin, since Phase 017 sits ahead of it in the roadmap sequence. This document's content is otherwise unchanged from its original form; only the Phase ID, this file's name, and this note were updated. See `decisions.md` ADR-0009 for the full rationale.
+**Renumbered from Phase 017 to Phase 018 by ADR-0009 (2026-08-07), then from Phase 018 to Phase 019 by ADR-0010 (2026-08-08)** — Phase 018 was inserted for a concrete feature phase, "Titan Shell Control Plane" (`phase-018-titan-shell-control-plane.md`), which this open-ended phase does not depend on completing before it can eventually begin, since Phase 018 sits ahead of it in the roadmap sequence. This document's content is otherwise unchanged from its original form; only the Phase ID, this file's name, and this note were updated (twice, across both renumberings). See `decisions.md` ADR-0009 and ADR-0010 for the full rationale.
 
 - **Status:** not-started
 - **Started:** <date>
@@ -31,7 +31,7 @@ Operate Titan AI in steady state with ongoing monitoring, reliability improvemen
 
 ## Dependencies
 
-- Phase 017 completion (renumbered by ADR-0009; was Phase 016 completion prior to the Phase 017 insertion).
+- Phase 018 completion (renumbered by ADR-0010; was Phase 017 completion prior to the Phase 018 insertion, and Phase 016 completion prior to the Phase 017 insertion).
 
 ## Risks
 
