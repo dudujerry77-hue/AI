@@ -1,11 +1,12 @@
-import type { CommandDefinition, CommandResult } from '../types';
+import type { CommandLeaf, CommandResult } from '../types';
 
-export const clearCommand: CommandDefinition = {
+export const clearCommand: CommandLeaf = {
+  kind: 'leaf',
   name: 'clear',
   usage: 'clear',
   description: 'Clear the screen.',
   execute: (): CommandResult => {
     console.clear();
-    return { output: '' };
+    return { success: true, output: '' };
   },
 };

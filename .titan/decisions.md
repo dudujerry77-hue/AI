@@ -379,6 +379,38 @@ Insert a new **Phase 017: AI Shell & Command Interface** immediately after Phase
 - **Negative:** Any prior reference to "Phase 017" (in `changelog.md` entries, session logs, or this conversation's own earlier turns) meant Maintenance at the time it was written; from this ADR forward, Phase 017 means AI Shell & Command Interface. This is the same kind of consequence ADR-0002's renumbering already created, and is handled the same way: historical entries are read as accurate snapshots as of their own timestamp, not live truth.
 - **Mitigation:** This ADR, the updated `roadmap.md` table, and the `git mv`-preserved phase-018 file make the relocation fully traceable.
 
-## ADR-0010 through ADR-000N
+## ADR-0010: Insert Phase 018 (Titan Shell Control Plane); Renumber Maintenance & Continuous Improvement to Phase 019
+
+- **Status:** accepted
+- **Date:** 2026-08-08
+- **Author:** Claude
+
+### Context
+
+Phase 017 (AI Shell & Command Interface) is complete: a thin, ten-command proof-of-life CLI (`help`, `status`, `engines`, `version`, `plan create`/`explain`, `context`, `knowledge list`, `validate` placeholder, `clear`, `exit`), evidenced by 653/653 passing tests and manual end-to-end verification, closed 2026-08-07.
+
+A follow-on request arrived: rebuild Titan Shell as a hierarchical command-tree control plane spanning all seven engines' lifecycle objects (Goal → Plan → Workflow → Dispatch → Execution → Validation → Learning), with quote/flag-aware parsing, structured (human/JSON/concise) output, dispatcher-level error handling, real exit codes, and a services/adapters layer separating CLI concerns from engine business logic. This is substantially larger in scope than Phase 017's own Objective and Exit Criteria, which were deliberately narrow ("build the first usable AI shell," not "build the control plane"). Reopening the closed Phase 017 record to absorb this would falsify an already-evidenced historical snapshot, which `phases/README.md`'s own rule ("never delete a phase file... document the pivot") exists to prevent.
+
+It also does not fit Phase 018 (Maintenance & Continuous Improvement, renumbered from 017 by ADR-0009): that phase's Objective/Scope/Exit Criteria describe indefinite steady-state operation ("no end date... revisited indefinitely," Exit Criteria literally "not applicable as a terminal ongoing phase"), not a scoped, completable redesign. This is the identical situation ADR-0009 already resolved for the original AI Shell request, one phase earlier.
+
+`roadmap.md` §4 requires exactly this to be handled via ADR: *"Reordering, adding, or removing phases requires: an ADR in `decisions.md`, an update to this table, an update to `current_phase.md`... Do not silently reorder phases mid-session."*
+
+### Decision
+
+Insert a new **Phase 018: Titan Shell Control Plane** immediately after Phase 017, with its own Objective/Scope/Milestones/Exit Criteria (see `phases/phase-018-titan-shell-control-plane.md`). Renumber the existing **Maintenance & Continuous Improvement** phase from 018 to **019**; its content is preserved unchanged (`git mv` to `phases/phase-019-maintenance-and-continuous-improvement.md`, only its Phase ID/title/internal cross-references updated). No other phase numbers change.
+
+### Alternatives Considered
+
+1. **Reopen Phase 017 and expand its scope** — rejected. Falsifies a closed, evidenced record; `phases/README.md` requires documenting pivots via a new entry or ADR, not rewriting history in place.
+2. **Fold this work into Phase 018 Maintenance** — rejected, same reasoning ADR-0009 already applied to the original AI Shell request: an indefinite, non-terminal phase is not a fit for a scoped, completable feature.
+3. **Append as Phase 019, after Maintenance** — rejected. Maintenance is open-ended by its own Exit Criteria ("not applicable as a terminal ongoing phase"); sequencing a concrete, dependent-order phase after an indefinite one doesn't reflect real dependency order, identical to ADR-0009's own Alternative 1 rejection.
+
+### Consequences
+
+- **Positive:** `roadmap.md` accurately reflects real, concrete work; reuses the ADR-0002/ADR-0009 renumbering precedent rather than inventing a new mechanism; Maintenance's content is fully preserved, just relocated with full git history via `git mv`.
+- **Negative:** Any prior reference to "Phase 018" (in `changelog.md` entries, session logs, or earlier conversation turns) meant Maintenance at the time it was written; from this ADR forward, Phase 018 means Titan Shell Control Plane. Handled the same way ADR-0002's and ADR-0009's renumbering already established: historical entries are read as accurate snapshots as of their own timestamp, not live truth.
+- **Mitigation:** This ADR, the updated `roadmap.md` table, and the `git mv`-preserved phase-019 file make the relocation fully traceable.
+
+## ADR-0011 through ADR-000N
 
 No further decisions have been made yet. Add new entries below this line using `templates/adr-template.md`, incrementing the number sequentially. Do not skip numbers; do not reuse numbers.

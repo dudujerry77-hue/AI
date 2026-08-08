@@ -5,7 +5,15 @@ import type { CommandContext } from '../../apps/titan-shell/src/cli/types';
 
 function buildContext(): CommandContext {
   const shell = createTitanShell();
-  return { shell, logger: shell.logger, session: {}, args: [] };
+  return {
+    shell,
+    logger: shell.logger,
+    session: { history: [], plans: [], executions: [] },
+    args: [],
+    flags: {},
+    format: 'human',
+    verbose: false,
+  };
 }
 
 describe('statusCommand', () => {

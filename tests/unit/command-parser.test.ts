@@ -1,60 +1,124 @@
 import { describe, expect, it } from 'vitest';
-import { parseCommand } from '../../apps/titan-shell/src/cli/command-parser';
+import {
+  tokenize,
+  parseArgs,
+} from '../../apps/titan-shell/src/cli/command-parser';
+import type { FlagSpec } from '../../apps/titan-shell/src/cli/command-parser';
 
-describe('parseCommand', () => {
-  it('returns null for empty input', () => {
-    expect(parseCommand('')).toBeNull();
+describe('tokenize', () => {
+  it('returns an empty array for empty input', () => {
+    expect(tokenize('')).toEqual([]);
   });
 
-  it('returns null for whitespace-only input', () => {
-    expect(parseCommand('   \t  ')).toBeNull();
+  it('returns an empty array for whitespace-only input', () => {
+    expect(tokenize('   \t  ')).toEqual([]);
   });
 
-  it('parses a bare command with no arguments', () => {
-    expect(parseCommand('help')).toEqual({
-      name: 'help',
-      args: [],
-      raw: 'help',
-    });
+  it('splits on whitespace', () => {
+    expect(tokenize('plan Build a website')).toEqual([
+      'plan',
+      'Build',
+      'a',
+      'website',
+    ]);
   });
 
-  it('lowercases the command name', () => {
-    expect(parseCommand('STATUS')).toEqual({
-      name: 'status',
-      args: [],
-      raw: 'STATUS',
-    });
-  });
-
-  it('splits arguments on whitespace', () => {
-    expect(parseCommand('plan Build a website')).toEqual({
-      name: 'plan',
-      args: ['Build', 'a', 'website'],
-      raw: 'plan Build a website',
-    });
-  });
-
-  it('collapses repeated whitespace between arguments', () => {
-    expect(parseCommand('knowledge   list')).toEqual({
-      name: 'knowledge',
-      args: ['list'],
-      raw: 'knowledge   list',
-    });
+  it('collapses repeated whitespace between tokens', () => {
+    expect(tokenize('knowledge   list')).toEqual(['knowledge', 'list']);
   });
 
   it('trims leading and trailing whitespace', () => {
-    expect(parseCommand('  exit  ')).toEqual({
-      name: 'exit',
-      args: [],
-      raw: 'exit',
+    expect(tokenize('  exit  ')).toEqual(['exit']);
+  });
+
+  it('keeps a double-quoted span as a single token, stripping the quotes', () => {
+    expect(tokenize('knowledge search "governance drift"')).toEqual([
+      'knowledge',
+      'search',
+      'governance drift',
+    ]);
+  });
+
+  it('keeps a single-quoted span as a single token, stripping the quotes', () => {
+    expect(tokenize("plan create 'multi word goal'")).toEqual([
+      'plan',
+      'create',
+      'multi word goal',
+    ]);
+  });
+
+  it('does not alter casing of any token', () => {
+    expect(tokenize('STATUS')).toEqual(['STATUS']);
+  });
+});
+
+describe('parseArgs', () => {
+  it('returns all tokens as positional when no flags are present', () => {
+    expect(parseArgs(['Build', 'a', 'website'])).toEqual({
+      positional: ['Build', 'a', 'website'],
+      flags: {},
     });
   });
 
-  it('does not lowercase argument text, only the command name', () => {
-    expect(parseCommand('plan Build A Website')?.args).toEqual([
-      'Build',
-      'A',
-      'Website',
-    ]);
+  it('parses a bare long flag as boolean true', () => {
+    expect(parseArgs(['--json'])).toEqual({
+      positional: [],
+      flags: { json: true },
+    });
+  });
+
+  it('parses "--name value" as a string flag when undeclared', () => {
+    expect(parseArgs(['--limit', '20'])).toEqual({
+      positional: [],
+      flags: { limit: '20' },
+    });
+  });
+
+  it('coerces "--name value" to a number when declared as type number', () => {
+    const specs: FlagSpec[] = [{ name: 'limit', type: 'number' }];
+    expect(parseArgs(['--limit', '20'], specs)).toEqual({
+      positional: [],
+      flags: { limit: 20 },
+    });
+  });
+
+  it('parses "--name=value" form', () => {
+    expect(parseArgs(['--limit=20'])).toEqual({
+      positional: [],
+      flags: { limit: '20' },
+    });
+  });
+
+  it('never consumes the next token as a value for a declared boolean flag', () => {
+    const specs: FlagSpec[] = [{ name: 'verbose', type: 'boolean' }];
+    expect(parseArgs(['--verbose', 'search'], specs)).toEqual({
+      positional: ['search'],
+      flags: { verbose: true },
+    });
+  });
+
+  it('resolves a declared single-character alias to its canonical name', () => {
+    const specs: FlagSpec[] = [{ name: 'limit', type: 'number', alias: 'n' }];
+    expect(parseArgs(['-n', '5'], specs)).toEqual({
+      positional: [],
+      flags: { limit: 5 },
+    });
+  });
+
+  it('mixes positional args and flags in any order', () => {
+    expect(
+      parseArgs(['search', 'governance drift', '--limit', '5', '--json']),
+    ).toEqual({
+      positional: ['search', 'governance drift'],
+      flags: { limit: '5', json: true },
+    });
+  });
+
+  it('does not throw on a non-numeric value for a declared number flag, leaving it as the raw string', () => {
+    const specs: FlagSpec[] = [{ name: 'limit', type: 'number' }];
+    expect(parseArgs(['--limit', 'abc'], specs)).toEqual({
+      positional: [],
+      flags: { limit: 'abc' },
+    });
   });
 });

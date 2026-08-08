@@ -31,4 +31,5 @@ One file per phase from `roadmap.md`, named `phase-XXX-<kebab-case-name>.md` (e.
 | `phase-015-deployment-readiness.md` | 015 | complete |
 | `phase-016-production-release.md` | 016 | complete |
 | `phase-017-ai-shell-and-command-interface.md` | 017 | complete |
-| `phase-018-maintenance-and-continuous-improvement.md` | 018 | not-started |
+| `phase-018-titan-shell-control-plane.md` | 018 | complete |
+| `phase-019-maintenance-and-continuous-improvement.md` | 019 | not-started |

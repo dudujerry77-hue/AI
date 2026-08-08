@@ -1,8 +1,13 @@
-import type { CommandDefinition, CommandResult } from '../types';
+import type { CommandLeaf, CommandResult } from '../types';
 
-export const exitCommand: CommandDefinition = {
+export const exitCommand: CommandLeaf = {
+  kind: 'leaf',
   name: 'exit',
   usage: 'exit',
   description: 'Exit Titan AI.',
-  execute: (): CommandResult => ({ output: 'Goodbye.', exit: true }),
+  execute: (): CommandResult => ({
+    success: true,
+    output: 'Goodbye.',
+    exit: true,
+  }),
 };

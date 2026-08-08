@@ -3,24 +3,31 @@ import type { Readable, Writable } from 'node:stream';
 import { pathToFileURL } from 'node:url';
 import { createTitanShell } from './index';
 import { createTitanCommandRegistry } from './cli/register-commands';
-import { parseCommand } from './cli/command-parser';
+import { renderResult } from './cli/output';
 import { TITAN_SHELL_VERSION } from './cli/commands/version';
 import type { ShellSession } from './cli/types';
 
 const PROMPT = 'Titan AI > ';
 
+export interface TitanShellCliOutcome {
+  /** True if any dispatched command failed this session — callers decide what to do with it (the real entry point below sets `process.exitCode`). */
+  readonly failed: boolean;
+}
+
 /**
  * Runs the interactive Titan Shell REPL against injectable I/O streams
  * (defaulting to the real process stdin/stdout), so it can be driven
- * programmatically in tests without touching the real terminal.
+ * programmatically in tests without touching the real terminal or
+ * mutating `process.exitCode` as a side effect of a test run.
  */
 export function runTitanShellCli(
   input: Readable = process.stdin,
   output: Writable = process.stdout,
-): Promise<void> {
+): Promise<TitanShellCliOutcome> {
   const shell = createTitanShell();
   const registry = createTitanCommandRegistry();
-  const session: ShellSession = {};
+  const session: ShellSession = { history: [], plans: [], executions: [] };
+  let anyFailure = false;
 
   output.write(`Titan AI v${TITAN_SHELL_VERSION}\n`);
 
@@ -40,14 +47,14 @@ export function runTitanShellCli(
   let draining = false;
   let interfaceClosed = false;
   let exitRequested = false;
-  let resolveDone: () => void;
-  const done = new Promise<void>((resolve) => {
+  let resolveDone: (outcome: TitanShellCliOutcome) => void;
+  const done = new Promise<TitanShellCliOutcome>((resolve) => {
     resolveDone = resolve;
   });
 
   function settleIfFinished(): void {
     if (interfaceClosed && !draining && pendingLines.length === 0) {
-      resolveDone();
+      resolveDone({ failed: anyFailure });
     }
   }
 
@@ -59,32 +66,28 @@ export function runTitanShellCli(
 
     while (pendingLines.length > 0 && !exitRequested) {
       const line = pendingLines.shift() as string;
-      const parsed = parseCommand(line);
 
-      if (parsed) {
-        shell.logger.info('cli.command', {
-          command: parsed.name,
-          args: parsed.args,
-        });
+      const { result, format } = await registry.dispatchLine(line, {
+        shell,
+        logger: shell.logger,
+        session,
+      });
 
-        const result = await registry.dispatch(parsed.name, {
-          shell,
-          logger: shell.logger,
-          session,
-          args: parsed.args,
-        });
+      if (!result.success) {
+        anyFailure = true;
+      }
 
-        if (result.output) {
-          output.write(`${result.output}\n`);
+      const rendered = renderResult(result, format);
+      if (rendered) {
+        output.write(`${rendered}\n`);
+      }
+
+      if (result.exit) {
+        exitRequested = true;
+        if (!interfaceClosed) {
+          rl.close();
         }
-
-        if (result.exit) {
-          exitRequested = true;
-          if (!interfaceClosed) {
-            rl.close();
-          }
-          break;
-        }
+        break;
       }
 
       if (!exitRequested && !interfaceClosed) {
@@ -122,8 +125,14 @@ const isMainModule =
   import.meta.url === pathToFileURL(process.argv[1] as string).href;
 
 if (isMainModule) {
-  runTitanShellCli().catch((error: unknown) => {
-    console.error('[titan] fatal error:', error);
-    process.exitCode = 1;
-  });
+  runTitanShellCli()
+    .then((outcome) => {
+      if (outcome.failed) {
+        process.exitCode = 1;
+      }
+    })
+    .catch((error: unknown) => {
+      console.error('[titan] fatal error:', error);
+      process.exitCode = 1;
+    });
 }

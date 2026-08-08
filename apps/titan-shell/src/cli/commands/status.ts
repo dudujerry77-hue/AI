@@ -1,11 +1,16 @@
 import { resolveEngineMetadata } from '../engine-utils';
-import type {
-  CommandContext,
-  CommandDefinition,
-  CommandResult,
-} from '../types';
+import type { CommandContext, CommandLeaf, CommandResult } from '../types';
 
-export const statusCommand: CommandDefinition = {
+interface EngineStatusRow {
+  readonly id: string;
+  readonly name: string;
+  readonly state: string;
+  readonly health: string;
+  readonly version: string;
+}
+
+export const statusCommand: CommandLeaf = {
+  kind: 'leaf',
   name: 'status',
   usage: 'status',
   description: 'Display shell, engine, and runtime status.',
@@ -13,7 +18,7 @@ export const statusCommand: CommandDefinition = {
     const { shell } = context;
     const engines = shell.registry.list();
 
-    const engineLines = await Promise.all(
+    const rows: EngineStatusRow[] = await Promise.all(
       engines.map(async (engine) => {
         const metadata = resolveEngineMetadata(engine);
         let healthLabel = 'unknown';
@@ -22,7 +27,13 @@ export const statusCommand: CommandDefinition = {
         } catch (error) {
           healthLabel = `error (${error instanceof Error ? error.message : String(error)})`;
         }
-        return `    - ${metadata.name} (${metadata.id}): state=${engine.getState()}, health=${healthLabel}, version=${metadata.version}`;
+        return {
+          id: metadata.id,
+          name: metadata.name,
+          state: engine.getState(),
+          health: healthLabel,
+          version: metadata.version,
+        };
       }),
     );
 
@@ -31,9 +42,21 @@ export const statusCommand: CommandDefinition = {
       `Environment: ${shell.config.environment}`,
       `Log level: ${shell.config.logLevel}`,
       `Registered engines: ${engines.length}`,
-      ...engineLines,
+      ...rows.map(
+        (row) =>
+          `    - ${row.name} (${row.id}): state=${row.state}, health=${row.health}, version=${row.version}`,
+      ),
     ];
 
-    return { output: lines.join('\n') };
+    return {
+      success: true,
+      output: lines.join('\n'),
+      data: {
+        shell: shell.name,
+        environment: shell.config.environment,
+        logLevel: shell.config.logLevel,
+        engines: rows,
+      },
+    };
   },
 };
